@@ -1116,94 +1116,108 @@ async function saveProduction(e) {
 }
 
 async function cancelLogItem(uid) {
+    // 1. Trava de Segurança: Verifica se o UID realmente existe
+    if (!uid || uid === 'undefined' || uid === 'null') {
+        return showToast("Erro: Esse registro não possui UID. Foi criado antes do ajuste no banco.", true);
+    }
+
     // Puxa o item exato clicado usando a chave única do banco
-    const logItem = STATE.logs.find(l => l.uid === uid);
-    if (!logItem) return;
+    const logItem = STATE.logs.find(l => String(l.uid) === String(uid));
+    
+    if (!logItem) {
+        return showToast("Erro: Registro não encontrado na memória.", true);
+    }
 
     if (!confirm("Atenção! Estornar esse registro devolverá as quantidades ao estoque e cancelará movimentações. Confirma?")) return;
     showLoading(true);
 
-    // 1. Marca o log atual como CANCELADO
+    // 2. Marca o log atual como CANCELADO
     const { error: errCancel } = await sb.from('logs').update({ status: 'CANCELADO' }).eq('uid', uid);
     if (errCancel) { 
         showLoading(false); 
-        return showToast("Erro: " + errCancel.message, true); 
+        return showToast("Erro ao cancelar: " + errCancel.message, true); 
     }
 
     const logType = logItem.type;
-    const logProdName = logItem.productName;
+    const logProdName = String(logItem.productName || '').trim();
     const logQty = Number(logItem.quantity) || 0;
     const logNote = String(logItem.note || '');
     const logValue = Number(logItem.totalValue) || 0;
 
-    // 2. Estorno inteligente baseado no TIPO (Cópia fiel do seu GAS)
-    
-    let prodFound = STATE.products.find(p => p.name === logProdName);
+    // 3. Busca o produto limpando espaços extras (trim) para garantir que ache
+    let prodFound = STATE.products.find(p => String(p.name).trim() === logProdName);
 
-    if (logType === 'venda') {
-        if (prodFound) {
-            let committed = Number(prodFound.committed) || 0;
-            await sb.from('produtos').update({ estoque_comprometido: Math.max(0, committed - logQty) }).eq('id', prodFound.id);
-        }
-    } 
-    else if (logType === 'fabricacao') {
-        if (prodFound) {
-            let physical = Number(prodFound.stock) || 0;
-            await sb.from('produtos').update({ estoque_fisico: Math.max(0, physical - logQty) }).eq('id', prodFound.id);
-        }
-    } 
-    else if (logType === 'recebimento') {
-        let match = logNote.match(/#(\d+)/);
-        if (match && match[1]) {
-            let origId = match[1];
-            for (let i = 0; i < STATE.logs.length; i++) {
-                if (String(STATE.logs[i].id) === String(origId) && STATE.logs[i].type === 'venda') {
-                    let currentPaid = Number(STATE.logs[i].paidValue) || 0;
-                    let totalVal = Number(STATE.logs[i].totalValue) || 0;
-                    let newPaid = Math.max(0, currentPaid - logValue);
-                    
-                    let newStatus = STATE.logs[i].finStatus;
-                    if (newPaid < totalVal) newStatus = 'A RECEBER';
-                    
-                    await sb.from('logs').update({ valor_pago: newPaid, status_financeiro: newStatus }).eq('uid', STATE.logs[i].uid);
-                }
+    try {
+        // 4. Estorno inteligente baseado no TIPO
+        if (logType === 'venda') {
+            if (prodFound) {
+                let committed = Number(prodFound.committed) || 0;
+                await sb.from('produtos').update({ estoque_comprometido: Math.max(0, committed - logQty) }).eq('id', prodFound.id);
             }
-        }
-    } 
-    else if (logType === 'entrega') {
-        let match = logNote.match(/#(\d+)/);
-        if (match && match[1]) {
-            let origId = match[1];
-            
-            // Procura a linha da venda original que tem o mesmo ID E o mesmo produto
-            for (let i = 0; i < STATE.logs.length; i++) {
-                if (String(STATE.logs[i].id) === String(origId) && STATE.logs[i].type === 'venda' && STATE.logs[i].productName === logProdName) {
-                    let currentDelivered = Number(STATE.logs[i].deliveredQty) || 0;
-                    let totalQty = Number(STATE.logs[i].quantity) || 0;
-                    let newDelivered = Math.max(0, currentDelivered - logQty);
-                    
-                    let newStatus = '';
-                    if (newDelivered === 0) newStatus = 'PENDENTE';
-                    else if (newDelivered < totalQty) newStatus = 'PARCIAL';
-                    else newStatus = 'ENTREGUE';
-                    
-                    await sb.from('logs').update({ qtd_entregue: newDelivered, status_entrega: newStatus }).eq('uid', STATE.logs[i].uid);
-                    
-                    if (prodFound) {
-                        let physical = Number(prodFound.stock) || 0;
-                        let committed = Number(prodFound.committed) || 0;
-                        await sb.from('produtos').update({ 
-                            estoque_fisico: physical + logQty,
-                            estoque_comprometido: committed + logQty
-                        }).eq('id', prodFound.id);
+        } 
+        else if (logType === 'fabricacao') {
+            if (prodFound) {
+                let physical = Number(prodFound.stock) || 0;
+                await sb.from('produtos').update({ estoque_fisico: Math.max(0, physical - logQty) }).eq('id', prodFound.id);
+            }
+        } 
+        else if (logType === 'recebimento') {
+            let match = logNote.match(/#(\d+)/);
+            if (match && match[1]) {
+                let origId = match[1];
+                for (let i = 0; i < STATE.logs.length; i++) {
+                    if (String(STATE.logs[i].id) === String(origId) && STATE.logs[i].type === 'venda') {
+                        let currentPaid = Number(STATE.logs[i].paidValue) || 0;
+                        let totalVal = Number(STATE.logs[i].totalValue) || 0;
+                        let newPaid = Math.max(0, currentPaid - logValue);
+                        
+                        let newStatus = STATE.logs[i].finStatus;
+                        if (newPaid < totalVal) newStatus = 'A RECEBER';
+                        
+                        await sb.from('logs').update({ valor_pago: newPaid, status_financeiro: newStatus }).eq('uid', STATE.logs[i].uid);
                     }
-                    break;
+                }
+            }
+        } 
+        else if (logType === 'entrega') {
+            let match = logNote.match(/#(\d+)/);
+            if (match && match[1]) {
+                let origId = match[1];
+                
+                // Procura a linha da venda original que tem o mesmo ID E o mesmo produto (usando trim)
+                for (let i = 0; i < STATE.logs.length; i++) {
+                    if (String(STATE.logs[i].id) === String(origId) && STATE.logs[i].type === 'venda' && String(STATE.logs[i].productName).trim() === logProdName) {
+                        let currentDelivered = Number(STATE.logs[i].deliveredQty) || 0;
+                        let totalQty = Number(STATE.logs[i].quantity) || 0;
+                        let newDelivered = Math.max(0, currentDelivered - logQty);
+                        
+                        let newStatus = '';
+                        if (newDelivered === 0) newStatus = 'PENDENTE';
+                        else if (newDelivered < totalQty) newStatus = 'PARCIAL';
+                        else newStatus = 'ENTREGUE';
+                        
+                        await sb.from('logs').update({ qtd_entregue: newDelivered, status_entrega: newStatus }).eq('uid', STATE.logs[i].uid);
+                        
+                        if (prodFound) {
+                            let physical = Number(prodFound.stock) || 0;
+                            let committed = Number(prodFound.committed) || 0;
+                            await sb.from('produtos').update({ 
+                                estoque_fisico: physical + logQty,
+                                estoque_comprometido: committed + logQty
+                            }).eq('id', prodFound.id);
+                        }
+                        break;
+                    }
                 }
             }
         }
-    }
-    else if (logType === 'despesa') {
-        await sb.from('despesas').delete().eq('id', logItem.id);
+        else if (logType === 'despesa') {
+            await sb.from('despesas').delete().eq('id', logItem.id);
+        }
+    } catch(err) {
+        console.error(err);
+        showLoading(false);
+        return showToast("Erro durante as atualizações de estorno.", true);
     }
 
     showToast("Estornado com sucesso!");
