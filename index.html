@@ -899,42 +899,122 @@ async function deleteQuote(id) {
 
 async function confirmDelivery() {
     const id = document.getElementById('del-log-id').value;
-    const productName = document.getElementById('del-log-prod').value;
+    const productNameStr = document.getElementById('del-log-prod').value;
     const qty = parseFloat(document.getElementById('del-qty-input').value);
-    
-    if (qty <= 0 || isNaN(qty)) return showToast("Quantidade inválida.", true);
-    showLoading(true);
 
-    // Achar o log original
-    const item = STATE.logs.find(l => String(l.id) === String(id) && l.productName === productName);
-    if(!item) { showLoading(false); return showToast("Pedido não encontrado", true); }
-
-    let newDelivered = (item.deliveredQty || 0) + qty;
-    let newStatus = newDelivered >= item.quantity ? 'ENTREGUE' : 'PARCIAL';
-
-    // 1. Atualiza log de venda
-    await sb.from('logs').update({ qtd_entregue: newDelivered, status_entrega: newStatus }).eq('uid', item.uid);
-
-    // 2. Atualiza estoque do produto
-    const prod = STATE.products.find(p => p.name === productName);
-    if(prod) {
-        await sb.from('produtos').update({ 
-            estoque_fisico: Math.max(0, prod.stock - qty),
-            estoque_comprometido: Math.max(0, prod.committed - qty)
-        }).eq('id', prod.id);
+    // Validação inicial
+    if (qty <= 0 || isNaN(qty)) {
+        showToast("Quantidade inválida.", true);
+        return;
     }
 
-    // 3. Cria log de entrega
-    await sb.from('logs').insert([{
-        id: getNextId(STATE.logs), tipo: 'entrega', produto_nome: productName, quantidade: qty,
-        data: new Date().toISOString(), observacao: 'Ref Venda #' + id, valor_total: 0,
-        cliente_nome: item.clientName, status: 'ATIVO', status_entrega: 'ENTREGUE',
-        qtd_entregue: qty, valor_pago: 0
-    }]);
+    showLoading(true);
+
+    // 1. Encontrar a venda original exata no Log (Mesma lógica do GAS)
+    let origLog = null;
+    for (let i = 0; i < STATE.logs.length; i++) {
+        // Exige que o ID, o tipo 'venda' e o Nome do Produto batam perfeitamente
+        if (String(STATE.logs[i].id) === String(id) && 
+            STATE.logs[i].type === 'venda' && 
+            String(STATE.logs[i].productName).trim() === String(productNameStr).trim()) {
+            origLog = STATE.logs[i];
+            break;
+        }
+    }
+
+    if (!origLog) {
+        showLoading(false);
+        showToast("Pedido ou produto não encontrado na base de dados.", true);
+        return;
+    }
+
+    const prodName = origLog.productName;
+    const totalQty = Number(origLog.quantity) || 0;
+    const clientName = origLog.clientName || '';
+    const currentDelivered = Number(origLog.deliveredQty) || 0;
+
+    // 2. Atualiza o status da venda original
+    let newDelivered = currentDelivered + Number(qty);
+    let newStatus = '';
+    
+    if (newDelivered >= totalQty) {
+        newStatus = 'ENTREGUE';
+    } else {
+        newStatus = 'PARCIAL';
+    }
+
+    const { error: errUpdateLog } = await sb.from('logs')
+        .update({ qtd_entregue: newDelivered, status_entrega: newStatus })
+        .eq('uid', origLog.uid); // Usa o UID único do Supabase para não afetar outros itens do pedido
+        
+    if (errUpdateLog) {
+        showLoading(false);
+        return showToast("Erro ao atualizar venda: " + errUpdateLog.message, true);
+    }
+
+    // 3. Decrementar do Estoque Físico e Comprometido
+    let prodFound = null;
+    for (let p = 0; p < STATE.products.length; p++) {
+        // Usando trim() por segurança na hora de bater o nome, como no seu código original
+        if (String(STATE.products[p].name).trim() === String(prodName).trim()) {
+            prodFound = STATE.products[p];
+            break;
+        }
+    }
+
+    if (prodFound) {
+        let physical = Number(prodFound.stock) || 0;
+        let committed = Number(prodFound.committed) || 0;
+        
+        await sb.from('produtos')
+            .update({ 
+                estoque_fisico: Math.max(0, physical - qty),
+                estoque_comprometido: Math.max(0, committed - qty)
+            })
+            .eq('id', prodFound.id);
+    }
+
+    // 4. CRIAR REGISTRO DA ENTREGA NO LOG
+    let maxId = 999;
+    for (let i = 0; i < STATE.logs.length; i++) {
+        const val = parseInt(STATE.logs[i].id);
+        if (!isNaN(val) && val > maxId) {
+            maxId = val;
+        }
+    }
+    const newId = (maxId + 1).toString();
+    const timestamp = new Date().toISOString();
+
+    const newLogEntry = {
+        id: newId,
+        tipo: 'entrega',
+        produto_nome: prodName,
+        quantidade: qty,
+        data: timestamp,
+        observacao: 'Ref Venda #' + id,
+        valor_total: 0,
+        cliente_nome: clientName,
+        forma_pagamento: '',
+        status: 'ATIVO',
+        status_entrega: 'ENTREGUE',
+        qtd_entregue: qty,
+        desconto: 0,
+        status_financeiro: '',
+        vencimento: timestamp,
+        valor_pago: 0,
+        endereco_entrega: ''
+    };
+
+    const { error: errInsert } = await sb.from('logs').insert([newLogEntry]);
+    
+    if (errInsert) {
+        showLoading(false);
+        return showToast("Erro ao registrar entrega: " + errInsert.message, true);
+    }
 
     closeDeliveryModal();
     showToast("Entrega Registrada!");
-    loadData();
+    await loadData();
 }
 
 async function saveReceivableEdit() {
@@ -1036,61 +1116,98 @@ async function saveProduction(e) {
 }
 
 async function cancelLogItem(uid) {
-    // Atenção: Aqui precisamos passar o UID (Chave primária do Supabase) que amarramos lá em cima no loadData
+    // Puxa o item exato clicado usando a chave única do banco
     const logItem = STATE.logs.find(l => l.uid === uid);
-    if(!logItem) return;
+    if (!logItem) return;
 
-    if(!confirm("Atenção! Estornar esse registro devolverá as quantidades ao estoque e cancelará movimentações. Confirma?")) return;
+    if (!confirm("Atenção! Estornar esse registro devolverá as quantidades ao estoque e cancelará movimentações. Confirma?")) return;
     showLoading(true);
 
-    // 1. Cancela o Log atual
-    await sb.from('logs').update({ status: 'CANCELADO' }).eq('uid', uid);
+    // 1. Marca o log atual como CANCELADO
+    const { error: errCancel } = await sb.from('logs').update({ status: 'CANCELADO' }).eq('uid', uid);
+    if (errCancel) { 
+        showLoading(false); 
+        return showToast("Erro: " + errCancel.message, true); 
+    }
 
-    const prod = STATE.products.find(p => p.name === logItem.productName);
+    const logType = logItem.type;
+    const logProdName = logItem.productName;
+    const logQty = Number(logItem.quantity) || 0;
+    const logNote = String(logItem.note || '');
+    const logValue = Number(logItem.totalValue) || 0;
 
-    // 2. Reverte Estoques baseados no tipo
-    if (logItem.type === 'venda' && prod) {
-        await sb.from('produtos').update({ estoque_comprometido: Math.max(0, prod.committed - logItem.quantity) }).eq('id', prod.id);
+    // 2. Estorno inteligente baseado no TIPO (Cópia fiel do seu GAS)
+    
+    let prodFound = STATE.products.find(p => p.name === logProdName);
+
+    if (logType === 'venda') {
+        if (prodFound) {
+            let committed = Number(prodFound.committed) || 0;
+            await sb.from('produtos').update({ estoque_comprometido: Math.max(0, committed - logQty) }).eq('id', prodFound.id);
+        }
     } 
-    else if (logItem.type === 'fabricacao' && prod) {
-        await sb.from('produtos').update({ estoque_fisico: Math.max(0, prod.stock - logItem.quantity) }).eq('id', prod.id);
-    }
-    else if (logItem.type === 'recebimento') {
-        let match = logItem.note.match(/#(\d+)/);
+    else if (logType === 'fabricacao') {
+        if (prodFound) {
+            let physical = Number(prodFound.stock) || 0;
+            await sb.from('produtos').update({ estoque_fisico: Math.max(0, physical - logQty) }).eq('id', prodFound.id);
+        }
+    } 
+    else if (logType === 'recebimento') {
+        let match = logNote.match(/#(\d+)/);
         if (match && match[1]) {
             let origId = match[1];
-            let rowsToUpdate = STATE.logs.filter(l => String(l.id) === String(origId) && l.type === 'venda');
-            for(let row of rowsToUpdate) {
-                let newPaid = Math.max(0, row.paidValue - logItem.totalValue);
-                let newStatus = newPaid < row.totalValue ? 'A RECEBER' : 'PAGO';
-                await sb.from('logs').update({ valor_pago: newPaid, status_financeiro: newStatus }).eq('uid', row.uid);
+            for (let i = 0; i < STATE.logs.length; i++) {
+                if (String(STATE.logs[i].id) === String(origId) && STATE.logs[i].type === 'venda') {
+                    let currentPaid = Number(STATE.logs[i].paidValue) || 0;
+                    let totalVal = Number(STATE.logs[i].totalValue) || 0;
+                    let newPaid = Math.max(0, currentPaid - logValue);
+                    
+                    let newStatus = STATE.logs[i].finStatus;
+                    if (newPaid < totalVal) newStatus = 'A RECEBER';
+                    
+                    await sb.from('logs').update({ valor_pago: newPaid, status_financeiro: newStatus }).eq('uid', STATE.logs[i].uid);
+                }
+            }
+        }
+    } 
+    else if (logType === 'entrega') {
+        let match = logNote.match(/#(\d+)/);
+        if (match && match[1]) {
+            let origId = match[1];
+            
+            // Procura a linha da venda original que tem o mesmo ID E o mesmo produto
+            for (let i = 0; i < STATE.logs.length; i++) {
+                if (String(STATE.logs[i].id) === String(origId) && STATE.logs[i].type === 'venda' && STATE.logs[i].productName === logProdName) {
+                    let currentDelivered = Number(STATE.logs[i].deliveredQty) || 0;
+                    let totalQty = Number(STATE.logs[i].quantity) || 0;
+                    let newDelivered = Math.max(0, currentDelivered - logQty);
+                    
+                    let newStatus = '';
+                    if (newDelivered === 0) newStatus = 'PENDENTE';
+                    else if (newDelivered < totalQty) newStatus = 'PARCIAL';
+                    else newStatus = 'ENTREGUE';
+                    
+                    await sb.from('logs').update({ qtd_entregue: newDelivered, status_entrega: newStatus }).eq('uid', STATE.logs[i].uid);
+                    
+                    if (prodFound) {
+                        let physical = Number(prodFound.stock) || 0;
+                        let committed = Number(prodFound.committed) || 0;
+                        await sb.from('produtos').update({ 
+                            estoque_fisico: physical + logQty,
+                            estoque_comprometido: committed + logQty
+                        }).eq('id', prodFound.id);
+                    }
+                    break;
+                }
             }
         }
     }
-    else if (logItem.type === 'entrega') {
-        let match = logItem.note.match(/#(\d+)/);
-        if (match && match[1]) {
-            let origId = match[1];
-            let rowsToUpdate = STATE.logs.filter(l => String(l.id) === String(origId) && l.type === 'venda');
-            for(let row of rowsToUpdate) {
-                let newDelivered = Math.max(0, row.deliveredQty - logItem.quantity);
-                let newStatus = newDelivered === 0 ? 'PENDENTE' : (newDelivered < row.quantity ? 'PARCIAL' : 'ENTREGUE');
-                await sb.from('logs').update({ qtd_entregue: newDelivered, status_entrega: newStatus }).eq('uid', row.uid);
-            }
-            if(prod) {
-                await sb.from('produtos').update({ 
-                    estoque_fisico: prod.stock + logItem.quantity,
-                    estoque_comprometido: prod.committed + logItem.quantity
-                }).eq('id', prod.id);
-            }
-        }
-    }
-    else if (logItem.type === 'despesa') {
+    else if (logType === 'despesa') {
         await sb.from('despesas').delete().eq('id', logItem.id);
     }
 
     showToast("Estornado com sucesso!");
-    loadData();
+    await loadData();
 }
 
 // --- FUNÇÕES DA INTERFACE (Renderização) --- 
