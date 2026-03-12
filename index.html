@@ -1686,7 +1686,11 @@ function openEditReceivable(id, total, paid, due, method) {
 function renderLogs() {
     const body = document.getElementById('logs-table-body');
     if(!body) return;
-    body.innerHTML = (STATE.logs||[]).slice().reverse().map(l=> {
+
+    // A MÁGICA ESTÁ AQUI: .sort() organiza as datas da mais recente para a mais antiga
+    const sortedLogs = (STATE.logs||[]).slice().sort((a, b) => new Date(b.date) - new Date(a.date));
+
+    body.innerHTML = sortedLogs.map(l=> {
         let textProd = l.productName;
         if (l.type === 'venda') textProd += ` (x${l.quantity})`;
         else if (l.type === 'entrega') textProd += ` (x${l.quantity})`;
