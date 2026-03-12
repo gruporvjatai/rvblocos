@@ -1287,7 +1287,11 @@ function renderPOSProducts() {
     const term = document.getElementById('pos-search').value.toLowerCase();
     const grid = document.getElementById('pos-products-grid');
     if(!grid) return;
-    grid.innerHTML = (STATE.products||[]).filter(p=>p.name.toLowerCase().includes(term)).map(p => {
+
+    // A MÁGICA: Ordena pelo ID (do mais antigo pro mais novo) antes de filtrar
+    const sortedProducts = (STATE.products||[]).slice().sort((a, b) => Number(a.id) - Number(b.id));
+
+    grid.innerHTML = sortedProducts.filter(p=>p.name.toLowerCase().includes(term)).map(p => {
         return `<button onclick="addToCart('${p.id}')" class="p-3 border rounded-lg text-left hover:shadow-md transition flex flex-col justify-between h-24 bg-white hover:border-orange-400 group relative overflow-hidden">
         <h4 class="font-bold text-sm leading-tight text-slate-700 line-clamp-2">${p.name}</h4>
         <div class="flex justify-between items-end w-full">
@@ -1296,6 +1300,7 @@ function renderPOSProducts() {
         </div>
     </button>`;
     }).join('');
+    
     renderRecentHistory();
 }
 
@@ -1723,7 +1728,11 @@ function renderLogs() {
 function renderDashboard() { 
     const grid = document.getElementById('dash-grid');
     if(!grid) return;
-    grid.innerHTML = (STATE.products||[]).map(p => { 
+    
+    // Mesma lógica: Ordena pelo ID
+    const sortedProducts = (STATE.products||[]).slice().sort((a, b) => Number(a.id) - Number(b.id));
+
+    grid.innerHTML = sortedProducts.map(p => { 
         const percent = Math.min(100, (p.stock / 2000) * 100); 
         return `<div class="bg-white p-5 rounded-xl border border-slate-100 shadow-sm relative overflow-hidden group hover:shadow-md transition">
         <div class="flex justify-between items-start mb-2"><h4 class="font-bold text-slate-700 truncate">${p.name}</h4><span class="text-xs bg-slate-100 text-slate-500 px-2 py-1 rounded">${p.category}</span></div>
