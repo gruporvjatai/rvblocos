@@ -7,12 +7,12 @@
   "background_color": "#f1f5f9",
   "icons": [
     {
-      "src": "https://i.postimg.cc/bNzydNr0/Captura-de-tela-2026-02-03-081527-(2).png",
+      "src": "logo.png",
       "sizes": "192x192",
       "type": "image/png"
     },
     {
-      "src": "https://i.postimg.cc/bNzydNr0/Captura-de-tela-2026-02-03-081527-(2).png",
+      "src": "logo.png",
       "sizes": "512x512",
       "type": "image/png"
     }
