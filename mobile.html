@@ -431,7 +431,10 @@
     }
 
     function renderEstoque() {
-      document.getElementById('lista-estoque').innerHTML = STATE.products.map(p => `
+      // A MÁGICA: Pega os produtos e ordena pelo ID (do menor para o maior)
+      const sortedProducts = (STATE.products||[]).slice().sort((a, b) => Number(a.id) - Number(b.id));
+
+      document.getElementById('lista-estoque').innerHTML = sortedProducts.map(p => `
         <div class="bg-white p-5 rounded-2xl border-2 border-white shadow-sm flex justify-between items-center">
           <div><h4 class="font-black text-slate-800 leading-none">${p.name}</h4><p class="text-[9px] text-slate-400 uppercase font-bold mt-1">${p.category}</p></div>
           <div class="flex gap-4 text-right">
