@@ -1,8 +1,8 @@
 {
   "name": "RV Blocos e Estruturas",
   "short_name": "RV Blocos",
-  "start_url": "/rvblocos/mobile.html",
-  "display": "standalone",
+  "start_url": "./mobile.html",
+
   "theme_color": "#0f172a",
   "background_color": "#f1f5f9",
   "icons": [
