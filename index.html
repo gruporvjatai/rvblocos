@@ -806,7 +806,7 @@ async function saveProduct(e) {
     loadData();
 }
 
-async function finalizeSale() {
+async function finalizeSale(isProntaEntrega = false) {
     if(!CART.length) return showToast("Vazio!", true);
     showLoading(true);
 
@@ -830,31 +830,61 @@ async function finalizeSale() {
     const fator = subtotalBruto > 0 ? (totals.total / subtotalBruto) : 1;
 
     let logsToInsert = [];
-    let productsToUpdate = [];
 
+    // 1. ATUALIZAR O ESTOQUE (Agora blindado e testado linha a linha)
     for(let item of CART) {
         const prod = STATE.products.find(p => p.id == item.prodId);
         if(prod) {
-            productsToUpdate.push({ id: prod.id, estoque_comprometido: prod.committed + Number(item.qty) });
+            let physical = Number(prod.stock) || 0;
+            let committed = Number(prod.committed) || 0;
+            let updatePayload = {};
+
+            if (isProntaEntrega) {
+                // PRONTA ENTREGA: Tira direto do físico (O disponível cai na hora)
+                updatePayload = { estoque_fisico: Math.max(0, physical - Number(item.qty)) };
+            } else {
+                // ENTREGA FUTURA: Aumenta o Comprometido (O disponível cai na hora)
+                updatePayload = { estoque_comprometido: committed + Number(item.qty) };
+            }
+
+            // FAZ O UPDATE E TRAVA O SISTEMA SE O BANCO DE DADOS FALHAR
+            const { error: errProd } = await sb.from('produtos').update(updatePayload).eq('id', prod.id);
+            if (errProd) {
+                console.error("Erro BD Estoque:", errProd);
+                showLoading(false);
+                return showToast("Erro ao baixar o estoque do produto: " + prod.name, true);
+            }
         }
+
+        const statusEntrega = isProntaEntrega ? 'ENTREGUE' : 'PENDENTE';
+        const qtdEntregue = isProntaEntrega ? item.qty : 0;
+
         logsToInsert.push({
             id: newSaleId, tipo: 'venda', produto_nome: item.name, quantidade: item.qty,
-            data: timestamp, observacao: 'Venda PDV', valor_total: (item.total * fator),
+            data: timestamp, observacao: isProntaEntrega ? 'Pronta Entrega PDV' : 'Venda PDV', 
+            valor_total: (item.total * fator),
             cliente_nome: clientName, forma_pagamento: payment, status: 'ATIVO',
-            status_entrega: 'PENDENTE', qtd_entregue: 0, desconto: totals.disc,
+            status_entrega: statusEntrega, qtd_entregue: qtdEntregue, desconto: totals.disc,
             status_financeiro: 'A RECEBER', vencimento: dueDate.toISOString(),
             valor_pago: 0, endereco_entrega: deliveryAddr
         });
+        
+        // Se o cliente levou na hora, já lança o log de entrega automático para fechar o ciclo
+        if (isProntaEntrega) {
+            logsToInsert.push({
+                id: getNextId(STATE.logs) + Math.floor(Math.random() * 1000), 
+                tipo: 'entrega', produto_nome: item.name, quantidade: item.qty,
+                data: timestamp, observacao: 'Retirado na hora. Ref Venda #' + newSaleId, 
+                valor_total: 0, cliente_nome: clientName, forma_pagamento: '', status: 'ATIVO',
+                status_entrega: 'ENTREGUE', qtd_entregue: item.qty, desconto: 0,
+                status_financeiro: '', vencimento: timestamp, valor_pago: 0, endereco_entrega: ''
+            });
+        }
     }
 
-    // 1. Inserir Logs
+    // 2. Inserir Logs de Venda/Entrega
     const { error: errLogs } = await sb.from('logs').insert(logsToInsert);
-    if(errLogs) { showLoading(false); return showToast("Erro nos logs: " + errLogs.message, true); }
-
-    // 2. Atualizar Estoque (Supabase não tem bulk update fácil sem RPC, então fazemos um por um)
-    for(let p of productsToUpdate) {
-        await sb.from('produtos').update({ estoque_comprometido: p.estoque_comprometido }).eq('id', p.id);
-    }
+    if(errLogs) { showLoading(false); return showToast("Erro ao registrar os logs.", true); }
 
     // 3. Deletar Orçamento original se existir
     if(CURRENT_QUOTE_ID) {
@@ -862,9 +892,15 @@ async function finalizeSale() {
     }
 
     clearCart();
-    showToast("Venda Realizada!");
-    await loadData(); // Recarrega e redireciona
-    navigate('expedition');
+    showToast(isProntaEntrega ? "Pronta Entrega Concluída!" : "Venda (Para Entrega) Registrada!");
+    await loadData(); 
+    
+    // Direciona para a tela certa
+    if (isProntaEntrega) {
+        navigate('pos'); 
+    } else {
+        navigate('expedition');
+    }
 }
 
 async function saveQuote() {
