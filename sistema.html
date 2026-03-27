@@ -7,6 +7,13 @@
     <script src="https://unpkg.com/lucide@latest"></script>
     <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
          <script>
+              // Verifica se existe o usuário salvo no navegador. Se não existir, chuta pro index.html
+              if (!localStorage.getItem('rv_user')) {
+                  window.location.replace("index.html");
+              }
+         </script>
+    
+         <script>          
         // Se detectar que a tela é de celular ou tablet, joga direto pro mobile.html
         if (/Android|webOS|iPhone|iPad|iPod|BlackBerry|IEMobile|Opera Mini/i.test(navigator.userAgent) || window.innerWidth <= 800) {
             window.location.replace("mobile.html");
@@ -145,6 +152,11 @@
         <button onclick="navigate('clients')" id="nav-clients" class="nav-btn w-full flex items-center space-x-3 px-4 py-3 rounded-lg text-slate-400 hover:bg-slate-800 hover:text-white transition-all"><i data-lucide="users"></i> <span class="font-medium text-sm">Clientes</span></button>
         <button onclick="navigate('prod')" id="nav-prod" class="nav-btn w-full flex items-center space-x-3 px-4 py-3 rounded-lg text-slate-400 hover:bg-slate-800 hover:text-white transition-all"><i data-lucide="package"></i> <span class="font-medium text-sm">Produtos</span></button>
         <button onclick="navigate('production')" id="nav-production" class="nav-btn w-full flex items-center space-x-3 px-4 py-3 rounded-lg text-slate-400 hover:bg-slate-800 hover:text-white transition-all"><i data-lucide="hammer"></i> <span class="font-medium text-sm">Produção</span></button>
+        <button onclick="navigate('production')" id="nav-production" class="nav-btn w-full flex items-center space-x-3 px-4 py-3 rounded-lg text-slate-400 hover:bg-slate-800 hover:text-white transition-all"><i data-lucide="hammer"></i> <span class="font-medium text-sm">Produção</span></button>
+            <div class="border-t border-slate-700 my-2 pt-2"></div>
+        <button onclick="fazerLogoff()" class="nav-btn w-full flex items-center space-x-3 px-4 py-3 rounded-lg text-red-400 hover:bg-red-500 hover:text-white transition-all">
+            <i data-lucide="log-out"></i> <span class="font-medium text-sm">Sair do Sistema</span>
+        </button>    
       </nav>
     </div>
 
@@ -645,6 +657,12 @@ const sb = supabase.createClient(supabaseUrl, supabaseKey);
 let STATE = { products: [], clients: [], logs: [], quotes: [], expenses: [], custoMaterialB10: 0 };
 let CART = [];
 let CURRENT_QUOTE_ID = null; 
+
+      // --- FUNÇÃO DE LOGOFF ---
+function fazerLogoff() {
+    localStorage.removeItem('rv_user');
+    window.location.replace('index.html');
+}
 
 window.onload = function() { showLoading(true); loadData(); };
 
