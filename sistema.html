@@ -2062,7 +2062,7 @@ function renderInvoice(sale, isQuote) {
     const finalTotal = subtotal - discount;
     
     const addressToShow = sale.deliveryAddress 
-        ? `<div style="padding: 4px; background-color: #fef3c7; border-left: 3px solid #f59e0b; margin-top: 5px;"><strong>ENTREGA:</strong><br>${sale.deliveryAddress}</div>` 
+        ? `<div style="padding: 4px; background-color: #fef3c7; border-left: 3px solid #f59e0b; margin-top: 5px;"><!--<strong>ENTREGA:</strong>--><br>${sale.deliveryAddress}</div>` 
         : cli.address;
 
     el.innerHTML = `
