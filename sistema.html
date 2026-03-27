@@ -783,7 +783,7 @@ async function loadData() {
         }));
 
         STATE.users = (resUsr.data || []).map(u => ({
-            id: u.id, name: u.nome, login: u.login, type: u.tipo, status: u.status
+            id: u.id, name: u.nome, login: u.email, type: u.nivel_acesso, status: u.status
         }));
 
         STATE.logs = (resLog.data || []).map(l => ({
