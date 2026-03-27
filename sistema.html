@@ -18,7 +18,6 @@
         if (/Android|webOS|iPhone|iPad|iPod|BlackBerry|IEMobile|Opera Mini/i.test(navigator.userAgent) || window.innerWidth <= 800) {
             window.location.replace("mobile.html");
         }</script>
-  <!-- ==========================================LOGO NAV=============================================================-->
   <link rel="icon" type="image/png" href="logo.png">
   <link rel="shortcut icon" type="image/png" href="logo.png">
   <link rel="apple-touch-icon" href="logo.png">
@@ -31,7 +30,6 @@
     <link rel="manifest" href="manifest.json">
 
     
-    <!-- ==========================================LOGO NAV =============================================================-->
     <style>
       body { background-color: #f1f5f9; font-family: 'Segoe UI', sans-serif; -webkit-font-smoothing: antialiased; }
 
@@ -150,6 +148,7 @@
         <div class="border-t border-slate-700 my-2 pt-2"></div>
         <button onclick="navigate('logs')" id="nav-logs" class="nav-btn w-full flex items-center space-x-3 px-4 py-3 rounded-lg text-slate-400 hover:bg-slate-800 hover:text-white transition-all"><i data-lucide="history"></i> <span class="font-medium text-sm">Histórico</span></button>
         <button onclick="navigate('clients')" id="nav-clients" class="nav-btn w-full flex items-center space-x-3 px-4 py-3 rounded-lg text-slate-400 hover:bg-slate-800 hover:text-white transition-all"><i data-lucide="users"></i> <span class="font-medium text-sm">Clientes</span></button>
+        <button onclick="navigate('users')" id="nav-users" class="nav-btn w-full flex items-center space-x-3 px-4 py-3 rounded-lg text-slate-400 hover:bg-slate-800 hover:text-white transition-all"><i data-lucide="user-cog"></i> <span class="font-medium text-sm">Usuários</span></button>
         <button onclick="navigate('prod')" id="nav-prod" class="nav-btn w-full flex items-center space-x-3 px-4 py-3 rounded-lg text-slate-400 hover:bg-slate-800 hover:text-white transition-all"><i data-lucide="package"></i> <span class="font-medium text-sm">Produtos</span></button>
         <button onclick="navigate('production')" id="nav-production" class="nav-btn w-full flex items-center space-x-3 px-4 py-3 rounded-lg text-slate-400 hover:bg-slate-800 hover:text-white transition-all"><i data-lucide="hammer"></i> <span class="font-medium text-sm">Produção</span></button>
       </nav>
@@ -389,6 +388,19 @@
           </div>
       </div>
 
+      <div id="view-users" class="hidden-section">
+          <div class="flex justify-between items-center mb-4">
+              <h2 class="text-2xl font-bold text-slate-800">Usuários do Sistema</h2>
+              <button onclick="openUserForm()" class="bg-blue-600 hover:bg-blue-700 text-white px-4 py-2 rounded font-bold shadow flex items-center gap-2"><i data-lucide="user-plus"></i> Novo Usuário</button>
+          </div>
+          <div class="bg-white rounded-xl border shadow-sm overflow-hidden">
+              <table class="w-full text-sm text-left">
+                  <thead class="bg-slate-50 text-slate-700"><tr><th class="p-4">Nome</th><th class="p-4">Login</th><th class="p-4">Perfil</th><th class="p-4 text-center">Status</th><th class="p-4 text-center">Ações</th></tr></thead>
+                  <tbody id="users-list" class="divide-y"></tbody>
+              </table>
+          </div>
+      </div>
+
       <div id="view-prod" class="hidden-section">
           <div class="flex justify-between items-center mb-4">
               <h2 class="text-2xl font-bold text-slate-800">Produtos</h2>
@@ -540,6 +552,27 @@
         </form>
     </div>
 
+    <div id="user-form-container" class="hidden fixed inset-0 bg-black/50 z-50 flex items-center justify-center p-4">
+        <form onsubmit="saveUser(event)" class="bg-white p-6 rounded-xl shadow-2xl w-full max-w-md">
+            <h3 class="font-bold text-lg mb-4">Dados do Usuário</h3>
+            <input type="hidden" id="usr-id">
+            <div class="space-y-3">
+                <input type="text" id="usr-name" required placeholder="Nome Completo" class="w-full p-2 border rounded">
+                <input type="text" id="usr-login" required placeholder="Login / Usuário" class="w-full p-2 border rounded">
+                <input type="password" id="usr-pass" placeholder="Senha (deixe em branco para manter a mesma)" class="w-full p-2 border rounded">
+                <select id="usr-type" required class="w-full p-2 border rounded bg-white">
+                    <option value="admin">Administrador (Acesso Total)</option>
+                    <option value="producao">Produção (Sem Financeiro/Usuários)</option>
+                    <option value="vendedor">Vendedor (Padrão)</option>
+                </select>
+            </div>
+            <div class="flex gap-2 mt-6">
+                <button type="button" onclick="document.getElementById('user-form-container').classList.add('hidden')" class="flex-1 p-2 bg-slate-200 rounded font-bold">Cancelar</button>
+                <button type="submit" class="flex-1 p-2 bg-blue-600 text-white rounded font-bold">Salvar</button>
+            </div>
+        </form>
+    </div>
+
     <div id="prod-form-container" class="hidden fixed inset-0 bg-black/50 z-50 flex items-center justify-center p-4">
         <form onsubmit="saveProduct(event)" class="bg-white p-6 rounded-xl shadow-2xl w-full max-w-md">
             <h3 class="font-bold text-lg mb-4">Dados do Produto</h3>
@@ -597,7 +630,7 @@
                 <button onclick="document.getElementById('modal-expense').classList.add('hidden')" class="text-slate-400 hover:text-red-500"><i data-lucide="x"></i></button>
             </div>
             <div class="p-6 space-y-4 overflow-y-auto">
-                  <div>
+                 <div>
                     <label class="block text-sm font-bold text-slate-700 mb-1">Descrição do Gasto (Item)</label>
                     <select id="exp-item" class="w-full p-3 border rounded-xl focus:ring-2 focus:ring-orange-500 outline-none bg-white">
                         <option value="Cimento">Cimento</option>
@@ -653,7 +686,7 @@
 const supabaseKey = 'sb_publishable_bhGr9DvGGg-gYWXsd_rf3w_CAZdF7n9';
 const sb = supabase.createClient(supabaseUrl, supabaseKey);
 
-let STATE = { products: [], clients: [], logs: [], quotes: [], expenses: [], custoMaterialB10: 0 };
+let STATE = { products: [], clients: [], logs: [], quotes: [], expenses: [], users: [], custoMaterialB10: 0 };
 let CART = [];
 let CURRENT_QUOTE_ID = null; 
 
@@ -665,8 +698,16 @@ function fazerLogoff() {
 
 window.onload = function() { showLoading(true); loadData(); };
 
-// --- NAVEGAÇÃO E UTILIDADES --- (Mantidas exatamente iguais)
+// --- NAVEGAÇÃO E UTILIDADES ---
 function navigate(viewId) {
+    // RBAC: Se for producao, bloqueia nav-fin e nav-users
+    try {
+        const u = JSON.parse(localStorage.getItem('rv_user'));
+        if (u && u.tipo === 'producao' && (viewId === 'fin' || viewId === 'users')) {
+            return showToast("Acesso restrito. Você não tem permissão para visualizar este módulo.", true);
+        }
+    } catch(e){}
+
     document.querySelectorAll('div[id^="view-"]').forEach(el => { el.classList.add('hidden-section'); el.classList.remove('active-section'); });
     const target = document.getElementById('view-' + viewId);
     if(target) { target.classList.remove('hidden-section'); target.classList.add('active-section'); }
@@ -680,10 +721,28 @@ function navigate(viewId) {
     if(viewId === 'expedition') renderExpedition();
     if(viewId === 'fin') renderFinance();
     if(viewId === 'clients') renderClients();
+    if(viewId === 'users') renderUsers();
     if(viewId === 'prod') renderProducts();
     if(viewId === 'production') renderProductionSelect();
     if(viewId === 'logs') renderLogs();
     lucide.createIcons();
+}
+
+function applyRBAC() {
+    try {
+        const userJson = localStorage.getItem('rv_user');
+        if(userJson) {
+            const user = JSON.parse(userJson);
+            if(user.tipo === 'producao') {
+                const navFin = document.getElementById('nav-fin');
+                const navUsers = document.getElementById('nav-users');
+                if(navFin) navFin.style.display = 'none';
+                if(navUsers) navUsers.style.display = 'none';
+            }
+        }
+    } catch(e) {
+        console.error("Erro no controle de acesso", e);
+    }
 }
 
 function formatMoney(val) { return parseFloat(val || 0).toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' }); }
@@ -701,13 +760,14 @@ function showToast(msg, isError) {
 
 async function loadData() {
     try {
-        const [resProd, resCli, resLog, resDesp, resOrc, resConf] = await Promise.all([
+        const [resProd, resCli, resLog, resDesp, resOrc, resConf, resUsr] = await Promise.all([
             sb.from('produtos').select('*'),
             sb.from('clientes').select('*'),
             sb.from('logs').select('*'),
             sb.from('despesas').select('*'),
             sb.from('orcamentos').select('*'),
-            sb.from('configuracoes').select('*').eq('chave', 'custo_material_b10').maybeSingle()
+            sb.from('configuracoes').select('*').eq('chave', 'custo_material_b10').maybeSingle(),
+            sb.from('usuarios').select('*')
         ]);
 
         if (resProd.error) throw resProd.error;
@@ -720,6 +780,10 @@ async function loadData() {
 
         STATE.clients = (resCli.data || []).map(c => ({
             id: c.id, name: c.nome, phone: c.telefone, doc: c.documento, address: c.endereco
+        }));
+
+        STATE.users = (resUsr.data || []).map(u => ({
+            id: u.id, name: u.nome, login: u.login, type: u.tipo, status: u.status
         }));
 
         STATE.logs = (resLog.data || []).map(l => ({
@@ -759,6 +823,7 @@ async function loadData() {
 
 function onDataLoaded() {
     updateClientSelects();
+    applyRBAC();
     if(!document.querySelector('.active-section')) {
         navigate('pos');
     } else {
@@ -774,7 +839,92 @@ function getNextId(array) {
     return max + 1;
 }
 
-// --- FUNÇÕES CRUD (SUBSTITUINDO O GOOGLE APPS SCRIPT) ---
+// --- FUNÇÕES CRUD DE USUÁRIOS ---
+
+function renderUsers() {
+    const list = document.getElementById('users-list');
+    if(!list) return;
+    list.innerHTML = (STATE.users||[]).map(u=>`
+    <tr class="hover:bg-slate-50">
+        <td class="p-4 font-medium">${u.name}</td>
+        <td class="p-4">${u.login}</td>
+        <td class="p-4 uppercase text-xs font-bold text-slate-500">${u.type}</td>
+        <td class="p-4 text-center">
+            <span class="px-2 py-1 rounded text-xs font-bold ${u.status === 'BLOQUEADO' ? 'bg-red-100 text-red-700' : 'bg-green-100 text-green-700'}">${u.status}</span>
+        </td>
+        <td class="p-4 text-center flex justify-center gap-3">
+            <button onclick="openUserForm('${u.id}')" class="text-blue-600 hover:text-blue-800"><i data-lucide="edit-3" width="16"></i></button>
+            <button onclick="toggleUserStatus('${u.id}', '${u.status}')" class="${u.status === 'BLOQUEADO' ? 'text-green-600 hover:text-green-800' : 'text-red-600 hover:text-red-800'}" title="${u.status === 'BLOQUEADO' ? 'Desbloquear' : 'Bloquear'}"><i data-lucide="${u.status === 'BLOQUEADO' ? 'unlock' : 'lock'}" width="16"></i></button>
+        </td>
+    </tr>`).join('');
+    lucide.createIcons();
+}
+
+function openUserForm(id) {
+    document.getElementById('user-form-container').classList.remove('hidden');
+    if(id) {
+        const u = STATE.users.find(x => String(x.id) === String(id));
+        if(u) {
+            document.getElementById('usr-id').value = u.id;
+            document.getElementById('usr-name').value = u.name;
+            document.getElementById('usr-login').value = u.login;
+            document.getElementById('usr-type').value = u.type;
+            document.getElementById('usr-pass').value = '';
+            document.getElementById('usr-pass').required = false;
+        }
+    } else {
+        document.getElementById('usr-id').value = '';
+        document.getElementById('usr-name').value = '';
+        document.getElementById('usr-login').value = '';
+        document.getElementById('usr-type').value = 'vendedor';
+        document.getElementById('usr-pass').value = '';
+        document.getElementById('usr-pass').required = true;
+    }
+}
+
+async function saveUser(e) {
+    e.preventDefault();
+    showLoading(true);
+    const isNew = !document.getElementById('usr-id').value;
+    const newId = isNew ? getNextId(STATE.users) : document.getElementById('usr-id').value;
+    const pass = document.getElementById('usr-pass').value;
+
+    const payload = {
+        id: newId,
+        nome: document.getElementById('usr-name').value,
+        login: document.getElementById('usr-login').value,
+        tipo: document.getElementById('usr-type').value
+    };
+    
+    if(pass || isNew) {
+        payload.senha = pass;
+    }
+    if(isNew) {
+        payload.status = 'ATIVO';
+    }
+
+    const { error } = await sb.from('usuarios').upsert(payload);
+    if(error) { showLoading(false); return showToast("Erro: " + error.message, true); }
+
+    document.getElementById('user-form-container').classList.add('hidden');
+    showToast("Usuário Salvo!");
+    loadData();
+}
+
+async function toggleUserStatus(id, currentStatus) {
+    const newStatus = currentStatus === 'ATIVO' ? 'BLOQUEADO' : 'ATIVO';
+    const actionText = newStatus === 'BLOQUEADO' ? 'bloquear' : 'desbloquear';
+    if(!confirm(`Deseja realmente ${actionText} este usuário?`)) return;
+
+    showLoading(true);
+    const { error } = await sb.from('usuarios').update({ status: newStatus }).eq('id', id);
+    if(error) { showLoading(false); return showToast("Erro: " + error.message, true); }
+
+    showToast(`Usuário ${newStatus.toLowerCase()} com sucesso!`);
+    loadData();
+}
+
+// --- RESTO DAS FUNÇÕES CRUD EXISTENTES ---
 
 async function saveClient(e) {
     e.preventDefault();
@@ -855,7 +1005,6 @@ async function finalizeSale(isProntaEntrega = false) {
 
     let logsToInsert = [];
 
-    // 1. ATUALIZAR O ESTOQUE (Agora blindado e testado linha a linha)
     for(let item of CART) {
         const prod = STATE.products.find(p => p.id == item.prodId);
         if(prod) {
@@ -864,14 +1013,11 @@ async function finalizeSale(isProntaEntrega = false) {
             let updatePayload = {};
 
             if (isProntaEntrega) {
-                // PRONTA ENTREGA: Tira direto do físico (O disponível cai na hora)
                 updatePayload = { estoque_fisico: Math.max(0, physical - Number(item.qty)) };
             } else {
-                // ENTREGA FUTURA: Aumenta o Comprometido (O disponível cai na hora)
                 updatePayload = { estoque_comprometido: committed + Number(item.qty) };
             }
 
-            // FAZ O UPDATE E TRAVA O SISTEMA SE O BANCO DE DADOS FALHAR
             const { error: errProd } = await sb.from('produtos').update(updatePayload).eq('id', prod.id);
             if (errProd) {
                 console.error("Erro BD Estoque:", errProd);
@@ -893,7 +1039,6 @@ async function finalizeSale(isProntaEntrega = false) {
             valor_pago: 0, endereco_entrega: deliveryAddr
         });
         
-        // Se o cliente levou na hora, já lança o log de entrega automático para fechar o ciclo
         if (isProntaEntrega) {
             logsToInsert.push({
                 id: getNextId(STATE.logs) + Math.floor(Math.random() * 1000), 
@@ -906,11 +1051,9 @@ async function finalizeSale(isProntaEntrega = false) {
         }
     }
 
-    // 2. Inserir Logs de Venda/Entrega
     const { error: errLogs } = await sb.from('logs').insert(logsToInsert);
     if(errLogs) { showLoading(false); return showToast("Erro ao registrar os logs.", true); }
 
-    // 3. Deletar Orçamento original se existir
     if(CURRENT_QUOTE_ID) {
         await sb.from('orcamentos').delete().eq('id', CURRENT_QUOTE_ID);
     }
@@ -919,7 +1062,6 @@ async function finalizeSale(isProntaEntrega = false) {
     showToast(isProntaEntrega ? "Pronta Entrega Concluída!" : "Venda (Para Entrega) Registrada!");
     await loadData(); 
     
-    // Direciona para a tela certa
     if (isProntaEntrega) {
         navigate('pos'); 
     } else {
@@ -940,7 +1082,6 @@ async function saveQuote() {
     
     const budgetId = CURRENT_QUOTE_ID || getNextId(STATE.quotes);
 
-    // Remove antigo se existir
     if(CURRENT_QUOTE_ID) await sb.from('orcamentos').delete().eq('id', CURRENT_QUOTE_ID);
 
     let quotesToInsert = CART.map(item => ({
@@ -973,7 +1114,6 @@ async function confirmDelivery() {
     const productNameStr = document.getElementById('del-log-prod').value;
     const qty = parseFloat(document.getElementById('del-qty-input').value);
 
-    // Validação inicial
     if (qty <= 0 || isNaN(qty)) {
         showToast("Quantidade inválida.", true);
         return;
@@ -981,10 +1121,8 @@ async function confirmDelivery() {
 
     showLoading(true);
 
-    // 1. Encontrar a venda original exata no Log (Mesma lógica do GAS)
     let origLog = null;
     for (let i = 0; i < STATE.logs.length; i++) {
-        // Exige que o ID, o tipo 'venda' e o Nome do Produto batam perfeitamente
         if (String(STATE.logs[i].id) === String(id) && 
             STATE.logs[i].type === 'venda' && 
             String(STATE.logs[i].productName).trim() === String(productNameStr).trim()) {
@@ -1004,7 +1142,6 @@ async function confirmDelivery() {
     const clientName = origLog.clientName || '';
     const currentDelivered = Number(origLog.deliveredQty) || 0;
 
-    // 2. Atualiza o status da venda original
     let newDelivered = currentDelivered + Number(qty);
     let newStatus = '';
     
@@ -1016,17 +1153,15 @@ async function confirmDelivery() {
 
     const { error: errUpdateLog } = await sb.from('logs')
         .update({ qtd_entregue: newDelivered, status_entrega: newStatus })
-        .eq('uid', origLog.uid); // Usa o UID único do Supabase para não afetar outros itens do pedido
+        .eq('uid', origLog.uid); 
         
     if (errUpdateLog) {
         showLoading(false);
         return showToast("Erro ao atualizar venda: " + errUpdateLog.message, true);
     }
 
-    // 3. Decrementar do Estoque Físico e Comprometido
     let prodFound = null;
     for (let p = 0; p < STATE.products.length; p++) {
-        // Usando trim() por segurança na hora de bater o nome, como no seu código original
         if (String(STATE.products[p].name).trim() === String(prodName).trim()) {
             prodFound = STATE.products[p];
             break;
@@ -1045,7 +1180,6 @@ async function confirmDelivery() {
             .eq('id', prodFound.id);
     }
 
-    // 4. CRIAR REGISTRO DA ENTREGA NO LOG
     let maxId = 999;
     for (let i = 0; i < STATE.logs.length; i++) {
         const val = parseInt(STATE.logs[i].id);
@@ -1104,7 +1238,6 @@ async function saveReceivableEdit() {
     let newOrderPaid = orderPaid + payVal;
     let finStatus = newOrderPaid >= orderTotal ? 'PAGO' : (newOrderPaid > 0 ? 'PARCIAL' : 'PENDENTE');
 
-    // Atualiza todas as linhas do pedido
     for(let row of rowsToUpdate) {
         let updateData = { valor_pago: newOrderPaid, status_financeiro: finStatus };
         if (method) updateData.forma_pagamento = method;
@@ -1112,7 +1245,6 @@ async function saveReceivableEdit() {
         await sb.from('logs').update(updateData).eq('uid', row.uid);
     }
 
-    // Cria registro de recebimento se teve valor pago
     if (payVal > 0) {
         await sb.from('logs').insert([{
             id: getNextId(STATE.logs), tipo: 'recebimento', produto_nome: 'Baixa de Conta', quantidade: 0,
@@ -1138,15 +1270,13 @@ async function saveExpense() {
     if(!item || !cost) return showToast("Preencha item e custo", true);
     showLoading(true);
 
-    const newId = getNextId(STATE.logs); // Mantendo ID sincronizado
+    const newId = getNextId(STATE.logs); 
 
-    // 1. Salva na tabela despesas
     await sb.from('despesas').insert([{
         id: newId, item: item, quantidade: Number(qty) || 0, unidade: unit,
         custo: Number(cost), data: date, observacao: note
     }]);
 
-    // 2. Salva no Log geral
     await sb.from('logs').insert([{
         id: newId, tipo: 'despesa', produto_nome: item, quantidade: Number(qty) || 0,
         data: date, observacao: note, valor_total: Number(cost), status: 'ATIVO',
@@ -1171,10 +1301,8 @@ async function saveProduction(e) {
     
     const prod = STATE.products.find(x => String(x.id) === String(pId));
     
-    // Atualiza Estoque
     await sb.from('produtos').update({ estoque_fisico: prod.stock + qty }).eq('id', prod.id);
 
-    // Salva Log
     await sb.from('logs').insert([{
         id: getNextId(STATE.logs), tipo: 'fabricacao', produto_nome: prod.name,
         quantidade: qty, data: new Date().toISOString(), observacao: document.getElementById('prod-note-production').value,
@@ -1187,12 +1315,10 @@ async function saveProduction(e) {
 }
 
 async function cancelLogItem(uid) {
-    // 1. Trava de Segurança: Verifica se o UID realmente existe
     if (!uid || uid === 'undefined' || uid === 'null') {
         return showToast("Erro: Esse registro não possui UID. Foi criado antes do ajuste no banco.", true);
     }
 
-    // Puxa o item exato clicado usando a chave única do banco
     const logItem = STATE.logs.find(l => String(l.uid) === String(uid));
     
     if (!logItem) {
@@ -1202,7 +1328,6 @@ async function cancelLogItem(uid) {
     if (!confirm("Atenção! Estornar esse registro devolverá as quantidades ao estoque e cancelará movimentações. Confirma?")) return;
     showLoading(true);
 
-    // 2. Marca o log atual como CANCELADO
     const { error: errCancel } = await sb.from('logs').update({ status: 'CANCELADO' }).eq('uid', uid);
     if (errCancel) { 
         showLoading(false); 
@@ -1215,11 +1340,9 @@ async function cancelLogItem(uid) {
     const logNote = String(logItem.note || '');
     const logValue = Number(logItem.totalValue) || 0;
 
-    // 3. Busca o produto limpando espaços extras (trim) para garantir que ache
     let prodFound = STATE.products.find(p => String(p.name).trim() === logProdName);
 
     try {
-        // 4. Estorno inteligente baseado no TIPO
         if (logType === 'venda') {
             if (prodFound) {
                 let committed = Number(prodFound.committed) || 0;
@@ -1255,7 +1378,6 @@ async function cancelLogItem(uid) {
             if (match && match[1]) {
                 let origId = match[1];
                 
-                // Procura a linha da venda original que tem o mesmo ID E o mesmo produto (usando trim)
                 for (let i = 0; i < STATE.logs.length; i++) {
                     if (String(STATE.logs[i].id) === String(origId) && STATE.logs[i].type === 'venda' && String(STATE.logs[i].productName).trim() === logProdName) {
                         let currentDelivered = Number(STATE.logs[i].deliveredQty) || 0;
@@ -1295,23 +1417,6 @@ async function cancelLogItem(uid) {
     await loadData();
 }
 
-// --- FUNÇÕES DA INTERFACE (Renderização) --- 
-// IMPORTANTE: Todas as funções de renderização continuam IGUAIS ao seu arquivo original.
-// Como não posso colar 600 linhas de renderização aqui, você deve manter todas as funções:
-// updateClientSelects(), calculateTotal(), toggleCustomAddress(), renderPOSProducts(),
-// addToCart(), updateCartItem(), renderCart(), clearCart(), renderRecentHistory(),
-// renderQuotesList(), loadQuoteToCart(), renderExpedition(), openDeliveryModal(), 
-// closeDeliveryModal(), renderProducts(), openProductForm(), renderClients(), 
-// openClientForm(), renderFinance(), openEditReceivable(), renderLogs(), renderDashboard(), 
-// renderProductionSelect(), renderProductionDash(), renderInvoice(), printOrder(), 
-// printQuote(), printExpeditionHistory(), reprintSale()
-
-// ÚNICA MUDANÇA NAS RENDERS:
-// Na função renderLogs(), na linha que desenha o botão de cancelar:
-// Troque: `<button onclick="cancelLogItem('${l.id}')"` 
-// Por: `<button onclick="cancelLogItem('${l.uid}')"`
-
-
 // =========================================================
 // --- FUNÇÕES DA INTERFACE E RENDERIZAÇÃO (TELA) ---
 // =========================================================
@@ -1348,7 +1453,6 @@ function renderPOSProducts() {
     const grid = document.getElementById('pos-products-grid');
     if(!grid) return;
 
-    // A MÁGICA: Ordena pelo ID (do mais antigo pro mais novo) antes de filtrar
     const sortedProducts = (STATE.products||[]).slice().sort((a, b) => Number(a.id) - Number(b.id));
 
     grid.innerHTML = sortedProducts.filter(p=>p.name.toLowerCase().includes(term)).map(p => {
@@ -1645,7 +1749,7 @@ function renderFinance() {
     const salesArr = Object.values(salesMap);
 
     const income = salesArr.filter(s => s.status === 'PAGO').reduce((a, b) => a + b.val, 0) +
-                    salesArr.filter(s => s.status !== 'PAGO').reduce((a, b) => a + b.paid, 0);
+                   salesArr.filter(s => s.status !== 'PAGO').reduce((a, b) => a + b.paid, 0);
     
     const expenses = STATE.expenses.reduce((a, b) => a + Number(b.cost), 0);
     
@@ -1752,7 +1856,6 @@ function renderLogs() {
     const body = document.getElementById('logs-table-body');
     if(!body) return;
 
-    // A MÁGICA ESTÁ AQUI: .sort() organiza as datas da mais recente para a mais antiga
     const sortedLogs = (STATE.logs||[]).slice().sort((a, b) => new Date(b.date) - new Date(a.date));
 
     body.innerHTML = sortedLogs.map(l=> {
@@ -1789,7 +1892,6 @@ function renderDashboard() {
     const grid = document.getElementById('dash-grid');
     if(!grid) return;
     
-    // Mesma lógica: Ordena pelo ID
     const sortedProducts = (STATE.products||[]).slice().sort((a, b) => Number(a.id) - Number(b.id));
 
     grid.innerHTML = sortedProducts.map(p => { 
