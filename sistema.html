@@ -848,7 +848,7 @@ function renderUsers() {
     list.innerHTML = (STATE.users||[]).map(u=>`
     <tr class="hover:bg-slate-50">
         <td class="p-4 font-medium">${u.name}</td>
-        <td class="p-4">${u.email}</td>
+        <td class="p-4">${u.login}</td>
         <td class="p-4 uppercase text-xs font-bold text-slate-500">${u.type}</td>
         <td class="p-4 text-center">
             <span class="px-2 py-1 rounded text-xs font-bold ${u.status === 'BLOQUEADO' ? 'bg-red-100 text-red-700' : 'bg-green-100 text-green-700'}">${u.status}</span>
@@ -868,7 +868,7 @@ function openUserForm(id) {
         if(u) {
             document.getElementById('usr-id').value = u.id;
             document.getElementById('usr-name').value = u.name;
-            document.getElementById('usr-login').value = u.email;
+            document.getElementById('usr-login').value = u.login;
             document.getElementById('usr-type').value = u.type;
             document.getElementById('usr-pass').value = '';
             document.getElementById('usr-pass').required = false;
@@ -891,11 +891,11 @@ async function saveUser(e) {
     const pass = document.getElementById('usr-pass').value;
 
     const payload = {
-        id: newId,
-        nome: document.getElementById('usr-name').value,
-        login: document.getElementById('usr-login').value,
-        tipo: document.getElementById('usr-type').value
-    };
+    id: newId,
+    nome: document.getElementById('usr-name').value,
+    email: document.getElementById('usr-login').value,
+    nivel_acesso: document.getElementById('usr-type').value
+};
     
     if(pass || isNew) {
         payload.senha = pass;
