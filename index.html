@@ -111,7 +111,7 @@
                     .select('*')
                     .eq('email', login_user) 
                     .eq('senha', senha)
-                    .eq('status', 'ativo')
+                    .eq('status', 'ATIVO')
                     .single();
 
                 if (error || !data) {
