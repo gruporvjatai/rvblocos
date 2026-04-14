@@ -1,770 +1,403 @@
 <!DOCTYPE html>
-<html>
+<html lang="pt-br">
 <head>
-  <base target="_top">
-  <meta charset="UTF-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no, viewport-fit=cover">
-  <title>RV Blocos Mobile</title>
-  <script src="https://cdn.tailwindcss.com"></script>
-  <script src="https://unpkg.com/lucide@latest"></script>
-  <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
-  <script src="https://cdnjs.cloudflare.com/ajax/libs/html2pdf.js/0.10.1/html2pdf.bundle.min.js"></script>
-
-  <link rel="icon" type="image/png" href="logo.png">
-  <link rel="shortcut icon" type="image/png" href="logo.png">
-  <link rel="apple-touch-icon" href="logo.png">
-  
-  <meta name="mobile-web-app-capable" content="yes">
-  <meta name="apple-mobile-web-app-capable" content="yes">
-  <meta name="application-name" content="RV Blocos">
-  <meta name="apple-mobile-web-app-title" content="RV Blocos">
-  <meta name="theme-color" content="#0f172a"> 
-  <link rel="manifest" href="manifest.json">
-
-  <style>
-    body {
-      background-color: #f1f5f9;
-      font-family: 'Inter', -apple-system, BlinkMacSystemFont, sans-serif;
-      -webkit-tap-highlight-color: transparent;
-      margin: 0;
-      padding: 0;
-      overscroll-behavior-y: none;
-    }
-    .bg-rv-dark { background-color: #0f172a; }
-    .text-rv-orange { color: #ea580c; }
-    .border-rv-orange { border-color: #ea580c; }
-    .bg-rv-orange { background-color: #ea580c; }
-    .bottom-safe { padding-bottom: env(safe-area-inset-bottom, 0px); }
-    
-    .fade-in { animation: fadeIn 0.2s ease; }
-    @keyframes fadeIn { from { opacity: 0; transform: translateY(5px); } to { opacity: 1; transform: translateY(0); } }
-    
-    .loader {
-      border: 2px solid rgba(234, 88, 12, 0.2);
-      border-top: 2px solid #ea580c;
-      border-radius: 50%;
-      width: 24px;
-      height: 24px;
-      animation: spin 0.8s linear infinite;
-    }
-    @keyframes spin { 0% { transform: rotate(0deg); } 100% { transform: rotate(360deg); } }
-
-    .card {
-      background: white;
-      border-radius: 20px;
-      box-shadow: 0 4px 6px -1px rgba(0,0,0,0.05);
-      border: 1px solid #f0f0f0;
-    }
-    input, select, textarea {
-      -webkit-appearance: none;
-      appearance: none;
-      background-color: #f8fafc;
-      border: 1px solid #e2e8f0;
-      border-radius: 16px !important;
-      padding: 14px 16px;
-      font-size: 16px;
-      outline: none;
-      transition: border 0.2s;
-    }
-    input:focus, select:focus, textarea:focus {
-      border-color: #ea580c;
-      box-shadow: 0 0 0 3px rgba(234,88,12,0.1);
-    }
-    button {
-      transition: all 0.15s;
-      border-radius: 16px !important;
-    }
-    button:active {
-      transform: scale(0.97);
-      opacity: 0.8;
-    }
-    
-    .tab-bar {
-      backdrop-filter: blur(10px);
-      background-color: rgba(15, 23, 42, 0.95);
-      border-top: 1px solid #334155;
-    }
-    .tab-item {
-      color: #94a3b8;
-      transition: all 0.2s;
-    }
-    .tab-item.active {
-      color: #ea580c;
-      background: rgba(234,88,12,0.1);
-      border-top: 3px solid #ea580c;
-    }
-
-    .modal-sheet {
-      position: fixed;
-      bottom: 0;
-      left: 0;
-      right: 0;
-      background: white;
-      border-radius: 32px 32px 0 0;
-      box-shadow: 0 -10px 25px rgba(0,0,0,0.1);
-      z-index: 100;
-      transform: translateY(100%);
-      transition: transform 0.3s ease;
-      max-height: 85vh;
-      overflow-y: auto;
-    }
-    .modal-sheet.show {
-      transform: translateY(0);
-    }
-    .modal-backdrop {
-      position: fixed;
-      inset: 0;
-      background: rgba(0,0,0,0.5);
-      z-index: 99;
-      opacity: 0;
-      visibility: hidden;
-      transition: 0.2s;
-    }
-    .modal-backdrop.show {
-      opacity: 1;
-      visibility: visible;
-    }
-
-    .invoice-full {
-      border: 1px solid #000;
-      min-height: 27.5cm;
-      background: white;
-      position: relative;
-      z-index: 1;
-      font-family: 'Helvetica', 'Arial', sans-serif;
-      color: #1e293b;
-      padding: 15px;
-    }
-    .invoice-full::before {
-      content: "";
-      position: fixed;
-      top: 50%;
-      left: 50%;
-      transform: translate(-50%, -50%);
-      width: 450px;
-      height: 450px;
-      background-image: url('https://lh3.googleusercontent.com/d/1SIoZ2JlalfMnGDZTXBk7ZYuPgwxX3odF');
-      background-size: contain;
-      background-position: center;
-      background-repeat: no-repeat;
-      opacity: 0.1;
-      z-index: -1;
-    }
-  </style>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=yes, viewport-fit=cover">
+    <title>RV Blocos Mobile</title>
+    <link rel="icon" type="image/png" href="logo.png">
+    <link rel="manifest" href="manifest.json">
+    <meta name="theme-color" content="#0f172a">
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script src="https://unpkg.com/lucide@latest"></script>
+    <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+    <style>
+        * { -webkit-tap-highlight-color: transparent; }
+        body { background-color: #f1f5f9; font-family: 'Segoe UI', system-ui, -apple-system, sans-serif; padding-bottom: 70px; }
+        .bottom-nav {
+            position: fixed;
+            bottom: 0;
+            left: 0;
+            right: 0;
+            background: rgba(255,255,255,0.96);
+            backdrop-filter: blur(10px);
+            border-top: 1px solid #e2e8f0;
+            display: flex;
+            justify-content: space-around;
+            align-items: center;
+            padding: 8px 12px 20px;
+            z-index: 40;
+            box-shadow: 0 -2px 15px rgba(0,0,0,0.05);
+        }
+        .nav-item {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            gap: 4px;
+            font-size: 11px;
+            font-weight: 600;
+            color: #94a3b8;
+            transition: all 0.2s;
+            background: transparent;
+            border: none;
+            padding: 6px 12px;
+            border-radius: 30px;
+        }
+        .nav-item.active {
+            color: #ea580c;
+            background-color: #fff7ed;
+        }
+        .nav-item i { width: 22px; height: 22px; }
+        .tab-content { display: none; animation: fade 0.2s ease; }
+        .tab-content.active-tab { display: block; }
+        @keyframes fade { from { opacity: 0; transform: translateY(5px); } to { opacity: 1; transform: translateY(0); } }
+        .sub-tab-bar {
+            display: flex;
+            gap: 12px;
+            background: white;
+            padding: 8px 16px;
+            border-bottom: 1px solid #e2e8f0;
+            margin-bottom: 16px;
+            border-radius: 40px;
+            margin-top: 8px;
+        }
+        .sub-tab {
+            flex: 1;
+            text-align: center;
+            padding: 8px 0;
+            font-weight: 700;
+            font-size: 14px;
+            border-radius: 40px;
+            background: #f1f5f9;
+            color: #475569;
+            transition: all 0.2s;
+        }
+        .sub-tab.active-sub {
+            background: #ea580c;
+            color: white;
+            box-shadow: 0 4px 8px rgba(234,88,12,0.2);
+        }
+        .quick-grid {
+            display: grid;
+            grid-template-columns: repeat(2, 1fr);
+            gap: 16px;
+            padding: 20px;
+        }
+        .quick-card {
+            background: white;
+            border-radius: 24px;
+            padding: 20px 12px;
+            text-align: center;
+            box-shadow: 0 4px 12px rgba(0,0,0,0.05);
+            transition: all 0.2s;
+            border: 1px solid #f1f5f9;
+        }
+        .quick-card:active { transform: scale(0.97); background: #fef9f5; }
+        .loader { border: 3px solid #e2e8f0; border-top: 3px solid #ea580c; border-radius: 50%; width: 28px; height: 28px; animation: spin 1s linear infinite; }
+        @keyframes spin { 0% { transform: rotate(0deg); } 100% { transform: rotate(360deg); } }
+        .btn-action { transition: 0.1s; }
+        .btn-action:active { transform: scale(0.96); }
+        .modal-mobile { background: rgba(0,0,0,0.6); backdrop-filter: blur(4px); }
+        .cart-item-mobile { background: #faf9fe; border-radius: 20px; margin-bottom: 8px; }
+        ::-webkit-scrollbar { width: 4px; }
+    </style>
 </head>
 <body class="bg-slate-100">
 
-  <!-- Loader Global -->
-  <div id="global-loader" class="hidden fixed inset-0 bg-black/30 z-[200] flex items-center justify-center">
-    <div class="bg-white p-6 rounded-2xl flex flex-col items-center shadow-xl">
-      <div class="loader mb-3"></div>
-      <span class="text-slate-700 font-bold text-sm">Processando...</span>
-    </div>
-  </div>
+<div id="loading" class="hidden fixed inset-0 bg-black/40 z-50 flex items-center justify-center"><div class="bg-white p-6 rounded-2xl flex flex-col items-center shadow-2xl"><div class="loader mb-3"></div><span class="font-bold text-slate-700">Carregando...</span></div></div>
+<div id="toast" class="hidden fixed bottom-24 left-4 right-4 bg-slate-900 text-white text-center py-3 px-4 rounded-xl text-sm font-medium z-50 shadow-xl transition-all"></div>
 
-  <!-- Toast -->
-  <div id="toast" class="hidden fixed top-20 left-1/2 -translate-x-1/2 px-6 py-3 rounded-full shadow-2xl text-white font-bold text-sm z-[100] transition-all text-center min-w-[250px]"></div>
-
-  <!-- Header -->
-  <header class="bg-rv-dark text-white px-5 py-4 flex items-center justify-between sticky top-0 z-30 shadow-lg border-b-2 border-rv-orange">
-    <div class="flex items-center gap-3">
-      <div class="w-12 h-12 rounded-xl border-2 border-rv-orange bg-white p-1">
-        <img src="https://lh3.googleusercontent.com/d/1SIoZ2JlalfMnGDZTXBk7ZYuPgwxX3odF" class="w-full h-full object-contain" alt="Logo">
-      </div>
-      <div>
-        <h1 class="font-black text-lg italic tracking-tight">RV BLOCOS</h1>
-        <p class="text-[10px] font-bold text-rv-orange uppercase tracking-widest">E ESTRUTURAS</p>
-      </div>
-    </div>
-    <button onclick="abrirMenuMais()" class="w-12 h-12 rounded-xl bg-slate-800 flex items-center justify-center text-white active:bg-slate-700">
-      <i data-lucide="menu" style="width: 24px; height: 24px;"></i>
-    </button>
-  </header>
-
-  <!-- Container de Telas -->
-  <main id="screen-container" class="px-4 py-4 pb-24">
+<!-- CONTEÚDO PRINCIPAL -->
+<main class="px-4 pb-2 pt-2 max-w-3xl mx-auto">
+    <!-- ABAS PRINCIPAIS -->
+    <div id="tab-dash" class="tab-content active-tab"><div id="view-dash-mobile"><h2 class="text-xl font-black text-slate-800 mb-4 flex items-center gap-2"><i data-lucide="layout-dashboard"></i> Visão Geral</h2><div id="dash-grid-mobile" class="grid grid-cols-2 gap-4"></div></div></div>
     
-    <!-- TELA ESTOQUE -->
-    <div id="screen-estoque" class="screen space-y-4">
-      <div class="flex justify-between items-center">
-        <h2 class="text-lg font-black text-slate-800">Estoque Atual</h2>
-        <button onclick="loadData()" class="text-rv-orange text-sm font-bold bg-orange-50 px-4 py-2 rounded-full active:bg-orange-100">🔄 Atualizar</button>
-      </div>
-      <div id="lista-estoque" class="space-y-3"></div>
+    <div id="tab-orcamento" class="tab-content">
+        <div class="sub-tab-bar">
+            <button class="sub-tab active-sub" data-sub="pdv">💸 PDV / Venda Rápida</button>
+            <button class="sub-tab" data-sub="list">📄 Orçamentos</button>
+        </div>
+        <div id="sub-pdv" class="sub-content active-sub-content">
+            <div class="bg-white rounded-2xl shadow-sm p-3 mb-4">
+                <div class="relative"><i data-lucide="search" class="absolute left-3 top-3 text-slate-400 w-4 h-4"></i><input type="text" id="pos-search-mobile" placeholder="Buscar produto..." class="w-full p-3 pl-10 border rounded-xl text-sm bg-white" onkeyup="renderPOSProductsMobile()"></div>
+            </div>
+            <div id="pos-products-mobile" class="grid grid-cols-2 gap-3 max-h-[45vh] overflow-y-auto pb-2"></div>
+            <div class="fixed bottom-20 left-0 right-0 bg-white border-t shadow-xl rounded-t-2xl p-4 z-30 max-w-3xl mx-auto" style="margin-bottom: 65px;" id="cart-mobile-panel">
+                <div class="flex justify-between items-center mb-2"><span class="font-bold text-slate-700"><i data-lucide="shopping-cart" class="w-4 h-4 inline"></i> CARRINHO <span id="cart-count-mobile">0</span></span><button onclick="clearCartMobile()" class="text-xs text-red-500 font-bold px-2 py-1 bg-red-50 rounded-full">LIMPAR</button></div>
+                <div id="cart-items-mobile" class="max-h-48 overflow-y-auto space-y-2 mb-3"></div>
+                <div class="flex justify-between items-center mb-2"><span class="text-sm font-bold">Total:</span><span id="cart-total-mobile" class="text-xl font-black text-orange-600">R$ 0,00</span></div>
+                <div class="grid grid-cols-2 gap-2 mb-2">
+                    <select id="pos-client-mobile" class="p-2 border rounded-xl text-sm bg-white"></select>
+                    <select id="pos-payment-mobile" class="p-2 border rounded-xl text-sm"><option>Dinheiro</option><option>PIX</option><option>Cartão Crédito</option><option>Cartão Débito</option><option>Boleto 5 dias</option><option>Boleto 10 dias</option><option>Boleto 15 dias</option><option>PIX 7 dias</option></select>
+                </div>
+                <div class="flex gap-2">
+                    <button onclick="saveQuoteMobile()" class="flex-1 bg-blue-600 text-white py-3 rounded-xl font-bold text-sm shadow"><i data-lucide="save"></i> Orçamento</button>
+                    <button onclick="finalizeSaleMobile(false)" class="flex-1 bg-green-600 text-white py-3 rounded-xl font-bold text-sm shadow"><i data-lucide="check-circle"></i> Vender</button>
+                </div>
+            </div>
+        </div>
+        <div id="sub-list" class="sub-content" style="display:none">
+            <div class="space-y-3 pb-24" id="quotes-list-mobile"></div>
+        </div>
     </div>
 
-    <!-- TELA ORÇAMENTOS -->
-    <div id="screen-orcamentos" class="screen hidden space-y-4">
-      <div class="flex justify-between items-center">
-        <h2 class="text-lg font-black text-slate-800">Orçamentos</h2>
-        <button onclick="loadData()" class="text-rv-orange text-sm font-bold bg-orange-50 px-4 py-2 rounded-full">🔄</button>
-      </div>
-      <div id="lista-orcamentos" class="space-y-3"></div>
-      <button onclick="abrirFormOrcamento()" class="fixed bottom-24 right-6 w-16 h-16 bg-rv-dark text-rv-orange rounded-full shadow-2xl text-4xl flex items-center justify-center z-40 transition-transform active:scale-90 border-2 border-rv-orange">+</button>
+    <div id="tab-financeiro" class="tab-content"><div id="view-fin-mobile"><h2 class="text-xl font-black mb-3">💰 Financeiro</h2><div class="grid grid-cols-3 gap-2 mb-4"><div class="bg-green-50 p-3 rounded-xl text-center"><span class="text-xs text-green-700">Receitas</span><span id="fin-income-mobile" class="block font-bold text-green-700">R$0</span></div><div class="bg-red-50 p-3 rounded-xl text-center"><span class="text-xs text-red-700">Despesas</span><span id="fin-expenses-mobile" class="block font-bold text-red-700">R$0</span></div><div class="bg-blue-50 p-3 rounded-xl text-center"><span class="text-xs text-blue-700">Saldo</span><span id="fin-balance-mobile" class="block font-bold text-blue-700">R$0</span></div></div><div class="bg-white rounded-xl p-3 mb-4"><h3 class="font-bold">📋 Contas a Receber</h3><div id="fin-receivables-mobile" class="divide-y"></div></div><button onclick="document.getElementById('modal-expense').classList.remove('hidden')" class="w-full bg-red-500 text-white py-3 rounded-xl font-bold mb-3">➕ Lançar Saída</button></div></div>
+
+    <div id="tab-relatorios" class="tab-content"><div class="space-y-3 pb-20"><h2 class="text-xl font-black">📊 Relatórios</h2><button onclick="printDailyRevenueMobile()" class="w-full bg-white p-5 rounded-2xl shadow-sm text-left flex items-center gap-4"><i data-lucide="calendar-days" class="text-orange-500"></i><div><span class="font-bold block">Faturamento do Dia</span><span class="text-xs text-slate-500">Resumo de hoje</span></div></button><button onclick="openPeriodReportModalMobile()" class="w-full bg-white p-5 rounded-2xl shadow-sm text-left flex items-center gap-4"><i data-lucide="bar-chart-3" class="text-indigo-500"></i><div><span class="font-bold block">Vendas por Período</span><span class="text-xs text-slate-500">Filtro personalizado</span></div></button></div></div>
+
+    <div id="tab-mais" class="tab-content">
+        <div class="quick-grid">
+            <div class="quick-card" onclick="navigateMobile('clientes')"><i data-lucide="users" class="w-8 h-8 text-blue-600 mx-auto mb-2"></i><span class="font-bold block">Clientes</span></div>
+            <div class="quick-card" onclick="navigateMobile('produtos')"><i data-lucide="package" class="w-8 h-8 text-emerald-600 mx-auto mb-2"></i><span class="font-bold block">Produtos</span></div>
+            <div class="quick-card" onclick="navigateMobile('producao')"><i data-lucide="hammer" class="w-8 h-8 text-amber-600 mx-auto mb-2"></i><span class="font-bold block">Produção</span></div>
+            <div class="quick-card" onclick="navigateMobile('expedicao')"><i data-lucide="truck" class="w-8 h-8 text-slate-700 mx-auto mb-2"></i><span class="font-bold block">Expedição</span></div>
+            <div class="quick-card" onclick="navigateMobile('usuarios')"><i data-lucide="user-cog" class="w-8 h-8 text-purple-600 mx-auto mb-2"></i><span class="font-bold block">Usuários</span></div>
+            <div class="quick-card" onclick="fazerLogoffMobile()"><i data-lucide="log-out" class="w-8 h-8 text-red-500 mx-auto mb-2"></i><span class="font-bold block">Sair</span></div>
+        </div>
     </div>
+</main>
 
-    <!-- TELA CAIXA (FINANCEIRO) -->
-    <div id="screen-caixa" class="screen hidden space-y-4">
-      <div class="flex justify-between items-center">
-        <h2 class="text-lg font-black text-slate-800">Financeiro</h2>
-        <button onclick="loadData()" class="text-rv-orange text-sm font-bold bg-orange-50 px-4 py-2 rounded-full">🔄</button>
-      </div>
-      
-      <div class="grid grid-cols-3 gap-3">
-        <div class="bg-green-50 p-3 rounded-2xl border border-green-100">
-          <p class="text-[10px] font-bold text-green-700 uppercase">Receitas</p>
-          <p id="caixa-receitas" class="text-lg font-black text-green-600">R$ 0</p>
-        </div>
-        <div class="bg-red-50 p-3 rounded-2xl border border-red-100">
-          <p class="text-[10px] font-bold text-red-700 uppercase">Despesas</p>
-          <p id="caixa-despesas" class="text-lg font-black text-red-600">R$ 0</p>
-        </div>
-        <div class="bg-blue-50 p-3 rounded-2xl border border-blue-100">
-          <p class="text-[10px] font-bold text-blue-700 uppercase">Saldo</p>
-          <p id="caixa-saldo" class="text-lg font-black text-blue-600">R$ 0</p>
-        </div>
-      </div>
+<div class="bottom-nav">
+    <button class="nav-item active" data-tab="dash"><i data-lucide="home"></i><span>Início</span></button>
+    <button class="nav-item" data-tab="orcamento"><i data-lucide="file-text"></i><span>Orçamento</span></button>
+    <button class="nav-item" data-tab="financeiro"><i data-lucide="dollar-sign"></i><span>Financeiro</span></button>
+    <button class="nav-item" data-tab="relatorios"><i data-lucide="pie-chart"></i><span>Relatórios</span></button>
+    <button class="nav-item" data-tab="mais"><i data-lucide="grid"></i><span>Mais</span></button>
+</div>
 
-      <div class="card p-4">
-        <h3 class="font-bold text-slate-700 text-sm mb-2 flex items-center gap-2"><i data-lucide="arrow-down-circle" class="w-4 h-4 text-green-500"></i> A Receber</h3>
-        <div id="lista-receber" class="space-y-2 max-h-60 overflow-y-auto"></div>
-      </div>
+<!-- MODAIS GENÉRICOS -->
+<div id="modal-expense" class="hidden fixed inset-0 bg-black/50 z-50 flex items-center justify-center p-4 modal-mobile"><div class="bg-white rounded-2xl w-full max-w-md p-5"><h3 class="font-bold text-lg mb-3">Nova Saída</h3><select id="exp-item" class="w-full p-3 border rounded-xl mb-2"><option>Cimento</option><option>Areia</option><option>Frete</option><option>Salário</option></select><div class="grid grid-cols-2 gap-2 mb-2"><input type="number" id="exp-qty" placeholder="Qtd" class="p-3 border rounded-xl"><select id="exp-unit" class="p-3 border rounded-xl"><option>Un</option><option>Sc</option><option>Kg</option></select></div><input type="number" id="exp-cost" placeholder="Custo R$" class="w-full p-3 border rounded-xl mb-2"><input type="date" id="exp-date" class="w-full p-3 border rounded-xl mb-2"><input type="text" id="exp-note" placeholder="Obs" class="w-full p-3 border rounded-xl mb-4"><div class="flex gap-3"><button onclick="document.getElementById('modal-expense').classList.add('hidden')" class="flex-1 p-3 bg-slate-200 rounded-xl">Cancelar</button><button onclick="saveExpenseMobile()" class="flex-1 p-3 bg-red-600 text-white rounded-xl">Salvar</button></div></div></div>
 
-      <div class="card p-4">
-        <h3 class="font-bold text-slate-700 text-sm mb-2 flex items-center gap-2"><i data-lucide="arrow-up-circle" class="w-4 h-4 text-red-500"></i> A Pagar</h3>
-        <div id="lista-pagar" class="space-y-2 max-h-60 overflow-y-auto"></div>
-      </div>
+<div id="client-form-mobile" class="hidden fixed inset-0 bg-black/50 z-50 flex items-center justify-center p-4"><form onsubmit="saveClientMobile(event)" class="bg-white p-5 rounded-2xl w-full max-w-md"><h3 class="font-bold mb-3">Cliente</h3><input type="hidden" id="cli-id-mobile"><input type="text" id="cli-name-mobile" placeholder="Nome" required class="w-full p-3 border rounded-xl mb-2"><input type="text" id="cli-phone-mobile" placeholder="Telefone" class="w-full p-3 border rounded-xl mb-2"><input type="text" id="cli-doc-mobile" placeholder="CPF/CNPJ" class="w-full p-3 border rounded-xl mb-2"><input type="text" id="cli-addr-mobile" placeholder="Endereço" class="w-full p-3 border rounded-xl mb-4"><div class="flex gap-2"><button type="button" onclick="closeClientModal()" class="flex-1 p-3 bg-slate-200 rounded-xl">Cancelar</button><button type="submit" class="flex-1 p-3 bg-blue-600 text-white rounded-xl">Salvar</button></div></form></div>
 
-      <button onclick="abrirModalDespesa()" class="w-full bg-red-500 text-white font-bold py-4 rounded-xl shadow-lg flex items-center justify-center gap-2">
-        <i data-lucide="minus-circle" class="w-5 h-5"></i> Lançar Saída
-      </button>
-    </div>
+<div id="prod-form-mobile" class="hidden fixed inset-0 bg-black/50 z-50 flex items-center justify-center p-4"><form onsubmit="saveProductMobile(event)" class="bg-white p-5 rounded-2xl w-full"><h3 class="font-bold">Produto</h3><input type="hidden" id="prd-id-mobile"><input type="text" id="prd-name-mobile" placeholder="Nome" required class="w-full p-3 border rounded-xl my-2"><input type="text" id="prd-cat-mobile" placeholder="Categoria" class="w-full p-3 border rounded-xl mb-2"><input type="number" id="prd-price-mobile" step="0.01" placeholder="Preço" class="w-full p-3 border rounded-xl mb-2"><input type="number" id="prd-stock-mobile" placeholder="Estoque" class="w-full p-3 border rounded-xl mb-4"><div class="flex gap-2"><button type="button" onclick="closeProdModal()" class="flex-1 p-3 bg-slate-200 rounded-xl">Cancelar</button><button type="submit" class="flex-1 p-3 bg-blue-600 rounded-xl text-white">Salvar</button></div></form></div>
 
-    <!-- TELA RELATÓRIOS -->
-    <div id="screen-relatorios" class="screen hidden space-y-4">
-      <h2 class="text-lg font-black text-slate-800">Relatórios</h2>
-      <div class="grid gap-4">
-        <div onclick="showDailyReport()" class="card p-5 active:bg-orange-50">
-          <div class="flex items-center gap-4">
-            <div class="w-12 h-12 bg-orange-100 text-orange-600 rounded-full flex items-center justify-center text-2xl">📅</div>
-            <div><h3 class="font-black text-slate-800">Faturamento do Dia</h3><p class="text-xs text-slate-400">Resumo de vendas de hoje</p></div>
-          </div>
-        </div>
-        <div onclick="openPeriodReportModal()" class="card p-5 active:bg-indigo-50">
-          <div class="flex items-center gap-4">
-            <div class="w-12 h-12 bg-indigo-100 text-indigo-600 rounded-full flex items-center justify-center text-2xl">📊</div>
-            <div><h3 class="font-black text-slate-800">Vendas por Período</h3><p class="text-xs text-slate-400">Filtrar por data, cliente e pagamento</p></div>
-          </div>
-        </div>
-      </div>
-      <div id="relatorio-resultado" class="mt-4"></div>
-    </div>
+<div id="modal-period-report-mobile" class="hidden fixed inset-0 bg-black/50 z-50 flex items-center justify-center p-4"><div class="bg-white rounded-2xl p-5 w-full"><h3 class="font-bold">Filtro de Vendas</h3><div class="grid grid-cols-2 gap-2 my-3"><input type="date" id="rep-per-start-mobile" class="p-2 border rounded"><input type="date" id="rep-per-end-mobile" class="p-2 border rounded"></div><select id="rep-per-payment-mobile" class="w-full p-2 border rounded mb-2"><option value="Todos">Todos os Pagamentos</option><option>Dinheiro</option><option>PIX</option><option>Cartão</option></select><input type="text" id="rep-per-client-mobile" placeholder="Cliente" class="w-full p-2 border rounded mb-4"><div class="flex gap-2"><button onclick="closePeriodModal()" class="flex-1 p-3 bg-slate-200 rounded-xl">Cancelar</button><button onclick="printPeriodReportMobile()" class="flex-1 p-3 bg-indigo-600 text-white rounded-xl">Gerar</button></div></div></div>
 
-    <!-- TELA REGISTROS (PRODUÇÃO) -->
-    <div id="screen-registros" class="screen hidden space-y-4">
-      <div class="flex justify-between items-center">
-        <h2 class="text-lg font-black text-slate-800">Histórico de Produção</h2>
-        <button onclick="loadData()" class="text-rv-orange text-sm font-bold bg-orange-50 px-4 py-2 rounded-full">🔄</button>
-      </div>
+<!-- JAVASCRIPT PRINCIPAL -->
+<script>
+const supabaseUrl = 'https://irbgmmoxiedhcbfkanmu.supabase.co';
+const supabaseKey = 'sb_publishable_bhGr9DvGGg-gYWXsd_rf3w_CAZdF7n9';
+const sb = supabase.createClient(supabaseUrl, supabaseKey);
+let STATE = { products: [], clients: [], logs: [], quotes: [], expenses: [], users: [], custoMaterialB10: 0 };
+let CART = [];
+let CURRENT_QUOTE_ID = null;
 
-      <div class="bg-rv-dark p-5 rounded-2xl text-white shadow-xl border-b-4 border-rv-orange">
-        <div class="flex justify-between items-center">
-          <div>
-            <p class="text-[10px] font-bold text-slate-400 uppercase">Produção Mensal</p>
-            <p id="dash-mes" class="text-3xl font-black">0</p>
-          </div>
-          <div class="text-right">
-            <p class="text-[10px] font-bold text-slate-400 uppercase">Custo Un.</p>
-            <p id="dash-custo-un" class="text-xl font-black text-rv-orange">R$ 0,00</p>
-          </div>
-        </div>
-        <input type="month" id="dash-month-filter" onchange="renderDashRegistros()" class="mt-3 w-full bg-slate-800 text-white border border-slate-600 rounded-xl p-2 text-sm">
-      </div>
+function showToast(msg, err) { const t = document.getElementById('toast'); t.innerText = msg; t.className = `fixed bottom-24 left-4 right-4 text-white text-center py-3 px-4 rounded-xl text-sm font-medium z-50 shadow-xl transition-all ${err ? 'bg-red-600' : 'bg-slate-900'}`; t.style.display = 'block'; setTimeout(()=>t.style.display='none', 3000); }
+function showLoading(show) { document.getElementById('loading').style.display = show ? 'flex' : 'none'; }
+function formatMoney(v) { return parseFloat(v||0).toLocaleString('pt-BR',{style:'currency',currency:'BRL'}); }
+function formatDate(d) { if(!d) return '-'; let p = d.split('T')[0].split('-'); return `${p[2]}/${p[1]}/${p[0]}`; }
+function getHojeLocalStr() { return new Date(new Date().getTime() - (new Date().getTimezoneOffset()*60000)).toISOString().split('T')[0]; }
 
-      <div class="flex gap-2 items-center bg-white p-3 rounded-2xl border">
-        <input type="date" id="reg-start" class="flex-1 text-sm" onchange="renderListaRegistros()">
-        <span class="text-slate-400 text-xs">até</span>
-        <input type="date" id="reg-end" class="flex-1 text-sm" onchange="renderListaRegistros()">
-        <button onclick="limparFiltrosRegistros()" class="w-10 h-10 bg-slate-100 rounded-xl text-slate-500 font-bold">X</button>
-      </div>
-
-      <div id="lista-registros" class="space-y-3"></div>
-
-      <button onclick="abrirModalProducao()" class="fixed bottom-24 right-6 w-16 h-16 bg-rv-dark text-rv-orange rounded-full shadow-2xl text-3xl flex items-center justify-center z-40 transition-transform active:scale-90 border-2 border-rv-orange">+</button>
-    </div>
-  </main>
-
-  <!-- Menu Inferior -->
-  <nav class="tab-bar fixed bottom-0 left-0 right-0 h-20 flex items-stretch justify-around z-40 border-t border-slate-800 bottom-safe">
-    <button onclick="switchTab('estoque')" id="tab-estoque" class="tab-item flex-1 flex flex-col items-center justify-center gap-1 rounded-none active">
-      <i data-lucide="package" class="w-6 h-6"></i>
-      <span class="text-[10px] font-bold uppercase tracking-tight">Estoque</span>
-    </button>
-    <button onclick="switchTab('orcamentos')" id="tab-orcamentos" class="tab-item flex-1 flex flex-col items-center justify-center gap-1">
-      <i data-lucide="file-text" class="w-6 h-6"></i>
-      <span class="text-[10px] font-bold uppercase tracking-tight">Orçam.</span>
-    </button>
-    <button onclick="switchTab('caixa')" id="tab-caixa" class="tab-item flex-1 flex flex-col items-center justify-center gap-1">
-      <i data-lucide="wallet" class="w-6 h-6"></i>
-      <span class="text-[10px] font-bold uppercase tracking-tight">Caixa</span>
-    </button>
-    <button onclick="switchTab('relatorios')" id="tab-relatorios" class="tab-item flex-1 flex flex-col items-center justify-center gap-1">
-      <i data-lucide="bar-chart-3" class="w-6 h-6"></i>
-      <span class="text-[10px] font-bold uppercase tracking-tight">Relat.</span>
-    </button>
-  </nav>
-
-  <!-- Menu "Mais" -->
-  <div class="modal-backdrop" id="modal-backdrop" onclick="fecharMenuMais()"></div>
-  <div class="modal-sheet" id="modal-mais">
-    <div class="p-6">
-      <div class="w-12 h-1.5 bg-slate-300 rounded-full mx-auto mb-6"></div>
-      <h3 class="text-xl font-black text-slate-800 mb-4">Mais opções</h3>
-      <div class="space-y-2">
-        <button onclick="abrirRegistrosDoMenu()" class="w-full p-4 bg-slate-50 rounded-xl flex items-center gap-4 active:bg-slate-100">
-          <i data-lucide="history" class="w-6 h-6 text-rv-orange"></i>
-          <span class="font-bold text-slate-700">Registros de Produção</span>
-        </button>
-        <button onclick="fazerLogoff()" class="w-full p-4 bg-red-50 rounded-xl flex items-center gap-4 active:bg-red-100">
-          <i data-lucide="log-out" class="w-6 h-6 text-red-500"></i>
-          <span class="font-bold text-red-600">Sair do Sistema</span>
-        </button>
-      </div>
-      <div class="mt-8 text-center">
-        <button onclick="fecharMenuMais()" class="text-slate-400 font-bold text-sm">Cancelar</button>
-      </div>
-    </div>
-  </div>
-
-  <!-- Modal Filtro Período -->
-  <div id="modal-filtro-periodo" class="modal-backdrop" onclick="fecharFiltroPeriodo()">
-    <div class="modal-sheet show" style="transform: translateY(0);" onclick="event.stopPropagation()">
-      <div class="p-6">
-        <h3 class="font-black text-lg mb-4">Filtrar Vendas</h3>
-        <div class="space-y-4">
-          <div><label class="text-xs font-bold text-slate-500">Data Inicial</label><input type="date" id="filtro-start" class="w-full"></div>
-          <div><label class="text-xs font-bold text-slate-500">Data Final</label><input type="date" id="filtro-end" class="w-full"></div>
-          <div><label class="text-xs font-bold text-slate-500">Pagamento</label><select id="filtro-payment" class="w-full"><option value="Todos">Todos</option><option>Dinheiro</option><option>PIX</option><option>Cartão Crédito</option><option>Cartão Débito</option><option>Boleto 5 dias</option><option>Boleto 10 dias</option><option>Boleto 15 dias</option><option>PIX 7 dias</option><option>Carteira</option></select></div>
-          <div><label class="text-xs font-bold text-slate-500">Cliente</label><input type="text" id="filtro-client" placeholder="Nome..." class="w-full"></div>
-          <button onclick="aplicarFiltroPeriodo()" class="w-full bg-rv-dark text-rv-orange font-bold py-4 rounded-xl">Aplicar Filtro</button>
-        </div>
-      </div>
-    </div>
-  </div>
-
-  <!-- Modal Despesa -->
-  <div id="modal-despesa" class="modal-backdrop" onclick="fecharModalDespesa()">
-    <div class="modal-sheet show" onclick="event.stopPropagation()">
-      <div class="p-6">
-        <h3 class="font-black text-lg mb-4">Lançar Saída</h3>
-        <div class="space-y-4">
-          <select id="exp-item" class="w-full"><option>Cimento</option><option>Areia</option><option>Brita</option><option>Frete</option><option>Salário</option><option>Combustível</option><option>Imposto</option><option>Maquinas</option><option>Despesas Diversas</option></select>
-          <div class="grid grid-cols-2 gap-3">
-            <input type="number" id="exp-qty" placeholder="Qtd" class="w-full">
-            <select id="exp-unit" class="w-full"><option>Un</option><option>Sc</option><option>Tn</option><option>M³</option><option>Kg</option><option>Lt</option></select>
-          </div>
-          <input type="number" id="exp-cost" placeholder="Custo Total (R$)" class="w-full">
-          <input type="date" id="exp-date" class="w-full">
-          <input type="text" id="exp-note" placeholder="Observação" class="w-full">
-          <button onclick="salvarDespesa()" class="w-full bg-red-600 text-white font-bold py-4 rounded-xl">Salvar Despesa</button>
-        </div>
-      </div>
-    </div>
-  </div>
-
-  <!-- Modal Produção -->
-  <div id="modal-producao" class="modal-backdrop" onclick="fecharModalProducao()">
-    <div class="modal-sheet show" onclick="event.stopPropagation()">
-      <div class="p-6">
-        <h3 class="font-black text-lg mb-4">Registrar Produção</h3>
-        <div class="space-y-4">
-          <select id="prod-select" class="w-full"></select>
-          <input type="number" id="prod-qty" placeholder="Quantidade" class="w-full">
-          <input type="text" id="prod-note" placeholder="Observações" class="w-full">
-          <button onclick="salvarProducao()" class="w-full bg-rv-dark text-rv-orange font-bold py-4 rounded-xl">Confirmar</button>
-        </div>
-      </div>
-    </div>
-  </div>
-
-  <!-- Modal Orçamento -->
-  <div id="modal-orcamento" class="fixed inset-0 bg-white z-[60] hidden flex flex-col p-4 overflow-y-auto">
-    <div class="flex justify-between items-center mb-6">
-      <button onclick="fecharFormOrcamento()" class="text-slate-400 font-bold uppercase text-sm">Sair</button>
-      <h3 id="modal-title" class="font-black text-slate-800 uppercase">Orçamento</h3>
-      <button onclick="enviarOrcamento()" class="text-rv-orange font-black uppercase text-sm">Salvar</button>
-    </div>
-    <div class="space-y-4">
-      <select id="orc-cliente" class="w-full p-4 bg-slate-50 border-0 rounded-xl font-bold"></select>
-      <div class="bg-orange-50 p-5 rounded-3xl space-y-4">
-        <select id="orc-produto" onchange="setarPrecoPadrao(this.value)" class="w-full p-3 border-0 rounded-xl font-bold"></select>
-        <div class="grid grid-cols-3 gap-2">
-          <input type="number" id="orc-qtd" placeholder="Qtd" class="p-3 border-0 rounded-xl text-center font-black text-lg bg-white">
-          <input type="number" id="orc-preco" placeholder="R$" class="p-3 border-0 rounded-xl font-black text-center text-lg bg-white">
-          <button onclick="addItemCarrinho()" class="bg-rv-dark text-rv-orange rounded-xl font-black uppercase text-xs">Add</button>
-        </div>
-      </div>
-      <div id="carrinho-itens" class="space-y-2"></div>
-      <div class="border-t pt-4 space-y-4">
-        <div class="grid grid-cols-2 gap-3">
-          <select id="orc-pagamento" class="w-full p-3 bg-slate-50 border-0 rounded-xl font-bold text-xs"><option>Dinheiro</option><option>PIX</option><option>Cartão Crédito</option><option>Cartão Débito</option></select>
-          <div class="flex border-0 rounded-xl overflow-hidden bg-slate-50">
-            <select id="orc-desc-tipo" onchange="renderCarrinho()" class="bg-slate-200 px-2 font-bold text-xs"><option>%</option><option>R$</option></select>
-            <input type="number" id="orc-desc-val" value="0" onchange="renderCarrinho()" class="w-full p-2 text-center outline-none bg-transparent font-black">
-          </div>
-        </div>
-        <div class="bg-rv-dark p-5 rounded-3xl flex justify-between items-center">
-          <span class="text-slate-400 text-xs font-black uppercase">Total</span>
-          <span id="orc-total-final" class="text-2xl font-black text-rv-orange">R$ 0,00</span>
-        </div>
-      </div>
-    </div>
-  </div>
-
-  <!-- Modal Baixa Recebimento -->
-  <div id="modal-receivable-edit" class="modal-backdrop" onclick="fecharModalRecebimento()">
-    <div class="modal-sheet show" onclick="event.stopPropagation()">
-      <div class="p-6">
-        <h3 class="font-black text-lg mb-4">Baixar Recebimento</h3>
-        <input type="hidden" id="rec-id">
-        <div class="flex justify-between bg-slate-100 p-4 rounded-xl mb-4">
-          <span>Total: <span id="rec-total-lbl" class="font-bold"></span></span>
-          <span>Restante: <span id="rec-pending-lbl" class="font-bold text-red-600"></span></span>
-        </div>
-        <select id="rec-method" class="w-full mb-4"><option>PIX</option><option>Dinheiro</option><option>Cartão Crédito</option><option>Cartão Débito</option></select>
-        <input type="number" id="rec-pay-val" placeholder="Valor a receber" class="w-full mb-4">
-        <button onclick="saveReceivableEdit()" class="w-full bg-green-600 text-white font-bold py-4 rounded-xl">Confirmar Baixa</button>
-      </div>
-    </div>
-  </div>
-
-  <!-- Área de impressão -->
-  <div id="print-area" style="display: none;"></div>
-
-  <script>
-    // --- CONFIGURAÇÃO SUPABASE RV BLOCOS ---
-    const supabaseUrl = 'https://irbgmmoxiedhcbfkanmu.supabase.co';
-    const supabaseKey = 'sb_publishable_bhGr9DvGGg-gYWXsd_rf3w_CAZdF7n9';
-    const sb = supabase.createClient(supabaseUrl, supabaseKey);
-
-    // --- VARIÁVEIS GLOBAIS ---
-    let STATE = { products: [], clients: [], logs: [], expenses: [], quotes: [], sales: [], custoMaterialB10: 0 };
-    let CART = [];
-    let CURRENT_QUOTE_ID = null;
-
-    // --- HELPERS ---
-    function fazerLogoff() { localStorage.removeItem('rv_user'); window.location.replace('index.html'); }
-    function formatMoney(v) { return (v||0).toLocaleString('pt-BR',{style:'currency',currency:'BRL'}); }
-    function formatDate(d) { try { if(!d) return '-'; const p = d.split('T')[0].split('-'); return `${p[2]}/${p[1]}/${p[0]}`; } catch { return '-'; } }
-    function getHojeLocal() { return new Date(new Date().getTime() - (new Date().getTimezoneOffset()*60000)).toISOString().split('T')[0]; }
-    function showLoading(s) { document.getElementById('global-loader').style.display = s ? 'flex' : 'none'; }
-    function showToast(msg, isError) { 
-      const t = document.getElementById('toast'); t.textContent = msg; 
-      t.className = `fixed top-20 left-1/2 -translate-x-1/2 px-6 py-3 rounded-full shadow-2xl text-white font-bold text-sm z-[100] transition-all text-center min-w-[250px] ${isError ? 'bg-red-600' : 'bg-slate-900'}`; 
-      t.style.display = 'block'; setTimeout(() => t.style.display = 'none', 3000); 
-    }
-    function getNextId(arr) { let m=0; arr.forEach(i=>{ let v=parseInt(i.id); if(!isNaN(v)&&v>max) m=v; }); return m+1; }
-
-    // --- INICIALIZAÇÃO ---
-    window.onload = () => { 
-      if (!localStorage.getItem('rv_user')) window.location.replace('index.html');
-      loadData(); 
-      lucide.createIcons();
-    };
-
-    // --- CARREGAR DADOS DO SUPABASE ---
-    async function loadData() {
-      showLoading(true);
-      try {
-        const [prod, cli, log, desp, conf] = await Promise.all([
-          sb.from('produtos').select('*'),
-          sb.from('clientes').select('*'),
-          sb.from('logs').select('*'),
-          sb.from('despesas').select('*'),
-          sb.from('configuracoes').select('*').eq('chave','custo_material_b10').maybeSingle()
+// LOAD DATA
+async function loadDataMobile() {
+    showLoading(true);
+    try {
+        const [prod, cli, logs, desp, conf, usr] = await Promise.all([
+            sb.from('produtos').select('*'), sb.from('clientes').select('*'), sb.from('logs').select('*'), sb.from('despesas').select('*'),
+            sb.from('configuracoes').select('*').eq('chave','custo_material_b10').maybeSingle(), sb.from('usuarios').select('*')
         ]);
-
-        STATE.products = (prod.data||[]).map(p=>({ id:p.id, name:p.nome, category:p.categoria, price:Number(p.preco), stock:Number(p.estoque_fisico), committed:Number(p.estoque_comprometido), available:Number(p.estoque_fisico)-Number(p.estoque_comprometido) }));
-        STATE.clients = (cli.data||[]).map(c=>({ id:c.id, name:c.nome, phone:c.telefone, doc:c.documento, address:c.endereco }));
-        STATE.expenses = (desp.data||[]).map(e=>({ id:e.id, item:e.item, quantity:Number(e.quantidade), unit:e.unidade, cost:Number(e.custo), date:e.data, note:e.observacao, status:e.status||'PENDENTE' }));
-        
-        // Processar logs para orçamentos e vendas (nova lógica)
-        STATE.logs = [];
-        const quotesMap = {};
-        const salesMap = {};
-        (log.data||[]).forEach(l => {
-          if (l.tipo === 'orcamento') {
-            const qId = String(l.id);
-            if(!quotesMap[qId]) quotesMap[qId] = { id: qId, date: l.data, clientName: l.cliente_nome, items: [], total: 0, status: l.status||'ABERTO', discount: Number(l.desconto), discountType: l.status_financeiro||'$', paymentMethod: l.forma_pagamento, deliveryAddress: l.endereco_entrega, observacao: l.observacao };
-            quotesMap[qId].items.push({ name: l.produto_nome, qty: Number(l.quantidade), price: Number(l.valor_total)/Number(l.quantidade), total: Number(l.valor_total) });
-            quotesMap[qId].total += Number(l.valor_total);
-          } else if (l.tipo === 'venda') {
-            const sId = String(l.id);
-            if(!salesMap[sId]) salesMap[sId] = { id: sId, date: l.data, clientName: l.cliente_nome, items: [], total: 0, status: l.status, discount: Number(l.desconto), paymentMethod: l.forma_pagamento, deliveryAddress: l.endereco_entrega, observacao: l.observacao };
-            salesMap[sId].items.push({ name: l.produto_nome, qty: Number(l.quantidade), price: Number(l.valor_total)/Number(l.quantidade), total: Number(l.valor_total) });
-            salesMap[sId].total += Number(l.valor_total);
-          }
-          STATE.logs.push({ uid:l.uid, id:l.id, type:l.tipo, productName:l.produto_nome, quantity:Number(l.quantidade), date:l.data, note:l.observacao, totalValue:Number(l.valor_total), clientName:l.cliente_nome, paymentMethod:l.forma_pagamento, status:l.status, finStatus:l.status_financeiro, dueDate:l.vencimento, paidValue:Number(l.valor_pago), discount:Number(l.desconto), deliveryAddress:l.endereco_entrega });
-        });
-        
-        STATE.quotes = Object.values(quotesMap).map(q => { q.absoluteDiscount = q.discountType === '%' ? q.total * (q.discount/100) : q.discount; return q; });
-        STATE.sales = Object.values(salesMap).map(s => { s.absoluteDiscount = Number(s.discount)||0; return s; });
-        
+        STATE.products = (prod.data||[]).map(p=>({id:p.id,name:p.nome,category:p.categoria,price:Number(p.preco),stock:Number(p.estoque_fisico),committed:Number(p.estoque_comprometido),available:Number(p.estoque_fisico)-Number(p.estoque_comprometido)}));
+        STATE.clients = (cli.data||[]).map(c=>({id:c.id,name:c.nome,phone:c.telefone,doc:c.documento,address:c.endereco}));
+        STATE.users = (usr.data||[]).map(u=>({id:u.id,name:u.nome,login:u.email,type:u.nivel_acesso,status:u.status}));
+        STATE.expenses = (desp.data||[]).map(e=>({id:e.id,item:e.item,quantity:Number(e.quantidade),unit:e.unidade,cost:Number(e.custo),date:e.data,note:e.observacao}));
         STATE.custoMaterialB10 = conf.data ? Number(conf.data.valor) : 0;
+        const quotesMap={}; STATE.logs=[];
+        (logs.data||[]).forEach(l=>{
+            if(l.tipo==='orcamento'){
+                if(!quotesMap[l.id]) quotesMap[l.id]={id:l.id,date:l.data,clientName:l.cliente_nome,items:[],total:0,status:l.status,discount:Number(l.desconto),discountType:l.status_financeiro||'$',paymentMethod:l.forma_pagamento,deliveryAddress:l.endereco_entrega};
+                const unitPrice = l.quantidade>0 ? Number(l.valor_total)/Number(l.quantidade):0;
+                quotesMap[l.id].items.push({name:l.produto_nome,qty:Number(l.quantidade),price:unitPrice,total:Number(l.valor_total)});
+                quotesMap[l.id].total += Number(l.valor_total);
+            } else {
+                STATE.logs.push({uid:l.uid,id:l.id,type:l.tipo,productName:l.produto_nome,quantity:Number(l.quantidade),date:l.data,note:l.observacao,totalValue:Number(l.valor_total),clientName:l.cliente_nome,paymentMethod:l.forma_pagamento,deliveryStatus:l.status_entrega,deliveredQty:Number(l.qtd_entregue),discount:Number(l.desconto),finStatus:l.status_financeiro,dueDate:l.vencimento,paidValue:Number(l.valor_pago),deliveryAddress:l.endereco_entrega});
+            }
+        });
+        STATE.quotes = Object.values(quotesMap);
+        updateClientSelectsMobile();
+        renderDashMobile();
+        renderPOSProductsMobile();
+        renderQuotesMobile();
+        renderFinanceMobile();
+        showLoading(false);
+    } catch(e) { showLoading(false); showToast("Erro: "+e.message,true); }
+}
 
-        renderEstoque();
-        renderOrcamentos();
-        renderCaixa();
-        renderDashRegistros();
-        renderListaRegistros();
-        preencherSelects();
+function updateClientSelectsMobile() {
+    const opts = '<option value="">Consumidor Final</option>'+STATE.clients.map(c=>`<option value="${c.id}">${c.name}</option>`).join('');
+    document.getElementById('pos-client-mobile').innerHTML = opts;
+}
+
+function renderDashMobile() {
+    const grid = document.getElementById('dash-grid-mobile');
+    if(!grid) return;
+    grid.innerHTML = STATE.products.map(p=>`<div class="bg-white p-3 rounded-xl shadow-sm border"><div class="font-bold text-sm truncate">${p.name}</div><div class="text-xs text-slate-500">Estoque: ${p.stock}</div><div class="text-green-700 font-bold text-sm">${formatMoney(p.price)}</div></div>`).join('');
+    lucide.createIcons();
+}
+
+function renderPOSProductsMobile() {
+    const term = document.getElementById('pos-search-mobile')?.value.toLowerCase()||'';
+    const grid = document.getElementById('pos-products-mobile');
+    if(!grid) return;
+    grid.innerHTML = STATE.products.filter(p=>p.name.toLowerCase().includes(term)).map(p=>`<button onclick="addToCartMobile('${p.id}')" class="bg-white p-3 rounded-xl shadow-sm text-left hover:border-orange-300 border"><span class="font-bold text-sm block">${p.name}</span><span class="text-orange-600 text-sm font-bold">${formatMoney(p.price)}</span><span class="text-[10px] text-slate-400 block">disp: ${p.available}</span></button>`).join('');
+    lucide.createIcons();
+}
+
+function addToCartMobile(id){
+    const p = STATE.products.find(x=>x.id==id);
+    const idx = CART.findIndex(x=>x.prodId==id);
+    if(idx>=0) CART[idx].qty++;
+    else CART.push({prodId:p.id,name:p.name,price:p.price,qty:1,total:p.price});
+    renderCartMobile();
+}
+function renderCartMobile(){
+    const container = document.getElementById('cart-items-mobile');
+    const total = CART.reduce((a,b)=>a+(b.qty*b.price),0);
+    document.getElementById('cart-total-mobile').innerText = formatMoney(total);
+    document.getElementById('cart-count-mobile').innerText = CART.length;
+    if(!CART.length){ container.innerHTML='<div class="text-center text-slate-400 text-xs py-2">Carrinho vazio</div>'; return; }
+    container.innerHTML = CART.map((i,idx)=>`<div class="flex justify-between items-center bg-slate-50 p-2 rounded-xl"><div><span class="font-medium text-sm">${i.name}</span><div class="text-xs">${formatMoney(i.price)}</div></div><div class="flex items-center gap-2"><button onclick="CART.splice(${idx},1);renderCartMobile()" class="text-red-400"><i data-lucide="trash-2" width="14"></i></button><span class="font-bold">${i.qty}</span><button onclick="CART[${idx}].qty++; renderCartMobile()" class="bg-orange-100 px-2 rounded">+</button></div></div>`).join('');
+    lucide.createIcons();
+}
+function clearCartMobile(){ CART=[]; CURRENT_QUOTE_ID=null; renderCartMobile(); }
+
+async function finalizeSaleMobile(isPronta=true){
+    if(!CART.length) return showToast("Carrinho vazio",true);
+    showLoading(true);
+    const cliId = document.getElementById('pos-client-mobile').value;
+    const client = STATE.clients.find(c=>c.id==cliId);
+    const clientName = client ? client.name : 'Consumidor Final';
+    const payment = document.getElementById('pos-payment-mobile').value;
+    const timestamp = new Date().toISOString();
+    const saleId = CURRENT_QUOTE_ID || (Math.floor(Math.random()*9000)+1000);
+    for(let item of CART){
+        const prod = STATE.products.find(p=>p.id==item.prodId);
+        if(prod){
+            let physical = prod.stock, committed = prod.committed;
+            if(isPronta) await sb.from('produtos').update({estoque_fisico: Math.max(0, physical - item.qty)}).eq('id',prod.id);
+            else await sb.from('produtos').update({estoque_comprometido: committed + item.qty}).eq('id',prod.id);
+        }
+        await sb.from('logs').insert([{id:saleId,tipo:'venda',produto_nome:item.name,quantidade:item.qty,data:timestamp,observacao:isPronta?'Pronta Entrega':'Venda PDV',valor_total:item.qty*item.price,cliente_nome:clientName,forma_pagamento:payment,status:'ATIVO',status_entrega:isPronta?'ENTREGUE':'PENDENTE',qtd_entregue:isPronta?item.qty:0,desconto:0,status_financeiro:'A RECEBER',vencimento:new Date(Date.now()+86400000*7).toISOString(),valor_pago:0}]);
+        if(isPronta) await sb.from('logs').insert([{id:Math.floor(Math.random()*9999),tipo:'entrega',produto_nome:item.name,quantidade:item.qty,data:timestamp,observacao:`Ref Venda #${saleId}`,cliente_nome:clientName,status_entrega:'ENTREGUE'}]);
+    }
+    if(CURRENT_QUOTE_ID) await sb.from('logs').delete().eq('id',CURRENT_QUOTE_ID).eq('tipo','orcamento');
+    clearCartMobile();
+    showLoading(false);
+    showToast("Venda concluída!");
+    loadDataMobile();
+    if(!isPronta) navigateMobile('expedicao');
+}
+
+async function saveQuoteMobile(){
+    if(!CART.length) return showToast("Adicione itens",true);
+    showLoading(true);
+    const cliId = document.getElementById('pos-client-mobile').value;
+    const client = STATE.clients.find(c=>c.id==cliId);
+    const clientName = client ? client.name : 'Consumidor Final';
+    const payment = document.getElementById('pos-payment-mobile').value;
+    const budgetId = CURRENT_QUOTE_ID || Math.floor(Math.random()*9000)+1000;
+    if(CURRENT_QUOTE_ID) await sb.from('logs').delete().eq('id',budgetId).eq('tipo','orcamento');
+    for(let item of CART){
+        await sb.from('logs').insert([{id:budgetId,tipo:'orcamento',produto_nome:item.name,quantidade:item.qty,data:new Date().toISOString(),valor_total:item.qty*item.price,cliente_nome:clientName,forma_pagamento:payment,status:'ABERTO',desconto:0,status_financeiro:'$'}]);
+    }
+    clearCartMobile();
+    showLoading(false);
+    showToast("Orçamento salvo!");
+    loadDataMobile();
+    document.querySelector('.sub-tab[data-sub="list"]').click();
+}
+
+function renderQuotesMobile(){
+    const container = document.getElementById('quotes-list-mobile');
+    if(!container) return;
+    container.innerHTML = STATE.quotes.slice().reverse().map(q=>`<div class="bg-white p-4 rounded-2xl shadow-sm"><div class="flex justify-between"><span class="font-bold">${q.clientName}</span><span class="text-orange-600">${formatMoney(q.total)}</span></div><div class="text-xs text-slate-400">#${q.id} - ${formatDate(q.date)}</div><div class="flex gap-2 mt-3"><button onclick="loadQuoteToCartMobile('${q.id}')" class="flex-1 bg-amber-100 text-amber-700 py-2 rounded-xl text-sm">Editar</button><button onclick="printQuoteMobile('${q.id}')" class="flex-1 bg-slate-800 text-white py-2 rounded-xl text-sm">Imprimir</button></div></div>`).join('');
+    lucide.createIcons();
+}
+function loadQuoteToCartMobile(id){
+    const q = STATE.quotes.find(x=>x.id==id);
+    if(q){ CART = q.items.map(i=>({prodId:null,name:i.name,price:i.price,qty:i.qty,total:i.total})); CURRENT_QUOTE_ID = q.id; renderCartMobile(); showToast("Orçamento carregado"); document.querySelector('.sub-tab[data-sub="pdv"]').click(); }
+}
+function printQuoteMobile(id){ const q = STATE.quotes.find(x=>x.id==id); const printWin = window.open('','_blank'); printWin.document.write(`<html><head><title>Orçamento RV</title><style>body{font-family:sans-serif;padding:20px}</style></head><body><h2>RV Blocos</h2><p>Cliente: ${q.clientName}</p><p>Valor: ${formatMoney(q.total)}</p><ul>${q.items.map(i=>`<li>${i.name} x${i.qty} = ${formatMoney(i.total)}</li>`).join('')}</ul></body></html>`); printWin.document.close(); printWin.print(); }
+function renderFinanceMobile(){
+    let totalIncome=0, totalExp=0;
+    STATE.logs.filter(l=>l.type==='venda' && l.finStatus==='PAGO').forEach(l=>totalIncome+=l.totalValue);
+    STATE.expenses.forEach(e=>totalExp+=e.cost);
+    document.getElementById('fin-income-mobile').innerText=formatMoney(totalIncome);
+    document.getElementById('fin-expenses-mobile').innerText=formatMoney(totalExp);
+    document.getElementById('fin-balance-mobile').innerText=formatMoney(totalIncome-totalExp);
+    const rec = STATE.logs.filter(l=>l.type==='venda' && l.finStatus!=='PAGO');
+    const recDiv = document.getElementById('fin-receivables-mobile');
+    recDiv.innerHTML = rec.length? rec.map(l=>`<div class="py-2 flex justify-between"><span>#${l.id} ${l.clientName}</span><span>${formatMoney(l.totalValue - (l.paidValue||0))}</span><button onclick="alert('Baixa parcial ainda não implementada no mobile rápido')" class="text-blue-500 text-xs">Baixar</button></div>`).join('') : '<div class="text-slate-400 text-center py-2">Nenhuma pendência</div>';
+}
+async function saveExpenseMobile(){
+    const item = document.getElementById('exp-item').value;
+    const cost = document.getElementById('exp-cost').value;
+    if(!cost) return showToast("Valor obrigatório",true);
+    await sb.from('despesas').insert([{id:Date.now(),item:item,quantidade:Number(document.getElementById('exp-qty').value)||0,unidade:document.getElementById('exp-unit').value,custo:Number(cost),data:document.getElementById('exp-date').value||new Date().toISOString(),observacao:document.getElementById('exp-note').value}]);
+    await sb.from('logs').insert([{id:Date.now(),tipo:'despesa',produto_nome:item,valor_total:Number(cost),data:new Date().toISOString()}]);
+    document.getElementById('modal-expense').classList.add('hidden');
+    showToast("Despesa registrada");
+    loadDataMobile();
+}
+function printDailyRevenueMobile(){
+    const hoje = getHojeLocalStr();
+    const vendas = STATE.logs.filter(l=>l.type==='venda' && (l.date||'').split('T')[0]===hoje);
+    let total=0; vendas.forEach(v=>total+=v.totalValue);
+    const printWin = window.open('','_blank');
+    printWin.document.write(`<html><head><title>Faturamento Dia</title></head><body><h2>RV Blocos - Faturamento ${formatDate(hoje)}</h2><p>Total vendido: ${formatMoney(total)}</p><p>Qtd pedidos: ${vendas.length}</p></body></html>`);
+    printWin.document.close(); printWin.print();
+}
+function openPeriodReportModalMobile(){ document.getElementById('modal-period-report-mobile').classList.remove('hidden'); }
+function closePeriodModal(){ document.getElementById('modal-period-report-mobile').classList.add('hidden'); }
+function printPeriodReportMobile(){
+    const start = document.getElementById('rep-per-start-mobile').value;
+    const end = document.getElementById('rep-per-end-mobile').value;
+    const filtered = STATE.logs.filter(l=>l.type==='venda' && (!start || (l.date||'').split('T')[0]>=start) && (!end || (l.date||'').split('T')[0]<=end));
+    let total=0; filtered.forEach(f=>total+=f.totalValue);
+    const printWin = window.open('','_blank');
+    printWin.document.write(`<html><head><title>Relatório</title></head><body><h2>Relatório de Vendas</h2><p>Período: ${start||'início'} até ${end||'hoje'}</p><p>Total líquido: ${formatMoney(total)}</p><p>Qtd: ${filtered.length}</p></body></html>`);
+    printWin.document.close(); printWin.print();
+    closePeriodModal();
+}
+function saveClientMobile(e){ e.preventDefault(); alert("Funcionalidade completa: integrar com Supabase igual à versão desktop"); closeClientModal(); loadDataMobile(); }
+function saveProductMobile(e){ e.preventDefault(); alert("Produto salvo (simulação)"); closeProdModal(); loadDataMobile(); }
+function closeClientModal(){ document.getElementById('client-form-mobile').classList.add('hidden'); }
+function closeProdModal(){ document.getElementById('prod-form-mobile').classList.add('hidden'); }
+function navigateMobile(view){
+    document.querySelectorAll('.tab-content').forEach(t=>t.classList.remove('active-tab'));
+    if(view === 'clientes') window.location.href = 'mobile.html?view=clientes'; // fallback simples
+    else if(view === 'produtos') window.location.href = 'mobile.html?view=produtos';
+    else if(view === 'producao') window.location.href = 'mobile.html?view=producao';
+    else if(view === 'expedicao') window.location.href = 'mobile.html?view=expedicao';
+    else if(view === 'usuarios') alert("Acesso usuários em breve");
+    else showToast("Módulo em construção", false);
+}
+function fazerLogoffMobile(){ localStorage.removeItem('rv_user'); window.location.href='index.html'; }
+
+// Navegação abas inferiores
+document.querySelectorAll('.nav-item').forEach(btn=>{
+    btn.addEventListener('click',()=>{
+        const tab = btn.dataset.tab;
+        document.querySelectorAll('.tab-content').forEach(t=>t.classList.remove('active-tab'));
+        document.getElementById(`tab-${tab}`).classList.add('active-tab');
+        document.querySelectorAll('.nav-item').forEach(b=>b.classList.remove('active'));
+        btn.classList.add('active');
+        if(tab==='orcamento'){ document.querySelector('.sub-tab[data-sub="pdv"]').click(); }
         lucide.createIcons();
-      } catch(e) { showToast('Erro: '+e.message, true); } finally { showLoading(false); }
-    }
-
-    // --- NAVEGAÇÃO ---
-    function switchTab(tab) {
-      document.querySelectorAll('.screen').forEach(s=>s.classList.add('hidden'));
-      document.getElementById('screen-'+tab).classList.remove('hidden');
-      document.querySelectorAll('.tab-item').forEach(b=>b.classList.remove('active'));
-      document.getElementById('tab-'+tab).classList.add('active');
-      if(tab==='caixa') renderCaixa();
-      if(tab==='relatorios') document.getElementById('relatorio-resultado').innerHTML = '';
-      lucide.createIcons();
-    }
-
-    function abrirMenuMais() {
-      document.getElementById('modal-backdrop').classList.add('show');
-      document.getElementById('modal-mais').classList.add('show');
-    }
-    function fecharMenuMais() {
-      document.getElementById('modal-backdrop').classList.remove('show');
-      document.getElementById('modal-mais').classList.remove('show');
-    }
-    function abrirRegistrosDoMenu() {
-      fecharMenuMais();
-      document.querySelectorAll('.screen').forEach(s=>s.classList.add('hidden'));
-      document.getElementById('screen-registros').classList.remove('hidden');
-      document.querySelectorAll('.tab-item').forEach(b=>b.classList.remove('active'));
-    }
-
-    // --- RENDERIZAÇÕES BÁSICAS ---
-    function renderEstoque() {
-      const sorted = [...STATE.products].sort((a,b)=>Number(a.id)-Number(b.id));
-      document.getElementById('lista-estoque').innerHTML = sorted.map(p=>`
-        <div class="card p-4 flex justify-between items-center">
-          <div><h4 class="font-black text-slate-800">${p.name}</h4><p class="text-[10px] text-slate-400 uppercase">${p.category||'Geral'}</p></div>
-          <div class="flex gap-4 text-right"><div><span class="text-[8px] text-slate-400">Físico</span><p class="font-black text-slate-700">${p.stock}</p></div><div><span class="text-[8px] text-slate-400">Disp.</span><p class="font-black ${p.available<100?'text-red-500':'text-blue-600'}">${p.available}</p></div></div>
-        </div>`).join('');
-    }
-
-    function renderOrcamentos() {
-      const list = document.getElementById('lista-orcamentos');
-      const orcamentos = STATE.quotes.sort((a,b)=>new Date(b.date)-new Date(a.date));
-      list.innerHTML = orcamentos.map(q=>`
-        <div class="card p-4 flex justify-between items-center">
-          <div onclick="editarOrcamento('${q.id}')" class="flex-1"><h4 class="font-black">${q.clientName}</h4><p class="text-[10px] text-slate-400">${formatDate(q.date)} • #${q.id}</p></div>
-          <div class="flex items-center gap-2"><span class="font-black text-rv-orange">${formatMoney(q.total - (q.absoluteDiscount||0))}</span>
-            <button onclick="shareQuote('${q.id}')" class="w-10 h-10 bg-blue-100 text-blue-700 rounded-xl">📲</button>
-            <button onclick="printQuote('${q.id}')" class="w-10 h-10 bg-rv-dark text-rv-orange rounded-xl">🖨️</button>
-          </div>
-        </div>`).join('');
-    }
-
-    // --- CAIXA ---
-    function renderCaixa() {
-      const receitas = STATE.logs.filter(l=>l.type==='venda'&&l.status!=='CANCELADO').reduce((acc,l)=>acc+(l.paidValue||0),0);
-      const despesas = STATE.expenses.filter(e=>e.status==='PAGO').reduce((acc,e)=>acc+e.cost,0);
-      document.getElementById('caixa-receitas').innerText = formatMoney(receitas);
-      document.getElementById('caixa-despesas').innerText = formatMoney(despesas);
-      document.getElementById('caixa-saldo').innerText = formatMoney(receitas - despesas);
-      
-      // A Receber
-      const map = {}; STATE.logs.filter(l=>l.type==='venda').forEach(l=>{ if(!map[l.id]) map[l.id]={id:l.id, client:l.clientName, total:0, paid:0, due:l.dueDate}; map[l.id].total+=l.totalValue; map[l.id].paid=Math.max(map[l.id].paid,l.paidValue||0); });
-      const receber = Object.values(map).filter(r=>r.total>r.paid);
-      document.getElementById('lista-receber').innerHTML = receber.map(r=>`<div class="flex justify-between p-2 bg-slate-50 rounded-xl"><div><span class="font-bold">${r.client}</span><p class="text-xs">#${r.id} ${formatDate(r.due)}</p></div><div><span class="font-bold text-red-600">${formatMoney(r.total-r.paid)}</span><button onclick="openBaixaReceita('${r.id}',${r.total},${r.paid})" class="ml-2 bg-green-100 p-1 rounded">💰</button></div></div>`).join('')||'<p class="text-slate-400 text-sm">Nenhuma conta pendente.</p>';
-      
-      // A Pagar
-      const pagar = STATE.expenses.filter(e=>e.status!=='PAGO');
-      document.getElementById('lista-pagar').innerHTML = pagar.map(e=>`<div class="flex justify-between p-2 bg-slate-50 rounded-xl"><div><span class="font-bold">${e.item}</span><p class="text-xs">${e.note||''} ${formatDate(e.date)}</p></div><div><span class="font-bold text-red-600">${formatMoney(e.cost)}</span><button onclick="payExpense('${e.id}')" class="ml-2 bg-red-100 p-1 rounded">💸</button></div></div>`).join('')||'<p class="text-slate-400 text-sm">Nenhuma despesa pendente.</p>';
-    }
-
-    function openBaixaReceita(id, total, paid) {
-      document.getElementById('rec-id').value = id;
-      document.getElementById('rec-total-lbl').innerText = formatMoney(total);
-      document.getElementById('rec-pending-lbl').innerText = formatMoney(total - paid);
-      document.getElementById('modal-receivable-edit').classList.add('show');
-    }
-    function fecharModalRecebimento() { document.getElementById('modal-receivable-edit').classList.remove('show'); }
-
-    async function saveReceivableEdit() {
-      const id = document.getElementById('rec-id').value;
-      const method = document.getElementById('rec-method').value;
-      const payVal = parseFloat(document.getElementById('rec-pay-val').value)||0;
-      if(payVal<=0) return showToast('Valor inválido', true);
-      showLoading(true);
-      try {
-        const rows = STATE.logs.filter(l=>l.id==id && l.type==='venda');
-        let total = rows.reduce((a,b)=>a+b.totalValue,0);
-        let paid = rows.reduce((a,b)=>Math.max(a,b.paidValue),0);
-        let newPaid = paid + payVal;
-        let status = newPaid>=total?'PAGO':(newPaid>0?'PARCIAL':'PENDENTE');
-        for(let r of rows) await sb.from('logs').update({valor_pago:newPaid, status_financeiro:status}).eq('uid',r.uid);
-        await sb.from('logs').insert([{id:getNextId(STATE.logs), tipo:'recebimento', produto_nome:'Baixa', quantidade:0, data:getHojeLocal(), observacao:'Ref Venda #'+id, valor_total:payVal, cliente_nome:rows[0].clientName, forma_pagamento:method, status:'ATIVO', status_financeiro:'PAGO', valor_pago:payVal}]);
-        fecharModalRecebimento();
-        showToast('Baixa registrada!');
-        loadData();
-      } catch(e) { showLoading(false); showToast(e.message, true); }
-    }
-
-    function abrirModalDespesa() { document.getElementById('modal-despesa').classList.add('show'); }
-    function fecharModalDespesa() { document.getElementById('modal-despesa').classList.remove('show'); }
-    async function salvarDespesa() {
-      const item = document.getElementById('exp-item').value;
-      const cost = parseFloat(document.getElementById('exp-cost').value)||0;
-      if(!cost) return showToast('Informe o custo', true);
-      showLoading(true);
-      const newId = getNextId(STATE.expenses);
-      const {error} = await sb.from('despesas').insert([{id:newId, item, quantidade:parseFloat(document.getElementById('exp-qty').value)||0, unidade:document.getElementById('exp-unit').value, custo:cost, data:document.getElementById('exp-date').value||getHojeLocal(), observacao:document.getElementById('exp-note').value, status:'PENDENTE'}]);
-      if(error) { showLoading(false); return showToast(error.message, true); }
-      fecharModalDespesa();
-      loadData();
-    }
-
-    async function payExpense(id) {
-      if(!confirm('Confirmar pagamento?')) return;
-      showLoading(true);
-      await sb.from('despesas').update({status:'PAGO'}).eq('id',id);
-      const exp = STATE.expenses.find(e=>e.id==id);
-      await sb.from('logs').insert([{id:getNextId(STATE.logs), tipo:'despesa', produto_nome:String(id), quantidade:exp.quantity, data:getHojeLocal(), observacao:exp.note, valor_total:exp.cost, status:'ATIVO', status_financeiro:'PAGO', valor_pago:exp.cost}]);
-      loadData();
-    }
-
-    // --- ORÇAMENTOS (formulário) ---
-    function abrirFormOrcamento() { CURRENT_QUOTE_ID=null; CART=[]; document.getElementById('modal-title').innerText='Novo Orçamento'; document.getElementById('orc-cliente').value=''; document.getElementById('orc-desc-val').value=0; renderCarrinho(); document.getElementById('modal-orcamento').classList.remove('hidden'); }
-    function fecharFormOrcamento() { document.getElementById('modal-orcamento').classList.add('hidden'); }
-    function editarOrcamento(id) {
-      const q = STATE.quotes.find(x=>x.id==id); if(!q) return;
-      CURRENT_QUOTE_ID=q.id; CART=[...q.items];
-      document.getElementById('modal-title').innerText='Editar Orçamento';
-      const cli = STATE.clients.find(c=>c.name===q.clientName); document.getElementById('orc-cliente').value = cli?cli.id:'';
-      document.getElementById('orc-desc-val').value = q.discount||0; document.getElementById('orc-desc-tipo').value = q.discountType||'$';
-      document.getElementById('orc-pagamento').value = q.paymentMethod||'Dinheiro';
-      renderCarrinho(); document.getElementById('modal-orcamento').classList.remove('hidden');
-    }
-    function setarPrecoPadrao(id) { const p=STATE.products.find(x=>x.id==id); if(p) document.getElementById('orc-preco').value=p.price; }
-    function addItemCarrinho() {
-      const id=document.getElementById('orc-produto').value, qtd=parseFloat(document.getElementById('orc-qtd').value), preco=parseFloat(document.getElementById('orc-preco').value);
-      if(!id||!qtd) return; const p=STATE.products.find(x=>x.id==id);
-      CART.push({prodId:p.id, name:p.name, qty:qtd, price:preco, total:qtd*preco}); document.getElementById('orc-qtd').value=''; renderCarrinho();
-    }
-    function renderCarrinho() {
-      const box=document.getElementById('carrinho-itens'); box.innerHTML = CART.map((i,idx)=>`
-        <div class="flex justify-between items-center p-3 bg-white rounded-xl border"><div><p class="font-bold">${i.name}</p><p class="text-xs">${i.qty} x ${formatMoney(i.price)}</p></div><div class="flex items-center gap-2"><span class="font-bold">${formatMoney(i.total)}</span><button onclick="CART.splice(${idx},1);renderCarrinho()" class="text-red-500">✕</button></div></div>`).join('');
-      const sub = CART.reduce((a,b)=>a+b.total,0); const dVal=parseFloat(document.getElementById('orc-desc-val').value)||0;
-      const dTipo=document.getElementById('orc-desc-tipo').value; const desc = dTipo==='%'? sub*(dVal/100) : dVal;
-      document.getElementById('orc-total-final').innerText = formatMoney(sub - desc);
-    }
-    async function enviarOrcamento() {
-      if(!CART.length) return;
-      showLoading(true);
-      const cliId=document.getElementById('orc-cliente').value; const clientName=STATE.clients.find(c=>c.id==cliId)?.name||"Consumidor Final";
-      const budgetId = CURRENT_QUOTE_ID || getNextId(STATE.logs); const date=new Date().toISOString();
-      const discount=parseFloat(document.getElementById('orc-desc-val').value)||0; const discountType=document.getElementById('orc-desc-tipo').value;
-      const payment=document.getElementById('orc-pagamento').value;
-      if(CURRENT_QUOTE_ID) await sb.from('logs').delete().eq('id',CURRENT_QUOTE_ID).eq('tipo','orcamento');
-      const items = CART.map(i=>({ id:budgetId, tipo:'orcamento', produto_nome:i.name, quantidade:i.qty, data:date, observacao:'', valor_total:i.total, cliente_nome:clientName, forma_pagamento:payment, status:'ABERTO', desconto:discount, status_financeiro:discountType, endereco_entrega:'' }));
-      const {error} = await sb.from('logs').insert(items);
-      if(error) { showLoading(false); return showToast(error.message, true); }
-      fecharFormOrcamento(); await loadData(); switchTab('orcamentos');
-    }
-
-    // --- RELATÓRIOS ---
-    function showDailyReport() {
-      const hoje = getHojeLocal();
-      const vendas = STATE.sales.filter(s=>s.date.split('T')[0]===hoje);
-      let total=0, pgtoMap={};
-      vendas.forEach(s=>{ total+=s.total; pgtoMap[s.paymentMethod]=(pgtoMap[s.paymentMethod]||0)+s.total; });
-      let html = `<div class="card p-4"><h3 class="font-bold">Faturamento ${formatDate(hoje)}</h3>`;
-      if(vendas.length===0) html+='<p>Nenhuma venda hoje.</p>';
-      else {
-        html+=vendas.map(s=>`<div class="flex justify-between"><span>#${s.id} - ${s.clientName}</span><span>${formatMoney(s.total)}</span></div>`).join('');
-        html+=`<div class="mt-4 grid grid-cols-2 gap-2"><div><p class="text-xs">Métodos</p>${Object.entries(pgtoMap).map(([k,v])=>`<div class="flex justify-between"><span>${k}</span><span>${formatMoney(v)}</span></div>`).join('')}</div><div class="bg-orange-50 p-2 rounded"><p class="text-xs">Total</p><p class="text-2xl font-black text-rv-orange">${formatMoney(total)}</p></div></div>`;
-      }
-      html+='</div>';
-      document.getElementById('relatorio-resultado').innerHTML = html;
-    }
-
-    function openPeriodReportModal() { document.getElementById('modal-filtro-periodo').classList.add('show'); }
-    function fecharFiltroPeriodo() { document.getElementById('modal-filtro-periodo').classList.remove('show'); }
-    function aplicarFiltroPeriodo() {
-      const start = document.getElementById('filtro-start').value;
-      const end = document.getElementById('filtro-end').value;
-      const payment = document.getElementById('filtro-payment').value;
-      const client = document.getElementById('filtro-client').value.toLowerCase();
-      let vendas = STATE.sales.filter(s=>{
-        if(start && s.date.split('T')[0] < start) return false;
-        if(end && s.date.split('T')[0] > end) return false;
-        if(payment!=='Todos' && s.paymentMethod !== payment) return false;
-        if(client && !s.clientName.toLowerCase().includes(client)) return false;
-        return true;
-      });
-      let total=0, pgtoMap={};
-      vendas.forEach(s=>{ total+=s.total; pgtoMap[s.paymentMethod]=(pgtoMap[s.paymentMethod]||0)+s.total; });
-      let html = `<div class="card p-4"><h3 class="font-bold">Vendas no Período</h3>`;
-      if(vendas.length===0) html+='<p>Nenhuma venda.</p>';
-      else {
-        html+=vendas.map(s=>`<div class="flex justify-between"><span>${formatDate(s.date)} #${s.id} - ${s.clientName}</span><span>${formatMoney(s.total)}</span></div>`).join('');
-        html+=`<div class="mt-4 grid grid-cols-2 gap-2"><div><p class="text-xs">Métodos</p>${Object.entries(pgtoMap).map(([k,v])=>`<div class="flex justify-between"><span>${k}</span><span>${formatMoney(v)}</span></div>`).join('')}</div><div class="bg-indigo-50 p-2 rounded"><p class="text-xs">Total</p><p class="text-2xl font-black text-indigo-700">${formatMoney(total)}</p></div></div>`;
-      }
-      html+='</div>';
-      document.getElementById('relatorio-resultado').innerHTML = html;
-      fecharFiltroPeriodo();
-    }
-
-    // --- REGISTROS (PRODUÇÃO) ---
-    function renderDashRegistros() {
-      const month = document.getElementById('dash-month-filter'); if(!month.value) { const d=new Date(); month.value = `${d.getFullYear()}-${String(d.getMonth()+1).padStart(2,'0')}`; }
-      const mes = month.value; let total=0;
-      STATE.logs.filter(l=>l.type==='fabricacao'&&l.status!=='CANCELADO').forEach(l=>{ if(l.date&&l.date.substring(0,7)===mes) total+=Number(l.quantity)||0; });
-      document.getElementById('dash-mes').innerText = total;
-      document.getElementById('dash-custo-un').innerText = formatMoney(STATE.custoMaterialB10||0);
-    }
-    function limparFiltrosRegistros() { document.getElementById('reg-start').value=''; document.getElementById('reg-end').value=''; renderListaRegistros(); }
-    function renderListaRegistros() {
-      const start=document.getElementById('reg-start').value, end=document.getElementById('reg-end').value;
-      let logs = STATE.logs.filter(l=>l.type==='fabricacao'&&l.status!=='CANCELADO').sort((a,b)=>new Date(b.date)-new Date(a.date));
-      if(start) logs=logs.filter(l=>l.date.split('T')[0]>=start); if(end) logs=logs.filter(l=>l.date.split('T')[0]<=end);
-      document.getElementById('lista-registros').innerHTML = logs.map(l=>`<div class="card p-4 flex justify-between"><div><p class="font-bold">${l.productName}</p><p class="text-xs">${formatDate(l.date)} ${l.note||''}</p></div><span class="font-black text-rv-orange text-xl">+${l.quantity}</span></div>`).join('')||'<p class="text-slate-400 p-4 text-center">Nenhum registro.</p>';
-    }
-    function abrirModalProducao() { document.getElementById('modal-producao').classList.add('show'); preencherSelects(); }
-    function fecharModalProducao() { document.getElementById('modal-producao').classList.remove('show'); }
-    async function salvarProducao() {
-      const pId=document.getElementById('prod-select').value, qty=parseFloat(document.getElementById('prod-qty').value);
-      if(!pId||!qty) return; const prod=STATE.products.find(p=>p.id==pId);
-      showLoading(true);
-      await sb.from('produtos').update({estoque_fisico: prod.stock + qty}).eq('id',pId);
-      const newId = getNextId(STATE.logs);
-      await sb.from('logs').insert([{ id:newId, tipo:'fabricacao', produto_nome:prod.name, quantidade:qty, data:new Date().toISOString(), observacao:document.getElementById('prod-note').value, status:'ATIVO' }]);
-      fecharModalProducao(); await loadData(); switchTab('registros');
-    }
-
-    function preencherSelects() {
-      const prods = STATE.products.map(p=>`<option value="${p.id}">${p.name}</option>`).join('');
-      const clis = STATE.clients.map(c=>`<option value="${c.id}">${c.name}</option>`).join('');
-      document.getElementById('prod-select').innerHTML = '<option value="">Selecione...</option>'+prods;
-      document.getElementById('orc-cliente').innerHTML = '<option value="">Consumidor Final</option>'+clis;
-      document.getElementById('orc-produto').innerHTML = '<option value="">Adicionar produto...</option>'+prods;
-    }
-
-    // --- IMPRESSÃO E COMPARTILHAMENTO (simplificado) ---
-    async function shareQuote(id) {
-      const q = STATE.quotes.find(x=>x.id==id) || STATE.sales.find(x=>x.id==id);
-      if(!q) return;
-      // ... (implementação de PDF similar ao modelo, omitida por brevidade, mas pode ser incluída)
-      showToast('Funcionalidade de PDF em desenvolvimento');
-    }
-    function printQuote(id) { shareQuote(id); }
-  </script>
+    });
+});
+document.querySelectorAll('.sub-tab').forEach(sub=>{
+    sub.addEventListener('click',()=>{
+        const target = sub.dataset.sub;
+        document.querySelectorAll('.sub-content').forEach(c=>c.style.display='none');
+        document.getElementById(`sub-${target}`).style.display='block';
+        document.querySelectorAll('.sub-tab').forEach(st=>st.classList.remove('active-sub'));
+        sub.classList.add('active-sub');
+        if(target==='list') renderQuotesMobile();
+        lucide.createIcons();
+    });
+});
+loadDataMobile();
+window.addEventListener('load',()=>{ lucide.createIcons(); });
+</script>
 </body>
 </html>
