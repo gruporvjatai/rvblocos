@@ -7,14 +7,12 @@
     <script src="https://unpkg.com/lucide@latest"></script>
     <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
          <script>
-              // Verifica se existe o usuário salvo no navegador. Se não existir, chuta pro index.html
               if (!localStorage.getItem('rv_user')) {
                   window.location.replace("index.html");
               }
          </script>
     
          <script>          
-        // Se detectar que a tela é de celular ou tablet, joga direto pro mobile.html
         if (/Android|webOS|iPhone|iPad|iPod|BlackBerry|IEMobile|Opera Mini/i.test(navigator.userAgent) || window.innerWidth <= 800) {
             window.location.replace("mobile.html");
         }</script>
@@ -33,11 +31,10 @@
     <style>
       body { background-color: #f1f5f9; font-family: 'Segoe UI', sans-serif; -webkit-font-smoothing: antialiased; }
 
-            /* Correção forçada para garantir que as bordas apareçam em todos os inputs e caixas */
       .border { 
           border-width: 1px !important; 
           border-style: solid !important; 
-          border-color: #cbd5e1 !important; /* slate-300 - cinza um pouco mais escuro e visível */
+          border-color: #cbd5e1 !important; 
       }
       
       .hidden-section { display: none !important; }
@@ -57,18 +54,27 @@
         .no-print { display: none !important; }
         .print-only { display: block !important; }
         
-        .invoice-full { 
-            border: 1px solid #000; 
+        .invoice-full, .invoice-box-orig { 
             position: relative; 
             z-index: 1;
-            min-height: 27.5cm; 
-            background-color: transparent;
+            background-color: transparent !important;
         }
 
-        .invoice-full::before {
+        .invoice-full {
+            border: 1px solid #000; 
+            min-height: 27.5cm; 
+        }
+
+        .invoice-box-orig { 
+            width: 100%; 
+            border: 1px solid #000; 
+            margin: 0 auto; 
+        }
+
+        .invoice-full::before, .invoice-box-orig::before {
             content: "";
-            position: absolute;
-            top: 57%; 
+            position: fixed; 
+            top: 50%; 
             left: 50%;
             transform: translate(-50%, -50%);
             width: 450px; 
@@ -79,9 +85,10 @@
             background-repeat: no-repeat;
             opacity: 0.1;
             z-index: -1; 
-            -webkit-print-color-adjust: exact;
-            print-color-adjust: exact;
+            -webkit-print-color-adjust: exact !important;
+            print-color-adjust: exact !important;
         }
+
         .header-section { display: flex; border-bottom: 2px solid #000; padding-bottom: 15px; margin-bottom: 20px; }
         .logo-area { width: 120px; display: flex; align-items: center; justify-content: center; border-right: 1px solid #e2e8f0; padding-right: 15px; margin-right: 15px; }
         .company-details { flex: 1; }
@@ -115,7 +122,6 @@
         .sign-line { border-top: 1px solid #000; margin-bottom: 5px; }
         .sign-label { font-size: 10px; font-weight: bold; text-transform: uppercase; }
 
-        .invoice-box-orig { width: 100%; border: 1px solid #000; margin: 0 auto; }
         .header-orig { display: flex; border-bottom: 1px solid #000; }
         .logo-box-orig { width: 100px; padding: 5px; border-right: 1px solid #000; display: flex; align-items: center; justify-content: center; }
         .company-box-orig { flex: 1; padding: 5px; font-size: 11px; border-right: 1px solid #000; }
@@ -146,7 +152,7 @@
         <button onclick="navigate('quotes')" id="nav-quotes" class="nav-btn w-full flex items-center space-x-3 px-4 py-3 rounded-lg text-slate-400 hover:bg-slate-800 hover:text-white transition-all"><i data-lucide="folder-open"></i> <span class="font-medium text-sm">Orçamentos</span></button>
         <button onclick="navigate('fin')" id="nav-fin" class="nav-btn w-full flex items-center space-x-3 px-4 py-3 rounded-lg text-slate-400 hover:bg-slate-800 hover:text-white transition-all"><i data-lucide="bar-chart-3"></i> <span class="font-medium text-sm">Financeiro</span></button>
         <div class="border-t border-slate-700 my-2 pt-2"></div>
-        <button onclick="navigate('logs')" id="nav-logs" class="nav-btn w-full flex items-center space-x-3 px-4 py-3 rounded-lg text-slate-400 hover:bg-slate-800 hover:text-white transition-all"><i data-lucide="history"></i> <span class="font-medium text-sm">Histórico</span></button>
+        <button onclick="navigate('reports')" id="nav-reports" class="nav-btn w-full flex items-center space-x-3 px-4 py-3 rounded-lg text-slate-400 hover:bg-slate-800 hover:text-white transition-all"><i data-lucide="pie-chart"></i> <span class="font-medium text-sm">Relatórios</span></button>
         <button onclick="navigate('clients')" id="nav-clients" class="nav-btn w-full flex items-center space-x-3 px-4 py-3 rounded-lg text-slate-400 hover:bg-slate-800 hover:text-white transition-all"><i data-lucide="users"></i> <span class="font-medium text-sm">Clientes</span></button>
         <button onclick="navigate('prod')" id="nav-prod" class="nav-btn w-full flex items-center space-x-3 px-4 py-3 rounded-lg text-slate-400 hover:bg-slate-800 hover:text-white transition-all"><i data-lucide="package"></i> <span class="font-medium text-sm">Produtos</span></button>
         <button onclick="navigate('production')" id="nav-production" class="nav-btn w-full flex items-center space-x-3 px-4 py-3 rounded-lg text-slate-400 hover:bg-slate-800 hover:text-white transition-all"><i data-lucide="hammer"></i> <span class="font-medium text-sm">Produção</span></button>
@@ -173,45 +179,48 @@
 
       <div id="view-dash" class="hidden-section"><h2 class="text-2xl font-bold text-slate-800 mb-6">Visão Geral do Estoque</h2><div id="dash-grid" class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6"></div></div>
 
+      <!-- PDV ATUALIZADO -->
       <div id="view-pos" class="hidden-section">
-        <div class="grid grid-cols-1 lg:grid-cols-3 gap-6 h-[calc(100vh-100px)]">
-            <div class="lg:col-span-2 flex flex-col gap-4 h-full">
-                <div class="bg-white rounded-xl shadow-sm border p-4 flex gap-4"><div class="relative flex-1"><i data-lucide="search" class="absolute left-3 top-2.5 text-slate-400 w-5 h-5"></i><input type="text" id="pos-search" placeholder="Buscar produto..." class="w-full p-2 border rounded pl-10 outline-none focus:ring-2 focus:ring-orange-500" onkeyup="renderPOSProducts()"></div></div>
-                <div id="pos-products-grid" class="bg-white rounded-xl shadow-sm border p-4 grid grid-cols-2 md:grid-cols-3 xl:grid-cols-4 gap-4 overflow-y-auto flex-1 content-start"></div>
-                <div class="bg-white p-4 rounded-xl border flex flex-col h-64 shadow-sm">
-                    <h3 class="font-bold text-slate-700 mb-2 flex gap-2 items-center text-sm uppercase border-b pb-2"><i data-lucide="history" class="w-4 h-4"></i> Vendas Efetuadas</h3>
-                    <div class="overflow-y-auto flex-1">
-                        <table class="w-full text-sm text-left">
-                            <tbody id="pos-recent-history" class="divide-y"></tbody>
-                        </table>
-                    </div>
-                </div>
+        <div class="flex flex-col gap-6 h-[calc(100vh-100px)]">
+            <div class="bg-white rounded-xl shadow-sm border p-6 flex justify-between items-center shrink-0">
+                <h3 class="font-bold text-slate-700 text-lg flex gap-2 items-center"><i data-lucide="shopping-cart"></i> PDV - Caixa</h3>
+                <button onclick="openPosHistoryModal()" class="bg-slate-800 hover:bg-slate-900 text-white px-6 py-3 rounded-xl font-bold flex items-center gap-2 shadow-lg transition">
+                    <i data-lucide="history"></i> Ver Vendas Efetuadas
+                </button>
             </div>
-            <div class="bg-white p-0 rounded-xl border shadow-lg flex flex-col h-full overflow-hidden border-t-4 border-t-slate-800">
-                <div class="p-4 bg-slate-50 border-b flex justify-between items-center"><div class="font-bold text-slate-700 flex gap-2 items-center"><i data-lucide="shopping-cart"></i> ITENS <span id="edit-mode-indicator" class="hidden text-xs bg-orange-100 text-orange-600 px-2 py-0.5 rounded ml-2">EDITANDO</span></div><button onclick="clearCart()" class="text-xs text-red-500 hover:text-red-700 font-bold border border-red-200 px-2 py-1 rounded bg-white">LIMPAR</button></div>
-                <div id="pos-cart-items" class="flex-1 space-y-2 overflow-y-auto p-4 bg-white"></div>
-                <div class="bg-slate-50 p-4 border-t space-y-3 shadow-inner">
-                    <div class="space-y-2">
-                        <div class="flex gap-2">
-                            <select id="pos-client" class="w-full p-2 border rounded text-sm bg-white focus:border-orange-500"></select>
-                            <button onclick="navigate('clients')" class="p-2 bg-slate-200 rounded hover:bg-slate-300"><i data-lucide="plus"></i></button>
+            <div class="grid grid-cols-1 lg:grid-cols-3 gap-6 flex-1 min-h-0">
+                <div class="lg:col-span-2 flex flex-col gap-4 h-full">
+                    <div class="bg-white rounded-xl shadow-sm border p-4 flex gap-4">
+                        <div class="relative flex-1"><i data-lucide="search" class="absolute left-3 top-2.5 text-slate-400 w-5 h-5"></i><input type="text" id="pos-search" placeholder="Buscar produto..." class="w-full p-2 border rounded pl-10 outline-none focus:ring-2 focus:ring-orange-500" onkeyup="renderPOSProducts()"></div>
+                    </div>
+                    <div id="pos-products-grid" class="bg-white rounded-xl shadow-sm border p-4 grid grid-cols-2 md:grid-cols-3 xl:grid-cols-4 gap-4 overflow-y-auto flex-1 content-start"></div>
+                </div>
+                <div class="bg-white p-0 rounded-xl border shadow-lg flex flex-col h-full overflow-hidden border-t-4 border-t-slate-800">
+                    <div class="p-4 bg-slate-50 border-b flex justify-between items-center"><div class="font-bold text-slate-700 flex gap-2 items-center"><i data-lucide="shopping-cart"></i> ITENS <span id="edit-mode-indicator" class="hidden text-xs bg-orange-100 text-orange-600 px-2 py-0.5 rounded ml-2">EDITANDO</span></div><button onclick="clearCart()" class="text-xs text-red-500 hover:text-red-700 font-bold border border-red-200 px-2 py-1 rounded bg-white">LIMPAR</button></div>
+                    <div id="pos-cart-items" class="flex-1 space-y-2 overflow-y-auto p-4 bg-white"></div>
+                    <div class="bg-slate-50 p-4 border-t space-y-3 shadow-inner">
+                        <div class="space-y-2">
+                            <div class="flex gap-2">
+                                <select id="pos-client" class="w-full p-2 border rounded text-sm bg-white focus:border-orange-500"></select>
+                                <button onclick="navigate('clients')" class="p-2 bg-slate-200 rounded hover:bg-slate-300"><i data-lucide="plus"></i></button>
+                            </div>
+                            
+                            <div class="flex items-center gap-2 mt-1">
+                                <input type="checkbox" id="pos-custom-address-check" class="w-4 h-4 text-orange-600 rounded border-slate-300 focus:ring-orange-500" onchange="toggleCustomAddress()">
+                                <label for="pos-custom-address-check" class="text-xs font-bold text-slate-600 cursor-pointer select-none">Adicionar Endereço de Entrega</label>
+                            </div>
+                            <div id="pos-custom-address-container" class="hidden transition-all duration-300">
+                                <textarea id="pos-custom-address" rows="2" placeholder="Digite o endereço completo da obra / ponto de referência..." class="w-full p-2 border rounded-lg text-xs bg-white focus:border-orange-500 focus:ring-2 focus:ring-orange-200 outline-none resize-none shadow-inner"></textarea>
+                            </div>
+                            <div class="grid grid-cols-2 gap-2">
+                                <select id="pos-payment" class="w-full p-2 border rounded text-sm bg-white"><option>Dinheiro</option><option>PIX</option><option>Cartão Crédito</option><option>Cartão Débito</option><option>Boleto 5 dias</option><option>Boleto 10 dias</option><option>Boleto 15 dias</option><option>PIX 7 dias</option><option>Carteira</option></select>
+                                <div class="flex rounded border bg-white overflow-hidden"><select id="pos-discount-type" class="bg-slate-100 text-xs px-1 border-r font-bold focus:outline-none" onchange="renderCart()"><option value="%">%</option><option value="$">R$</option></select><input type="number" id="pos-discount" value="0" class="w-full p-2 text-sm focus:outline-none" placeholder="Desc." onchange="renderCart()"></div>
+                            </div>
                         </div>
                         
-                        <div class="flex items-center gap-2 mt-1">
-                            <input type="checkbox" id="pos-custom-address-check" class="w-4 h-4 text-orange-600 rounded border-slate-300 focus:ring-orange-500" onchange="toggleCustomAddress()">
-                            <label for="pos-custom-address-check" class="text-xs font-bold text-slate-600 cursor-pointer select-none">Adicionar Endereço de Entrega</label>
-                        </div>
-                        <div id="pos-custom-address-container" class="hidden transition-all duration-300">
-                            <textarea id="pos-custom-address" rows="2" placeholder="Digite o endereço completo da obra / ponto de referência..." class="w-full p-2 border rounded-lg text-xs bg-white focus:border-orange-500 focus:ring-2 focus:ring-orange-200 outline-none resize-none shadow-inner"></textarea>
-                        </div>
-                        <div class="grid grid-cols-2 gap-2">
-                            <select id="pos-payment" class="w-full p-2 border rounded text-sm bg-white"><option>Dinheiro</option><option>PIX</option><option>Cartão Crédito</option><option>Cartão Débito</option><option>Boleto 5 dias</option><option>Boleto 10 dias</option><option>Boleto 15 dias</option><option>PIX 7 dias</option><option>Carteira</option></select>
-                            <div class="flex rounded border bg-white overflow-hidden"><select id="pos-discount-type" class="bg-slate-100 text-xs px-1 border-r font-bold focus:outline-none" onchange="renderCart()"><option value="%">%</option><option value="$">R$</option></select><input type="number" id="pos-discount" value="0" class="w-full p-2 text-sm focus:outline-none" placeholder="Desc." onchange="renderCart()"></div>
-                        </div>
+                        <div class="flex justify-between items-end border-t border-slate-300 pt-3"><div class="text-xs text-slate-500">Itens: <span id="cart-count">0</span></div><div class="text-right"><div class="text-xs text-slate-500">Total a Pagar</div><div id="pos-total-display" class="text-2xl font-bold text-slate-800 leading-none">R$ 0,00</div></div></div>
+                        <div class="grid grid-cols-2 gap-2 pt-2"><button onclick="saveQuote()" class="btn-action bg-blue-600 hover:bg-blue-700 text-white py-3 text-sm"><i data-lucide="save"></i> Salvar Orç.</button><button onclick="finalizeSale()" class="btn-action bg-green-600 hover:bg-green-700 text-white py-3 text-sm shadow-lg shadow-green-200"><i data-lucide="check-circle"></i> Vender</button></div>
                     </div>
-                    
-                    <div class="flex justify-between items-end border-t border-slate-300 pt-3"><div class="text-xs text-slate-500">Itens: <span id="cart-count">0</span></div><div class="text-right"><div class="text-xs text-slate-500">Total a Pagar</div><div id="pos-total-display" class="text-2xl font-bold text-slate-800 leading-none">R$ 0,00</div></div></div>
-                    <div class="grid grid-cols-2 gap-2 pt-2"><button onclick="saveQuote()" class="btn-action bg-blue-600 hover:bg-blue-700 text-white py-3 text-sm"><i data-lucide="save"></i> Salvar Orç.</button><button onclick="finalizeSale()" class="btn-action bg-green-600 hover:bg-green-700 text-white py-3 text-sm shadow-lg shadow-green-200"><i data-lucide="check-circle"></i> Vender</button></div>
                 </div>
             </div>
         </div>
@@ -374,7 +383,37 @@
         </div>
       </div>
 
-      <div id="view-logs" class="hidden-section"><h2 class="text-2xl font-bold text-slate-800 mb-4">Histórico Completo (Lançamentos e Movimentos)</h2><div class="bg-white rounded-xl border shadow-sm overflow-hidden"><div class="overflow-x-auto"><table class="w-full text-sm text-left"><thead class="bg-slate-50 text-slate-700"><tr><th class="p-4">Data</th><th class="p-4">Tipo</th><th class="p-4">Descrição/Produto</th><th class="p-4">Cliente</th><th class="p-4">Valor</th><th class="p-4">Status</th><th class="p-4 text-center">Ações</th></tr></thead><tbody id="logs-table-body" class="divide-y"></tbody></table></div></div></div>
+      <div id="view-reports" class="hidden-section w-full h-[calc(100vh-120px)] flex flex-col">
+          <h2 class="text-2xl font-bold text-slate-800 mb-6 flex items-center gap-2">
+              <i data-lucide="pie-chart"></i> Relatórios
+          </h2>
+          
+          <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6 pb-10">
+              <div onclick="printDailyRevenue()" class="bg-white p-6 rounded-xl shadow-sm border border-slate-200 hover:border-orange-500 hover:shadow-md cursor-pointer transition-all flex flex-col items-center text-center gap-3">
+                  <div class="w-14 h-14 bg-orange-100 text-orange-600 rounded-full flex items-center justify-center">
+                      <i data-lucide="calendar-days" class="w-7 h-7"></i>
+                  </div>
+                  <h3 class="font-bold text-slate-800 text-lg">Faturamento do Dia</h3>
+                  <p class="text-xs text-slate-500 font-medium">Imprime o resumo das vendas de hoje, formas de pagamento e total geral.</p>
+              </div>
+
+              <div onclick="openPeriodReportModal()" class="bg-white p-6 rounded-xl shadow-sm border border-slate-200 hover:border-indigo-500 hover:shadow-md cursor-pointer transition-all flex flex-col items-center text-center gap-3">
+                  <div class="w-14 h-14 bg-indigo-100 text-indigo-600 rounded-full flex items-center justify-center">
+                      <i data-lucide="bar-chart-3" class="w-7 h-7"></i>
+                  </div>
+                  <h3 class="font-bold text-slate-800 text-lg">Vendas por Período</h3>
+                  <p class="text-xs text-slate-500 font-medium">Filtre vendas por data, cliente ou método de pagamento.</p>
+              </div>
+
+              <div class="bg-slate-50 p-6 rounded-xl border border-slate-200 opacity-60 flex flex-col items-center text-center gap-3">
+                  <div class="w-14 h-14 bg-slate-200 text-slate-400 rounded-full flex items-center justify-center">
+                      <i data-lucide="trending-up" class="w-7 h-7"></i>
+                  </div>
+                  <h3 class="font-bold text-slate-700 text-lg">Produtos Mais Vendidos</h3>
+                  <span class="bg-slate-200 text-slate-500 text-[10px] font-bold uppercase px-2 py-1 rounded">Em Breve</span>
+              </div>
+          </div>
+      </div>
 
       <div id="view-clients" class="hidden-section">
           <div class="flex justify-between items-center mb-4">
@@ -469,6 +508,7 @@
                     <h3 class="font-bold text-slate-700 flex items-center gap-2">
                         <i data-lucide="history" class="w-5 h-5 text-slate-400"></i> Últimas Produções
                     </h3>
+                    <button onclick="printProductionHistory()" class="p-2 bg-slate-800 text-white hover:bg-slate-700 rounded text-xs shadow-sm flex items-center gap-2 font-bold"><i data-lucide="printer" class="w-4 h-4"></i> Imprimir</button>
                 </div>
                 <div class="overflow-y-auto flex-1">
                     <table class="w-full text-sm text-left border-collapse">
@@ -492,6 +532,37 @@
     </main>
 
     <div id="print-area" class="print-only"></div>
+
+    <div id="pos-history-modal" class="hidden fixed inset-0 bg-black/50 z-50 flex items-center justify-center p-4">
+      <div class="bg-white rounded-xl shadow-2xl w-full max-w-5xl flex flex-col max-h-[90vh] overflow-hidden">
+        <div class="p-5 border-b flex justify-between items-center bg-slate-50">
+            <h3 class="font-bold text-slate-700 flex items-center gap-2 text-lg"><i data-lucide="history"></i> Vendas Efetuadas</h3>
+            <button onclick="closePosHistoryModal()" class="p-2 bg-slate-200 hover:bg-red-100 hover:text-red-600 rounded-lg transition"><i data-lucide="x" class="w-5 h-5"></i></button>
+        </div>
+        <div class="p-4 bg-white border-b flex flex-wrap gap-3 items-center shrink-0">
+            <input type="text" id="pos-hist-search" placeholder="Buscar venda, nome ou ID..." class="flex-1 p-2.5 border rounded-lg text-sm outline-none focus:ring-2 focus:ring-orange-500 bg-slate-50" onkeyup="renderRecentHistoryModal()">
+            <input type="date" id="pos-hist-start" class="p-2.5 border rounded-lg text-sm outline-none focus:ring-2 focus:ring-orange-500 bg-slate-50" onchange="renderRecentHistoryModal()">
+            <input type="date" id="pos-hist-end" class="p-2.5 border rounded-lg text-sm outline-none focus:ring-2 focus:ring-orange-500 bg-slate-50" onchange="renderRecentHistoryModal()">
+            <button onclick="document.getElementById('pos-hist-search').value=''; document.getElementById('pos-hist-start').value=''; document.getElementById('pos-hist-end').value=''; renderRecentHistoryModal()" class="p-2.5 bg-slate-200 hover:bg-slate-300 rounded-lg text-slate-700 font-bold transition" title="Limpar Filtros"><i data-lucide="x" class="w-4 h-4"></i></button>
+        </div>
+        <div class="overflow-y-auto flex-1 p-4 bg-slate-100">
+            <div class="bg-white rounded-lg border shadow-sm overflow-hidden">
+                <table class="w-full text-sm text-left">
+                    <thead class="bg-slate-800 text-white">
+                        <tr>
+                            <th class="p-3">Pedido</th>
+                            <th class="p-3">Data</th>
+                            <th class="p-3">Cliente</th>
+                            <th class="p-3">Valor</th>
+                            <th class="p-3 text-center">Ações</th>
+                        </tr>
+                    </thead>
+                    <tbody id="pos-recent-history-modal" class="divide-y"></tbody>
+                </table>
+            </div>
+        </div>
+    </div>
+</div>
 
     <div id="modal-delivery" class="hidden fixed inset-0 bg-black/50 z-50 flex items-center justify-center p-4">
         <div class="bg-white rounded-xl shadow-2xl w-full max-w-md overflow-hidden animate-[fadeIn_0.2s]">
@@ -682,6 +753,42 @@
         </div>
     </div>
 
+    <div id="modal-period-report" class="hidden fixed inset-0 bg-black/50 z-50 flex justify-center items-center p-4">
+        <div class="bg-white rounded-2xl w-full max-w-md shadow-2xl flex flex-col max-h-[90vh] overflow-hidden">
+            <div class="p-5 border-b flex justify-between items-center bg-slate-50">
+                <h3 class="font-bold text-slate-800 text-lg flex items-center gap-2"><i data-lucide="calendar-search" class="text-indigo-600"></i> Relatório de Vendas</h3>
+                <button onclick="closePeriodReportModal()" class="text-slate-400 hover:text-red-500"><i data-lucide="x"></i></button>
+            </div>
+            <div class="p-6 space-y-4 overflow-y-auto">
+                <div class="grid grid-cols-2 gap-3">
+                    <div>
+                        <label class="block text-sm font-bold text-slate-700 mb-1">Data Inicial</label>
+                        <input type="date" id="rep-per-start" class="w-full p-3 border rounded-xl focus:ring-2 focus:ring-indigo-600 outline-none bg-white">
+                    </div>
+                    <div>
+                        <label class="block text-sm font-bold text-slate-700 mb-1">Data Final</label>
+                        <input type="date" id="rep-per-end" class="w-full p-3 border rounded-xl focus:ring-2 focus:ring-indigo-600 outline-none bg-white">
+                    </div>
+                </div>
+                <div>
+                    <label class="block text-sm font-bold text-slate-700 mb-1">Forma de Pagamento</label>
+                    <select id="rep-per-payment" class="w-full p-3 border rounded-xl focus:ring-2 focus:ring-indigo-600 outline-none bg-white">
+                        <option value="Todos">Todos</option>
+                        <option>Dinheiro</option><option>PIX</option><option>Cartão Crédito</option><option>Cartão Débito</option><option>Boleto 5 dias</option><option>Boleto 10 dias</option><option>Boleto 15 dias</option><option>PIX 7 dias</option><option>Carteira</option>
+                    </select>
+                </div>
+                <div>
+                    <label class="block text-sm font-bold text-slate-700 mb-1">Cliente</label>
+                    <input type="text" id="rep-per-client" placeholder="Digite o nome (Deixe vazio para Todos)" class="w-full p-3 border rounded-xl focus:ring-2 focus:ring-indigo-600 outline-none">
+                </div>
+            </div>
+            <div class="p-5 border-t bg-slate-50 flex gap-3">
+                <button onclick="closePeriodReportModal()" class="flex-1 py-3 bg-white border border-slate-300 rounded-xl font-bold text-slate-600 hover:bg-slate-100">Cancelar</button>
+                <button onclick="printPeriodReport()" class="flex-1 py-3 bg-indigo-700 rounded-xl font-bold text-white hover:bg-indigo-800 shadow-lg flex items-center justify-center gap-2"><i data-lucide="printer" class="w-4 h-4"></i> Gerar e Imprimir</button>
+            </div>
+        </div>
+    </div>
+
     <script>
       const supabaseUrl = 'https://irbgmmoxiedhcbfkanmu.supabase.co';
 const supabaseKey = 'sb_publishable_bhGr9DvGGg-gYWXsd_rf3w_CAZdF7n9';
@@ -701,7 +808,6 @@ window.onload = function() { showLoading(true); loadData(); };
 
 // --- NAVEGAÇÃO E UTILIDADES ---
 function navigate(viewId) {
-    // RBAC: Se for producao, bloqueia nav-fin e nav-users
     try {
         const u = JSON.parse(localStorage.getItem('rv_user'));
         if (u && u.tipo === 'producao' && (viewId === 'fin' || viewId === 'users')) {
@@ -721,11 +827,11 @@ function navigate(viewId) {
     if(viewId === 'quotes') renderQuotesList();
     if(viewId === 'expedition') renderExpedition();
     if(viewId === 'fin') renderFinance();
+    if(viewId === 'reports') {} 
     if(viewId === 'clients') renderClients();
     if(viewId === 'users') renderUsers();
     if(viewId === 'prod') renderProducts();
     if(viewId === 'production') renderProductionSelect();
-    if(viewId === 'logs') renderLogs();
     lucide.createIcons();
 }
 
@@ -747,7 +853,7 @@ function applyRBAC() {
 }
 
 function formatMoney(val) { return parseFloat(val || 0).toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' }); }
-function formatDate(d) { try { return d ? new Date(d).toLocaleDateString('pt-BR') : '-'; } catch(e) { return '-'; } }
+function formatDate(d) { try { if(!d) return '-'; const parts = d.split('T')[0].split('-'); return `${parts[2]}/${parts[1]}/${parts[0]}`; } catch(e) { return '-'; } }
 function showLoading(show) { document.getElementById('loading').style.display = show ? 'flex' : 'none'; }
 function showToast(msg, isError) { 
     const t=document.getElementById('toast'); 
@@ -757,16 +863,19 @@ function showToast(msg, isError) {
     setTimeout(()=>t.style.display='none',3000); 
 }
 
+function getHojeLocalStr() {
+    return new Date(new Date().getTime() - (new Date().getTimezoneOffset() * 60000)).toISOString().split('T')[0];
+}
+
 // --- BANCO DE DADOS: SUPABASE ---
 
 async function loadData() {
     try {
-        const [resProd, resCli, resLog, resDesp, resOrc, resConf, resUsr] = await Promise.all([
+        const [resProd, resCli, resLog, resDesp, resConf, resUsr] = await Promise.all([
             sb.from('produtos').select('*'),
             sb.from('clientes').select('*'),
             sb.from('logs').select('*'),
             sb.from('despesas').select('*'),
-            sb.from('orcamentos').select('*'),
             sb.from('configuracoes').select('*').eq('chave', 'custo_material_b10').maybeSingle(),
             sb.from('usuarios').select('*')
         ]);
@@ -787,30 +896,40 @@ async function loadData() {
             id: u.id, name: u.nome, login: u.email, type: u.nivel_acesso, status: u.status
         }));
 
-        STATE.logs = (resLog.data || []).map(l => ({
-            uid: l.uid, id: l.id, type: l.tipo, productName: l.produto_nome, quantity: Number(l.quantidade),
-            date: l.data, note: l.observacao, totalValue: Number(l.valor_total),
-            clientName: l.cliente_nome, paymentMethod: l.forma_pagamento, status: l.status,
-            deliveryStatus: l.status_entrega, deliveredQty: Number(l.qtd_entregue),
-            discount: Number(l.desconto), finStatus: l.status_financeiro, dueDate: l.vencimento,
-            paidValue: Number(l.valor_pago), deliveryAddress: l.endereco_entrega
-        }));
+        STATE.logs = [];
+        const quotesMap = {};
+
+        (resLog.data || []).forEach(l => {
+            if (l.tipo === 'orcamento') {
+                const qId = String(l.id);
+                if(!quotesMap[qId]) {
+                    quotesMap[qId] = { 
+                        id: qId, date: l.data, clientName: l.cliente_nome, items: [], total: 0, 
+                        status: l.status || 'ABERTO', discount: Number(l.desconto), discountType: l.status_financeiro || '$', 
+                        paymentMethod: l.forma_pagamento, deliveryAddress: l.endereco_entrega, observacao: l.observacao
+                    };
+                }
+                const unitPrice = Number(l.quantidade) > 0 ? Number(l.valor_total) / Number(l.quantidade) : 0;
+                quotesMap[qId].items.push({ name: l.produto_nome, qty: Number(l.quantidade), price: unitPrice, total: Number(l.valor_total) });
+                quotesMap[qId].total += Number(l.valor_total);
+            } else {
+                STATE.logs.push({
+                    uid: l.uid, id: l.id, type: l.tipo, productName: l.produto_nome, quantity: Number(l.quantidade),
+                    date: l.data, note: l.observacao, totalValue: Number(l.valor_total),
+                    clientName: l.cliente_nome, paymentMethod: l.forma_pagamento, status: l.status,
+                    deliveryStatus: l.status_entrega, deliveredQty: Number(l.qtd_entregue),
+                    discount: Number(l.desconto), finStatus: l.status_financeiro, dueDate: l.vencimento,
+                    paidValue: Number(l.valor_pago), deliveryAddress: l.endereco_entrega
+                });
+            }
+        });
+
+        STATE.quotes = Object.values(quotesMap).map(q => { q.itemsText = q.items.map(i => `${i.name} (x${i.qty})`).join(', '); return q; });
 
         STATE.expenses = (resDesp.data || []).map(e => ({
             id: e.id, item: e.item, quantity: Number(e.quantidade), unit: e.unidade,
             cost: Number(e.custo), date: e.data, note: e.observacao
         }));
-
-        const quotesMap = {};
-        (resOrc.data || []).forEach(row => {
-            const qId = String(row.id);
-            if(!quotesMap[qId]) {
-                quotesMap[qId] = { id: qId, date: row.data, clientName: row.cliente_nome, items: [], total: 0, status: row.status, discount: Number(row.desconto), discountType: row.tipo_desconto, paymentMethod: row.forma_pagamento, deliveryAddress: row.endereco_entrega };
-            }
-            quotesMap[qId].items.push({ name: row.item_nome, qty: Number(row.quantidade), price: Number(row.preco_unitario), total: Number(row.total_item) });
-            quotesMap[qId].total += Number(row.total_item);
-        });
-        STATE.quotes = Object.values(quotesMap).map(q => { q.itemsText = q.items.map(i => `${i.name} (x${i.qty})`).join(', '); return q; });
 
         STATE.custoMaterialB10 = resConf.data ? Number(resConf.data.valor) : 0;
 
@@ -841,7 +960,6 @@ function getNextId(array) {
 }
 
 // --- FUNÇÕES CRUD DE USUÁRIOS ---
-
 function renderUsers() {
     const list = document.getElementById('users-list');
     if(!list) return;
@@ -999,8 +1117,8 @@ async function finalizeSale(isProntaEntrega = false) {
     else if (payment.toLowerCase().includes("15")) dueDate.setDate(dueDate.getDate() + 15);
     else if (payment.toLowerCase().includes("boleto") || payment.toLowerCase().includes("prazo")) dueDate.setDate(dueDate.getDate() + 30);
     
-    const timestamp = new Date().toISOString();
-    const newSaleId = getNextId(STATE.logs);
+    const timestamp = new Date(new Date().getTime() - (new Date().getTimezoneOffset() * 60000)).toISOString();
+    const newSaleId = CURRENT_QUOTE_ID ? CURRENT_QUOTE_ID : getNextId(STATE.logs, STATE.quotes);
     const subtotalBruto = CART.reduce((acc, i) => acc + i.total, 0);
     const fator = subtotalBruto > 0 ? (totals.total / subtotalBruto) : 1;
 
@@ -1052,12 +1170,12 @@ async function finalizeSale(isProntaEntrega = false) {
         }
     }
 
+    if (CURRENT_QUOTE_ID) {
+        await sb.from('logs').delete().eq('id', CURRENT_QUOTE_ID).eq('tipo', 'orcamento');
+    }
+
     const { error: errLogs } = await sb.from('logs').insert(logsToInsert);
     if(errLogs) { showLoading(false); return showToast("Erro ao registrar os logs.", true); }
-
-    if(CURRENT_QUOTE_ID) {
-        await sb.from('orcamentos').delete().eq('id', CURRENT_QUOTE_ID);
-    }
 
     clearCart();
     showToast(isProntaEntrega ? "Pronta Entrega Concluída!" : "Venda (Para Entrega) Registrada!");
@@ -1079,20 +1197,21 @@ async function saveQuote() {
     const clientName = STATE.clients.find(c=>c.id==cliId)?.name||"Consumidor Final";
     const customAddrCheck = document.getElementById('pos-custom-address-check').checked;
     const deliveryAddr = customAddrCheck ? document.getElementById('pos-custom-address').value : '';
-    const date = new Date().toISOString();
+    const date = new Date(new Date().getTime() - (new Date().getTimezoneOffset() * 60000)).toISOString();
     
-    const budgetId = CURRENT_QUOTE_ID || getNextId(STATE.quotes);
+    const budgetId = CURRENT_QUOTE_ID || getNextId(STATE.logs, STATE.quotes);
 
-    if(CURRENT_QUOTE_ID) await sb.from('orcamentos').delete().eq('id', CURRENT_QUOTE_ID);
+    if(CURRENT_QUOTE_ID) await sb.from('logs').delete().eq('id', CURRENT_QUOTE_ID).eq('tipo', 'orcamento');
 
     let quotesToInsert = CART.map(item => ({
-        id: budgetId, data: date, cliente_nome: clientName, item_nome: item.name,
-        quantidade: item.qty, preco_unitario: item.price, total_item: item.total,
-        status: 'ABERTO', desconto: totals.disc, tipo_desconto: document.getElementById('pos-discount-type').value,
-        forma_pagamento: document.getElementById('pos-payment').value, endereco_entrega: deliveryAddr
+        id: budgetId, tipo: 'orcamento', produto_nome: item.name, quantidade: item.qty,
+        data: date, observacao: '', valor_total: item.total, cliente_nome: clientName, 
+        forma_pagamento: document.getElementById('pos-payment').value, status: 'ABERTO', 
+        desconto: totals.disc, status_financeiro: document.getElementById('pos-discount-type').value, 
+        endereco_entrega: deliveryAddr, status_entrega: '', qtd_entregue: 0, vencimento: date, valor_pago: 0
     }));
 
-    const { error } = await sb.from('orcamentos').insert(quotesToInsert);
+    const { error } = await sb.from('logs').insert(quotesToInsert);
     if(error) { showLoading(false); return showToast("Erro: " + error.message, true); }
 
     clearCart();
@@ -1104,7 +1223,7 @@ async function saveQuote() {
 async function deleteQuote(id) {
     if(!confirm("Excluir orçamento?")) return;
     showLoading(true);
-    const { error } = await sb.from('orcamentos').delete().eq('id', id);
+    const { error } = await sb.from('logs').delete().eq('id', id).eq('tipo', 'orcamento');
     if(error) { showLoading(false); return showToast("Erro: " + error.message, true); }
     showToast("Excluído!");
     loadData();
@@ -1315,107 +1434,132 @@ async function saveProduction(e) {
     loadData();
 }
 
-async function cancelLogItem(uid) {
-    if (!uid || uid === 'undefined' || uid === 'null') {
-        return showToast("Erro: Esse registro não possui UID. Foi criado antes do ajuste no banco.", true);
-    }
-
-    const logItem = STATE.logs.find(l => String(l.uid) === String(uid));
-    
-    if (!logItem) {
-        return showToast("Erro: Registro não encontrado na memória.", true);
-    }
-
-    if (!confirm("Atenção! Estornar esse registro devolverá as quantidades ao estoque e cancelará movimentações. Confirma?")) return;
+// --- ESTORNOS ---
+async function estornarVenda(saleId) {
+    if(!confirm("Tem certeza que deseja estornar esta venda? Ela voltará a ser um Orçamento e o estoque será devolvido.")) return;
     showLoading(true);
 
-    const { error: errCancel } = await sb.from('logs').update({ status: 'CANCELADO' }).eq('uid', uid);
-    if (errCancel) { 
-        showLoading(false); 
-        return showToast("Erro ao cancelar: " + errCancel.message, true); 
-    }
-
-    const logType = logItem.type;
-    const logProdName = String(logItem.productName || '').trim();
-    const logQty = Number(logItem.quantity) || 0;
-    const logNote = String(logItem.note || '');
-    const logValue = Number(logItem.totalValue) || 0;
-
-    let prodFound = STATE.products.find(p => String(p.name).trim() === logProdName);
+    const saleItems = STATE.logs.filter(l => String(l.id) === String(saleId) && l.type === 'venda');
+    if(!saleItems.length) { showLoading(false); return showToast("Venda não encontrada", true); }
 
     try {
-        if (logType === 'venda') {
-            if (prodFound) {
-                let committed = Number(prodFound.committed) || 0;
-                await sb.from('produtos').update({ estoque_comprometido: Math.max(0, committed - logQty) }).eq('id', prodFound.id);
-            }
-        } 
-        else if (logType === 'fabricacao') {
-            if (prodFound) {
-                let physical = Number(prodFound.stock) || 0;
-                await sb.from('produtos').update({ estoque_fisico: Math.max(0, physical - logQty) }).eq('id', prodFound.id);
-            }
-        } 
-        else if (logType === 'recebimento') {
-            let match = logNote.match(/#(\d+)/);
-            if (match && match[1]) {
-                let origId = match[1];
-                for (let i = 0; i < STATE.logs.length; i++) {
-                    if (String(STATE.logs[i].id) === String(origId) && STATE.logs[i].type === 'venda') {
-                        let currentPaid = Number(STATE.logs[i].paidValue) || 0;
-                        let totalVal = Number(STATE.logs[i].totalValue) || 0;
-                        let newPaid = Math.max(0, currentPaid - logValue);
-                        
-                        let newStatus = STATE.logs[i].finStatus;
-                        if (newPaid < totalVal) newStatus = 'A RECEBER';
-                        
-                        await sb.from('logs').update({ valor_pago: newPaid, status_financeiro: newStatus }).eq('uid', STATE.logs[i].uid);
-                    }
-                }
-            }
-        } 
-        else if (logType === 'entrega') {
-            let match = logNote.match(/#(\d+)/);
-            if (match && match[1]) {
-                let origId = match[1];
-                
-                for (let i = 0; i < STATE.logs.length; i++) {
-                    if (String(STATE.logs[i].id) === String(origId) && STATE.logs[i].type === 'venda' && String(STATE.logs[i].productName).trim() === logProdName) {
-                        let currentDelivered = Number(STATE.logs[i].deliveredQty) || 0;
-                        let totalQty = Number(STATE.logs[i].quantity) || 0;
-                        let newDelivered = Math.max(0, currentDelivered - logQty);
-                        
-                        let newStatus = '';
-                        if (newDelivered === 0) newStatus = 'PENDENTE';
-                        else if (newDelivered < totalQty) newStatus = 'PARCIAL';
-                        else newStatus = 'ENTREGUE';
-                        
-                        await sb.from('logs').update({ qtd_entregue: newDelivered, status_entrega: newStatus }).eq('uid', STATE.logs[i].uid);
-                        
-                        if (prodFound) {
-                            let physical = Number(prodFound.stock) || 0;
-                            let committed = Number(prodFound.committed) || 0;
-                            await sb.from('produtos').update({ 
-                                estoque_fisico: physical + logQty,
-                                estoque_comprometido: committed + logQty
-                            }).eq('id', prodFound.id);
-                        }
-                        break;
-                    }
-                }
-            }
-        }
-        else if (logType === 'despesa') {
-            await sb.from('despesas').delete().eq('id', logItem.id);
-        }
-    } catch(err) {
-        console.error(err);
-        showLoading(false);
-        return showToast("Erro durante as atualizações de estorno.", true);
-    }
+        for(let item of saleItems) {
+            const prod = STATE.products.find(p => p.name === item.productName);
+            if(prod) {
+                let physical = Number(prod.stock) || 0;
+                let committed = Number(prod.committed) || 0;
+                let delivered = Number(item.deliveredQty) || 0;
+                let pending = Number(item.quantity) - delivered;
 
-    showToast("Estornado com sucesso!");
-    await loadData();
+                const {error} = await sb.from('produtos').update({
+                    estoque_fisico: physical + delivered,
+                    estoque_comprometido: Math.max(0, committed - pending)
+                }).eq('id', prod.id);
+                if(error) throw error;
+            }
+        }
+
+        await sb.from('logs').delete().like('observacao', `%Ref Venda #${saleId}%`).eq('tipo', 'entrega');
+        await sb.from('logs').delete().like('observacao', `%Ref Venda #${saleId}%`).eq('tipo', 'recebimento');
+
+        for(let item of saleItems) {
+            const {error} = await sb.from('logs').update({
+                tipo: 'orcamento',
+                status: 'ABERTO',
+                status_entrega: '',
+                qtd_entregue: 0,
+                valor_pago: 0,
+                status_financeiro: '$'
+            }).eq('uid', item.uid);
+            if(error) throw error;
+        }
+
+        showToast("Venda estornada para Orçamento!");
+        await loadData();
+    } catch(err) {
+        showLoading(false);
+        showToast("Erro ao estornar: " + err.message, true);
+    }
+}
+
+async function estornarRecebimento(id) {
+    if(!confirm("Deseja estornar a baixa desta conta? Ela voltará a ficar PENDENTE no financeiro.")) return;
+    showLoading(true);
+    try {
+        const items = STATE.logs.filter(l => String(l.id) === String(id) && l.type === 'venda');
+        for(let item of items) {
+            await sb.from('logs').update({
+                valor_pago: 0,
+                status_financeiro: 'PENDENTE'
+            }).eq('uid', item.uid);
+        }
+        await sb.from('logs').delete().like('observacao', `%Ref Venda #${id}%`).eq('tipo', 'recebimento');
+
+        showToast("Recebimento estornado!");
+        await loadData();
+    } catch(e) {
+        showLoading(false);
+        showToast("Erro: " + e.message, true);
+    }
+}
+
+async function estornarDespesa(id) {
+    if(!confirm("Estornar o pagamento desta despesa? Ela voltará a ficar PENDENTE no caixa.")) return;
+    showLoading(true);
+    try {
+        await sb.from('despesas').update({ status: 'PENDENTE' }).eq('id', id);
+        await sb.from('logs').delete().like('observacao', `%Ref Despesa #${id}%`).eq('tipo', 'despesa');
+        showToast("Pagamento estornado!");
+        loadData();
+    } catch(e) {
+        showLoading(false);
+        showToast("Erro: " + e.message, true);
+    }
+}
+
+async function estornarEntregaLog(uid) {
+    if(!confirm("Estornar esta entrega? Os itens devolvidos voltarão como saldo pendente no pedido e o estoque físico será devolvido.")) return;
+    showLoading(true);
+    try {
+        const entregaLog = STATE.logs.find(l => l.uid === uid && l.type === 'entrega');
+        if(!entregaLog) throw new Error("Log de entrega não encontrado");
+
+        let orderIdMatch = entregaLog.note.match(/#(\d+)/);
+        if(!orderIdMatch) throw new Error("ID do pedido não identificado na observação");
+        let orderId = orderIdMatch[1];
+
+        const vendaItem = STATE.logs.find(l => String(l.id) === String(orderId) && l.type === 'venda' && l.productName === entregaLog.productName);
+
+        if(vendaItem) {
+            let currentDelivered = Number(vendaItem.deliveredQty) || 0;
+            let newDelivered = Math.max(0, currentDelivered - entregaLog.quantity);
+            let totalQty = Number(vendaItem.quantity) || 0;
+            let newStatus = newDelivered === 0 ? 'PENDENTE' : (newDelivered < totalQty ? 'PARCIAL' : 'ENTREGUE');
+
+            await sb.from('logs').update({
+                qtd_entregue: newDelivered,
+                status_entrega: newStatus
+            }).eq('uid', vendaItem.uid);
+
+            const prod = STATE.products.find(p => p.name === entregaLog.productName);
+            if(prod) {
+                let physical = Number(prod.stock) || 0;
+                let committed = Number(prod.committed) || 0;
+                await sb.from('produtos').update({
+                    estoque_fisico: physical + entregaLog.quantity,
+                    estoque_comprometido: committed + entregaLog.quantity
+                }).eq('id', prod.id);
+            }
+        }
+
+        await sb.from('logs').delete().eq('uid', uid);
+
+        showToast("Entrega estornada!");
+        await loadData();
+    } catch(e) {
+        showLoading(false);
+        showToast("Erro ao estornar entrega: " + e.message, true);
+    }
 }
 
 // =========================================================
@@ -1465,8 +1609,6 @@ function renderPOSProducts() {
         </div>
     </button>`;
     }).join('');
-    
-    renderRecentHistory();
 }
 
 function addToCart(id) {
@@ -1513,15 +1655,22 @@ function clearCart() {
     CART=[]; 
     CURRENT_QUOTE_ID=null; 
     document.getElementById('pos-discount').value=0; 
-    
     document.getElementById('pos-custom-address-check').checked = false;
     document.getElementById('pos-custom-address-container').classList.add('hidden');
     document.getElementById('pos-custom-address').value = '';
-    
     renderCart(); 
 }
 
-function renderRecentHistory() { 
+function openPosHistoryModal() {
+    document.getElementById('pos-history-modal').classList.remove('hidden');
+    renderRecentHistoryModal();
+}
+
+function closePosHistoryModal() {
+    document.getElementById('pos-history-modal').classList.add('hidden');
+}
+
+function renderRecentHistoryModal() { 
     const salesMap = {};
     (STATE.logs||[]).filter(l => l.type === 'venda' && l.status !== 'CANCELADO').forEach(l => {
         if(!salesMap[l.id]) {
@@ -1530,22 +1679,90 @@ function renderRecentHistory() {
         salesMap[l.id].valorFinal += l.totalValue; 
     });
     
-    const recentSales = Object.values(salesMap).sort((a,b) => b.id - a.id).slice(0, 10); 
-    const histBody = document.getElementById('pos-recent-history');
+    let recentSales = Object.values(salesMap).sort((a,b) => b.id - a.id); 
+    
+    const term = document.getElementById('pos-hist-search')?.value.toLowerCase() || '';
+    const startDate = document.getElementById('pos-hist-start')?.value;
+    const endDate = document.getElementById('pos-hist-end')?.value;
+
+    if(term) {
+        recentSales = recentSales.filter(r => (r.client && r.client.toLowerCase().includes(term)) || String(r.id).includes(term));
+    }
+    if(startDate) recentSales = recentSales.filter(r => (r.date||'').split('T')[0] >= startDate);
+    if(endDate) recentSales = recentSales.filter(r => (r.date||'').split('T')[0] <= endDate);
+
+    const histBody = document.getElementById('pos-recent-history-modal');
     if(!histBody) return;
     
+    if(recentSales.length === 0) {
+        histBody.innerHTML = '<tr><td colspan="5" class="p-8 text-center text-slate-400 font-medium">Nenhuma venda encontrada.</td></tr>';
+        return;
+    }
+
     histBody.innerHTML = recentSales.map(r => {
         return `
         <tr class="border-b last:border-0 hover:bg-slate-50 transition">
-            <td class="p-2 text-slate-500 text-xs font-bold">#${r.id}</td>
-            <td class="p-2 truncate text-xs font-bold text-slate-700" style="max-width:90px">${r.client}</td>
-            <td class="p-2 text-right text-xs text-green-700 font-bold">${formatMoney(r.valorFinal)}</td>
-            <td class="p-2 text-center">
-                <button onclick="reprintSale('${r.id}')" class="text-slate-600 hover:text-orange-600"><i data-lucide="printer" width="14"></i></button>
+            <td class="p-3 text-slate-500 text-xs font-bold">#${r.id} <br><span class="text-[10px] font-normal">${formatDate(r.date)}</span></td>
+            <td class="p-3 truncate text-xs font-bold text-slate-700" style="max-width:120px">${r.client}</td>
+            <td class="p-3 text-right text-sm text-green-700 font-bold">${formatMoney(r.valorFinal)}</td>
+            <td class="p-3 text-center flex gap-1 justify-center">
+                <button onclick="reprintSale('${r.id}')" class="text-slate-600 hover:text-orange-600 bg-white border border-slate-200 p-2 rounded shadow-sm" title="Imprimir"><i data-lucide="printer" width="14"></i></button>
+                <button onclick="duplicateSaleToQuote('${r.id}')" class="text-amber-500 hover:text-amber-700 bg-white border border-amber-200 p-2 rounded shadow-sm" title="Duplicar para Orçamento"><i data-lucide="copy" width="14"></i></button>
+                <button onclick="estornarVenda('${r.id}')" class="text-red-500 hover:text-red-700 bg-white border border-red-200 p-2 rounded shadow-sm" title="Estornar para Orçamento"><i data-lucide="rotate-ccw" width="14"></i></button>
             </td>
         </tr>`;
     }).join(''); 
     lucide.createIcons();
+}
+
+async function duplicateSaleToQuote(saleId) {
+    if(!confirm("Deseja duplicar esta venda para um novo orçamento?")) return;
+    showLoading(true);
+
+    const saleItems = STATE.logs.filter(l => String(l.id) === String(saleId) && l.type === 'venda');
+    if(!saleItems.length) {
+        showLoading(false);
+        return showToast("Venda não encontrada!", true);
+    }
+
+    const newBudgetId = getNextId(STATE.logs, STATE.quotes);
+    const date = new Date(new Date().getTime() - (new Date().getTimezoneOffset() * 60000)).toISOString();
+
+    let quotesToInsert = saleItems.map(item => {
+        let obs = item.note || '';
+        if(obs === 'Venda PDV' || obs === 'Pronta Entrega PDV') obs = '';
+
+        return {
+            id: newBudgetId,
+            tipo: 'orcamento',
+            produto_nome: item.productName,
+            quantidade: item.quantity,
+            data: date,
+            observacao: obs,
+            valor_total: item.totalValue, 
+            cliente_nome: item.clientName,
+            forma_pagamento: item.paymentMethod || 'Dinheiro',
+            status: 'ABERTO', 
+            desconto: 0, 
+            status_financeiro: '$',
+            endereco_entrega: item.deliveryAddress || '',
+            status_entrega: '',
+            qtd_entregue: 0,
+            vencimento: date,
+            valor_pago: 0
+        };
+    });
+
+    const { error } = await sb.from('logs').insert(quotesToInsert);
+
+    if(error) {
+        showLoading(false);
+        return showToast("Erro ao duplicar: " + error.message, true);
+    }
+
+    showToast("Venda duplicada para Orçamento!");
+    await loadData(); 
+    navigate('quotes'); 
 }
 
 function renderQuotesList() {
@@ -1655,7 +1872,10 @@ function renderExpedition() {
                     <td class="p-4 text-xs font-bold text-slate-700">${l.note || '-'}</td>
                     <td class="p-4 font-medium text-slate-700 truncate max-w-[200px]">${l.clientName || '-'}</td>
                     <td class="p-4 text-sm">${l.productName}</td>
-                    <td class="p-4 text-center font-bold text-green-600">+ ${l.quantity}</td>
+                    <td class="p-4 text-center font-bold text-green-600 flex items-center justify-between">
+                        <span>+ ${l.quantity}</span>
+                        <button onclick="estornarEntregaLog('${l.uid}')" class="text-red-400 hover:text-red-600 p-1" title="Estornar Entrega"><i data-lucide="rotate-ccw" width="14"></i></button>
+                    </td>
                 </tr>`;
             }).join('');
         }
@@ -1782,6 +2002,7 @@ function renderFinance() {
                 <td class="p-3 font-bold">${formatMoney(rest)}</td>
                 <td class="p-3 text-right">
                     <button onclick="openEditReceivable('${r.id}', ${r.val}, ${r.paid}, '${r.dueDate}', '${r.payment}')" class="bg-blue-500 hover:bg-blue-600 text-white text-[10px] font-bold py-1 px-3 rounded shadow"><i data-lucide="edit-3" class="w-3 h-3 inline"></i> EDITAR</button>
+                    <button onclick="estornarRecebimento('${r.id}')" class="bg-white border border-slate-200 text-slate-500 hover:text-red-500 text-[10px] font-bold py-1 px-2 rounded shadow ml-1" title="Estornar"><i data-lucide="rotate-ccw" class="w-3 h-3"></i></button>
                 </td>
             </tr>`;
         }).join('');
@@ -1851,42 +2072,6 @@ function openEditReceivable(id, total, paid, due, method) {
     document.getElementById('rec-pay-val').value = '';
     
     document.getElementById('modal-receivable-edit').classList.remove('hidden');
-}
-
-function renderLogs() {
-    const body = document.getElementById('logs-table-body');
-    if(!body) return;
-
-    const sortedLogs = (STATE.logs||[]).slice().sort((a, b) => new Date(b.date) - new Date(a.date));
-
-    body.innerHTML = sortedLogs.map(l=> {
-        let textProd = l.productName;
-        if (l.type === 'venda') textProd += ` (x${l.quantity})`;
-        else if (l.type === 'entrega') textProd += ` (x${l.quantity})`;
-        else if (l.type === 'recebimento') textProd = l.note;
-        else if (l.type === 'fabricacao') textProd += ` (x${l.quantity})`;
-        else if (l.type === 'despesa') textProd += ` (x${l.quantity})`;
-
-        let valStr = '-';
-        if (l.type === 'venda') valStr = formatMoney(l.totalValue);
-        else if (l.type === 'recebimento') valStr = formatMoney(l.totalValue);
-        else if (l.type === 'despesa') valStr = formatMoney(l.totalValue);
-
-        let canCancel = l.status !== 'CANCELADO';
-        let isDespesa = l.type === 'despesa';
-
-        return `<tr class="hover:bg-slate-50 border-b">
-        <td class="p-4 text-xs">${formatDate(l.date)}</td>
-        <td class="p-4"><span class="px-2 py-1 rounded text-xs font-bold uppercase bg-slate-100">${l.type}</span></td>
-        <td class="p-4 font-medium text-slate-700">${textProd}</td>
-        <td class="p-4 text-xs">${l.clientName||'-'}</td>
-        <td class="p-4 font-bold text-sm ${isDespesa ? 'text-red-500' : ''}">${isDespesa ? '-' + valStr : valStr}</td>
-        <td class="p-4 text-xs font-bold ${l.status==='CANCELADO'?'text-red-500':'text-green-500'}">${l.status}</td>
-        <td class="p-4 text-center">
-            ${canCancel ? `<button onclick="cancelLogItem('${l.uid}')" class="text-red-500 text-xs border border-red-200 p-1 rounded hover:bg-red-50">Estornar</button>` : ''}
-        </td>
-        </tr>`;
-    }).join('');
 }
 
 function renderDashboard() { 
@@ -2045,34 +2230,53 @@ function renderProductionDash() {
     }
 }
 
+
 function renderInvoice(sale, isQuote) {
     const el = document.getElementById('print-area');
     const title = isQuote ? "ORÇAMENTO" : "VENDA / PEDIDO";
     const clientName = sale.clientName || 'Consumidor Final';
-    const cli = STATE.clients.find(c => c.name === clientName) || { name: clientName, doc: '', phone: '', address: '' };
+    
+    // Busca cliente no cadastro, se não encontrar usa os dados básicos do log
+    const cliFromState = STATE.clients.find(c => c.name === clientName);
+    const cli = cliFromState || { 
+        name: clientName, 
+        doc: '', 
+        phone: '', 
+        address: '' 
+    };
 
     let subtotal = 0;
     const itemsHtml = sale.items.map(i => {
         const itemTotal = i.qty * i.price;
         subtotal += itemTotal;
-        return `<tr><td>${i.name}</td><td align="center">${i.qty}</td><td align="right">${formatMoney(i.price)}</td><td align="right">${formatMoney(itemTotal)}</td></tr>`;
+        return `<tr>
+            <td>${i.name}</td>
+            <td align="center">${i.qty}</td>
+            <td align="right">${formatMoney(i.price)}</td>
+            <td align="right">${formatMoney(itemTotal)}</td>
+        </tr>`;
     }).join('');
 
     const discount = Number(sale.discount) || 0;
-    const finalTotal = subtotal - discount;
+    const finalTotal = Math.max(0, subtotal - discount);
     
+    // Endereço prioritário: campo específico da venda, senão endereço do cliente
     const addressToShow = sale.deliveryAddress 
-        ? `<div style="padding: 4px; background-color: #fef3c7; border-left: 3px solid #f59e0b; margin-top: 5px;"><!--<strong>ENTREGA:</strong>--><br>${sale.deliveryAddress}</div>` 
-        : cli.address;
+        ? `<div style="padding: 4px; background-color: #fef3c7; border-left: 3px solid #f59e0b; margin-top: 5px;">
+            <strong>ENTREGA:</strong><br>${sale.deliveryAddress}
+           </div>` 
+        : (cli.address || 'Endereço não informado');
 
     el.innerHTML = `
     <div class="invoice-full">
         <div class="header-section">
-            <div class="logo-area"><img src="https://lh3.googleusercontent.com/d/1SIoZ2JlalfMnGDZTXBk7ZYuPgwxX3odF" style="max-height: 80px;" /></div>
+            <div class="logo-area">
+                <img src="https://lh3.googleusercontent.com/d/1SIoZ2JlalfMnGDZTXBk7ZYuPgwxX3odF" style="max-height: 80px;" />
+            </div>
             <div class="company-details">
                 <h2 class="company-title">RV BLOCOS E ESTRUTURAS</h2>
-                <div class="company-info">CNPJ: 46.889.791/0001-53 </div>
-                <div class="company-info">Rua Mineiros, 532 | Jataí - GO | (64) 3636-4861 </div>
+                <div class="company-info">CNPJ: 46.889.791/0001-53</div>
+                <div class="company-info">Rua Mineiros, 532 | Jataí - GO | (64) 3636-4861</div>
             </div>
             <div class="doc-meta">
                 <div class="doc-title">${title}</div>
@@ -2083,23 +2287,51 @@ function renderInvoice(sale, isQuote) {
         <div class="info-grid">
             <div class="info-col">
                 <div class="col-header">Dados do Cliente</div>
-                <div class="col-content"><strong>${cli.name}</strong><br>${cli.doc}<br>${cli.phone}<br>${addressToShow}</div>
+                <div class="col-content">
+                    <strong>${cli.name}</strong><br>
+                    ${cli.doc || 'CPF/CNPJ não informado'}<br>
+                    ${cli.phone || 'Telefone não informado'}<br>
+                    ${addressToShow}
+                </div>
             </div>
             <div class="info-col">
                 <div class="col-header">Pagamento</div>
-                <div class="col-content"><strong>Forma:</strong> ${sale.paymentMethod || 'A Combinar'}<br><strong>Vendedor:</strong> RV Blocos</div>
+                <div class="col-content">
+                    <strong>Forma:</strong> ${sale.paymentMethod || 'A Combinar'}<br>
+                    <strong>Vendedor:</strong> RV Blocos
+                </div>
             </div>
         </div>
         <table class="full-table">
-            <thead><tr><th>Descrição</th><th align="center">Qtd</th><th align="right">Unit.</th><th align="right">Total</th></tr></thead>
+            <thead>
+                <tr>
+                    <th>Descrição</th>
+                    <th align="center">Qtd</th>
+                    <th align="right">Unit.</th>
+                    <th align="right">Total</th>
+                </tr>
+            </thead>
             <tbody>${itemsHtml}</tbody>
         </table>
         <div class="footer-section">
-            <div class="notes-area"><div class="notes-title">Observações:</div><div class="notes-text">Válido por 7 dias. Verifique os produtos no ato da entrega.</div></div>
+            <div class="notes-area">
+                <div class="notes-title">Observações:</div>
+                <div class="notes-text">Válido por 7 dias. Verifique os produtos no ato da entrega.</div>
+            </div>
             <div class="totals-area">
-                <div class="total-row"><span>Subtotal:</span><span>${formatMoney(subtotal)}</span></div>
-                ${discount > 0 ? `<div class="total-row" style="color:red"><span>Desconto:</span><span>- ${formatMoney(discount)}</span></div>` : ''}
-                <div class="total-row final"><span>TOTAL A PAGAR:</span><span>${formatMoney(finalTotal)}</span></div>
+                <div class="total-row">
+                    <span>Subtotal:</span>
+                    <span>${formatMoney(subtotal)}</span>
+                </div>
+                ${discount > 0 ? `
+                <div class="total-row" style="color:red">
+                    <span>Desconto:</span>
+                    <span>- ${formatMoney(discount)}</span>
+                </div>` : ''}
+                <div class="total-row final">
+                    <span>TOTAL A PAGAR:</span>
+                    <span>${formatMoney(finalTotal)}</span>
+                </div>
             </div>
         </div>
     </div>`;
@@ -2205,10 +2437,10 @@ function printOrder(id, encodedProdName) {
         </div>
     </div>`;
     
-    setTimeout(() => window.print(), 500);
+    setTimeout(() => { window.print(); limparAreaImpressao(); }, 500);
 }
 
-function printQuote(id) { const q = STATE.quotes.find(x => x.id == id); renderInvoice(q, true); setTimeout(() => window.print(), 500); }
+function printQuote(id) { const q = STATE.quotes.find(x => x.id == id); renderInvoice(q, true); setTimeout(() => { window.print(); limparAreaImpressao(); }, 500); }
 
 function printExpeditionHistory() {
     let histLogs = (STATE.logs || []).filter(l => l.type === 'entrega' && l.status !== 'CANCELADO');
@@ -2305,41 +2537,385 @@ function printExpeditionHistory() {
         </div>
     `;
     
-    setTimeout(() => window.print(), 500);
+    setTimeout(() => { window.print(); limparAreaImpressao(); }, 500);
 }
 
 function reprintSale(id) {
-    const items = STATE.logs.filter(l => String(l.id) === String(id));
-    if(!items.length) return;
-    
-    const totalDiscount = items[0].discount || 0;
-    const netTotal = items.reduce((acc, i) => acc + i.totalValue, 0);
-    
+    const items = STATE.logs.filter(l => String(l.id) === String(id) && l.type === 'venda');
+    if (!items.length) {
+        showToast("Venda não encontrada", true);
+        return;
+    }
+
+    const totalDiscount = Number(items[0].discount) || 0;
+    const netTotal = items.reduce((acc, i) => acc + (Number(i.totalValue) || 0), 0);
     const grossTotal = netTotal + totalDiscount;
     const fator = netTotal > 0 ? (grossTotal / netTotal) : 1;
-    
+
     const saleObj = {
-        id: id, 
-        date: items[0].date, 
-        clientName: items[0].clientName, 
-        paymentMethod: items[0].paymentMethod, 
+        id: id,
+        date: items[0].date,
+        clientName: items[0].clientName || 'Consumidor Final',
+        paymentMethod: items[0].paymentMethod || 'Não informado',
         discount: totalDiscount,
-        deliveryAddress: items[0].deliveryAddress,
+        deliveryAddress: items[0].deliveryAddress || '',
         items: items.map(i => {
-            const grossItemTotal = i.totalValue * fator; 
-            return { 
-                name: i.productName, 
-                qty: i.quantity, 
-                price: grossItemTotal / i.quantity, 
-                total: grossItemTotal 
+            const grossItemTotal = (Number(i.totalValue) || 0) * fator;
+            const qty = Number(i.quantity) || 1;
+            return {
+                name: i.productName,
+                qty: qty,
+                price: grossItemTotal / qty,
+                total: grossItemTotal
             };
         })
     };
-    
-    renderInvoice(saleObj, false); 
-    setTimeout(() => window.print(), 500);
+
+    const printArea = document.getElementById('print-area');
+    printArea.innerHTML = '';
+    renderInvoice(saleObj, false);
+
+    // Apenas esconde o modal para que ele não apareça na impressão
+    const modal = document.getElementById('pos-history-modal');
+    if (modal) modal.style.display = 'none';
+
+    // Aguarda a renderização completa antes de imprimir
+    setTimeout(() => {
+        window.print();
+        // Restaura o modal após a janela de impressão ser fechada
+        setTimeout(limparAreaImpressao, 500);
+    }, 200);
 }
-        
+
+function limparAreaImpressao() {
+    const printArea = document.getElementById('print-area');
+    printArea.innerHTML = '';  // limpa conteúdo gerado
+    const modal = document.getElementById('pos-history-modal');
+    if (modal) modal.style.display = ''; // restaura o display original (flex)
+}
+      
+function printProductionHistory() {
+    const prodLogs = (STATE.logs || [])
+        .filter(l => l.type === 'fabricacao' && l.status !== 'CANCELADO')
+        .sort((a,b) => new Date(b.date) - new Date(a.date));
+
+    if (prodLogs.length === 0) return showToast("Nenhuma produção registrada para imprimir.", true);
+
+    const company = {
+        name: "RV BLOCOS E ESTRUTURAS",
+        cnpj: "46.889.791/0001-53",
+        logoUrl: "https://lh3.googleusercontent.com/d/1SIoZ2JlalfMnGDZTXBk7ZYuPgwxX3odF"
+    };
+
+    let totalQtd = 0;
+    const rowsHtml = prodLogs.map(l => {
+        totalQtd += Number(l.quantity) || 0;
+        return `<tr>
+            <td style="border-bottom:1px solid #ccc; border-right:1px solid #000; padding:5px;">${formatDate(l.date)}</td>
+            <td style="border-bottom:1px solid #ccc; border-right:1px solid #000; padding:5px;">${l.productName}</td>
+            <td style="border-bottom:1px solid #ccc; padding:5px; text-align:center;">${l.quantity}</td>
+        </tr>`;
+    }).join('');
+
+    const el = document.getElementById('print-area');
+    el.innerHTML = `
+        <div class="invoice-box-orig" style="font-family:'Helvetica',sans-serif; max-width:800px; margin:auto; padding:15px;">
+            <div class="header-orig" style="display:flex; border:1px solid #000;">
+                <div class="logo-box-orig" style="width:100px; padding:5px; border-right:1px solid #000;">
+                    <img src="${company.logoUrl}" style="max-height:80px;" />
+                </div>
+                <div class="company-box-orig" style="flex:1; padding:10px;">
+                    <h2 style="margin:0; color:#ea580c;">${company.name}</h2>
+                    <p>CNPJ: ${company.cnpj}</p>
+                </div>
+                <div class="info-box-orig" style="width:200px; padding:10px;">
+                    <h3>RELATÓRIO DE PRODUÇÃO</h3>
+                    <p>${new Date().toLocaleDateString()}</p>
+                </div>
+            </div>
+            <div class="section-title-orig">REGISTROS DE FABRICAÇÃO</div>
+            <table class="items-table-orig" style="width:100%; border-collapse:collapse; border:1px solid #000;">
+                <thead><tr><th>Data</th><th>Produto</th><th>Qtd</th></tr></thead>
+                <tbody>${rowsHtml}</tbody>
+                <tfoot><tr><td colspan="2" style="text-align:right; font-weight:bold;">TOTAL</td><td style="text-align:center; font-weight:bold;">${totalQtd}</td></tr></tfoot>
+            </table>
+        </div>
+    `;
+    setTimeout(() => { window.print(); limparAreaImpressao(); }, 500);
+}
+
+function printDailyRevenue() {
+    showLoading(true);
+    const hojeLocalStr = getHojeLocalStr();
+    const salesMap = {};
+    STATE.logs.filter(l => l.type === 'venda' && l.status !== 'CANCELADO').forEach(l => {
+        try {
+            if ((l.date || '').split('T')[0] !== hojeLocalStr) return;
+        } catch (e) { return; }
+        if (!salesMap[l.id]) {
+            salesMap[l.id] = {
+                id: l.id,
+                date: l.date,
+                clientName: l.clientName || 'Consumidor Final',
+                paymentMethod: l.paymentMethod || 'Não Informado',
+                totalValue: 0
+            };
+        }
+        salesMap[l.id].totalValue += Number(l.totalValue) || 0;
+    });
+    let vendasHoje = Object.values(salesMap).sort((a, b) => new Date(a.date) - new Date(b.date));
+    if (vendasHoje.length === 0) {
+        showLoading(false);
+        return showToast("Nenhuma venda registrada no dia de hoje.", true);
+    }
+
+    let totalLiquido = 0;
+    let pagamentosMap = {};
+    let rowsHtml = vendasHoje.map(s => {
+        totalLiquido += s.totalValue;
+        const pgto = s.paymentMethod;
+        if (!pagamentosMap[pgto]) pagamentosMap[pgto] = 0;
+        pagamentosMap[pgto] += s.totalValue;
+        return `<tr style="border-bottom:1px solid #e2e8f0;">
+            <td style="padding:8px 5px; font-size:11px;">${formatDate(s.date)}</td>
+            <td style="padding:8px 5px; font-size:11px; font-weight:bold;">#${s.id}</td>
+            <td style="padding:8px 5px; font-size:11px;">${s.clientName}</td>
+            <td style="padding:8px 5px; font-size:11px; text-transform:uppercase;">${s.paymentMethod}</td>
+            <td style="padding:8px 5px; text-align:right; font-weight:bold; color:#059669;">${formatMoney(s.totalValue)}</td>
+        </tr>`;
+    }).join('');
+
+    let pgtoRowsHtml = Object.entries(pagamentosMap).map(([metodo, valor]) => `
+        <tr>
+            <td style="padding:6px; border-bottom:1px dashed #ccc; font-size:12px;">${metodo}</td>
+            <td style="padding:6px; border-bottom:1px dashed #ccc; text-align:right; font-weight:bold; font-size:12px;">${formatMoney(valor)}</td>
+        </tr>
+    `).join('');
+
+    const company = {
+        name: "RV BLOCOS E ESTRUTURAS",
+        cnpj: "46.889.791/0001-53",
+        logoUrl: "https://lh3.googleusercontent.com/d/1SIoZ2JlalfMnGDZTXBk7ZYuPgwxX3odF"
+    };
+
+    const filtroTexto = `Período: Vendas de Hoje (${formatDate(hojeLocalStr)})`;
+
+    const el = document.getElementById('print-area');
+    el.innerHTML = `
+        <div class="invoice-box-orig" style="font-family: 'Helvetica', sans-serif; max-width: 800px; margin: auto; padding: 20px;">
+            <div style="display: flex; justify-content: space-between; align-items: center; border-bottom: 2px solid #000; padding-bottom: 15px; margin-bottom: 20px;">
+                <div style="display: flex; gap: 15px; align-items: center;">
+                    <img src="${company.logoUrl}" style="max-height: 60px;" />
+                    <div>
+                        <h2 style="margin: 0; font-size: 18px; font-weight: bold; color: #ea580c;">${company.name}</h2>
+                        <p style="margin: 2px 0; font-size: 11px; color: #64748b;">CNPJ: ${company.cnpj}</p>
+                    </div>
+                </div>
+                <div style="text-align: right;">
+                    <h3 style="margin: 0; font-size: 16px; font-weight: bold;">FATURAMENTO DO DIA</h3>
+                    <p style="margin: 2px 0; font-size: 11px;">Impresso em: ${new Date().toLocaleString('pt-BR')}</p>
+                </div>
+            </div>
+
+            <div style="background-color: #f8fafc; border: 1px solid #cbd5e1; padding: 10px; margin-bottom: 20px; font-size: 12px; border-radius: 6px;">
+                <strong>Filtros aplicados:</strong> ${filtroTexto}
+            </div>
+
+            <table style="width: 100%; border-collapse: collapse; margin-bottom: 30px;">
+                <thead>
+                    <tr style="background-color: #f1f5f9; border-bottom: 2px solid #0f172a;">
+                        <th style="padding: 8px 5px; text-align: left; font-size: 11px;">Data</th>
+                        <th style="padding: 8px 5px; text-align: left; font-size: 11px;">Pedido</th>
+                        <th style="padding: 8px 5px; text-align: left; font-size: 11px;">Cliente</th>
+                        <th style="padding: 8px 5px; text-align: left; font-size: 11px;">Pgto</th>
+                        <th style="padding: 8px 5px; text-align: right; font-size: 11px;">Valor Liq.</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    ${rowsHtml}
+                </tbody>
+            </table>
+
+            <div style="display: flex; justify-content: space-between; gap: 20px;">
+                <div style="width: 45%; border: 1px solid #000; padding: 15px; border-radius: 6px;">
+                    <h4 style="margin: 0 0 10px 0; font-size: 13px; border-bottom: 1px solid #000; padding-bottom: 5px; text-transform: uppercase;">Receitas por Método</h4>
+                    <table style="width: 100%; border-collapse: collapse;">
+                        ${pgtoRowsHtml}
+                    </table>
+                </div>
+
+                <div style="width: 45%; border: 1px solid #000; padding: 15px; border-radius: 6px; background-color: #f8fafc;">
+                    <h4 style="margin: 0 0 10px 0; font-size: 13px; border-bottom: 1px solid #000; padding-bottom: 5px; text-transform: uppercase;">Resumo do Dia</h4>
+                    <table style="width: 100%; font-size: 12px; border-collapse: collapse;">
+                        <tr>
+                            <td style="padding: 5px 0;">Qtd. Pedidos:</td>
+                            <td style="padding: 5px 0; text-align: right; font-weight: bold;">${vendasHoje.length}</td>
+                        </tr>
+                        <tr>
+                            <td style="padding: 10px 0; font-size: 14px; font-weight: 900; border-top: 1px solid #000; margin-top: 5px;">LÍQUIDO TOTAL:</td>
+                            <td style="padding: 10px 0; font-size: 16px; font-weight: 900; text-align: right; border-top: 1px solid #000; margin-top: 5px; color: #0f172a;">${formatMoney(totalLiquido)}</td>
+                        </tr>
+                    </table>
+                </div>
+            </div>
+        </div>
+    `;
+
+    showLoading(false);
+    setTimeout(() => {
+        window.print();
+        limparAreaImpressao();
+    }, 500);
+}
+
+function openPeriodReportModal() {
+    const hoje = new Date();
+    const primeiro = new Date(hoje.getFullYear(), hoje.getMonth(), 1);
+    const ultimo = new Date(hoje.getFullYear(), hoje.getMonth() + 1, 0);
+    document.getElementById('rep-per-start').value = getLocalISODate(primeiro);
+    document.getElementById('rep-per-end').value = getLocalISODate(ultimo);
+    document.getElementById('modal-period-report').classList.remove('hidden');
+}
+function getLocalISODate(d) { return new Date(d.getTime() - (d.getTimezoneOffset() * 60000)).toISOString().split('T')[0]; }
+function closePeriodReportModal() { document.getElementById('modal-period-report').classList.add('hidden'); }
+
+function printPeriodReport() {
+    showLoading(true);
+
+    const start = document.getElementById('rep-per-start').value;
+    const end = document.getElementById('rep-per-end').value;
+    const payment = document.getElementById('rep-per-payment').value;
+    const client = document.getElementById('rep-per-client').value.toLowerCase().trim();
+
+    const salesMap = {};
+    STATE.logs.filter(l => l.type === 'venda' && l.status !== 'CANCELADO').forEach(l => {
+        if (!salesMap[l.id]) {
+            salesMap[l.id] = {
+                id: l.id,
+                date: l.date,
+                clientName: l.clientName || 'Consumidor Final',
+                paymentMethod: l.paymentMethod || 'Não Informado',
+                totalValue: 0
+            };
+        }
+        salesMap[l.id].totalValue += Number(l.totalValue) || 0;
+    });
+
+    let filteredSales = Object.values(salesMap);
+
+    if (start) filteredSales = filteredSales.filter(s => (s.date || '').split('T')[0] >= start);
+    if (end) filteredSales = filteredSales.filter(s => (s.date || '').split('T')[0] <= end);
+    if (payment !== 'Todos') filteredSales = filteredSales.filter(s => s.paymentMethod === payment);
+    if (client) filteredSales = filteredSales.filter(s => s.clientName.toLowerCase().includes(client));
+
+    filteredSales.sort((a, b) => new Date(a.date) - new Date(b.date));
+
+    if (filteredSales.length === 0) {
+        showLoading(false);
+        closePeriodReportModal();
+        return showToast("Nenhuma venda encontrada para esses filtros.", true);
+    }
+
+    let totalLiquido = 0;
+    let pagamentosMap = {};
+    let rowsHtml = filteredSales.map(s => {
+        totalLiquido += s.totalValue;
+        const pgto = s.paymentMethod;
+        if (!pagamentosMap[pgto]) pagamentosMap[pgto] = 0;
+        pagamentosMap[pgto] += s.totalValue;
+        return `<tr style="border-bottom:1px solid #e2e8f0;">
+            <td style="padding:8px 5px; font-size:11px;">${formatDate(s.date)}</td>
+            <td style="padding:8px 5px; font-size:11px; font-weight:bold;">#${s.id}</td>
+            <td style="padding:8px 5px; font-size:11px;">${s.clientName}</td>
+            <td style="padding:8px 5px; font-size:11px; text-transform:uppercase;">${s.paymentMethod}</td>
+            <td style="padding:8px 5px; text-align:right; font-weight:bold; color:#059669;">${formatMoney(s.totalValue)}</td>
+        </tr>`;
+    }).join('');
+
+    let pgtoRowsHtml = Object.entries(pagamentosMap).map(([metodo, valor]) => `
+        <tr>
+            <td style="padding:6px; border-bottom:1px dashed #ccc; font-size:12px;">${metodo}</td>
+            <td style="padding:6px; border-bottom:1px dashed #ccc; text-align:right; font-weight:bold; font-size:12px;">${formatMoney(valor)}</td>
+        </tr>
+    `).join('');
+
+    const company = {
+        name: "RV BLOCOS E ESTRUTURAS",
+        cnpj: "46.889.791/0001-53",
+        logoUrl: "https://lh3.googleusercontent.com/d/1SIoZ2JlalfMnGDZTXBk7ZYuPgwxX3odF"
+    };
+
+    const filtroTexto = `Período: ${start ? formatDate(start) : 'Início'} até ${end ? formatDate(end) : 'Hoje'} | Pgto: ${payment} ${client ? ' | Cliente: ' + client : ''}`;
+
+    const el = document.getElementById('print-area');
+    el.innerHTML = `
+        <div class="invoice-box-orig" style="font-family: 'Helvetica', sans-serif; max-width: 800px; margin: auto; padding: 20px;">
+            <div style="display: flex; justify-content: space-between; align-items: center; border-bottom: 2px solid #000; padding-bottom: 15px; margin-bottom: 20px;">
+                <div style="display: flex; gap: 15px; align-items: center;">
+                    <img src="${company.logoUrl}" style="max-height: 60px;" />
+                    <div>
+                        <h2 style="margin: 0; font-size: 18px; font-weight: bold; color: #ea580c;">${company.name}</h2>
+                        <p style="margin: 2px 0; font-size: 11px; color: #64748b;">CNPJ: ${company.cnpj}</p>
+                    </div>
+                </div>
+                <div style="text-align: right;">
+                    <h3 style="margin: 0; font-size: 16px; font-weight: bold;">RELATÓRIO DE VENDAS</h3>
+                    <p style="margin: 2px 0; font-size: 11px;">Impresso em: ${new Date().toLocaleString('pt-BR')}</p>
+                </div>
+            </div>
+
+            <div style="background-color: #f8fafc; border: 1px solid #cbd5e1; padding: 10px; margin-bottom: 20px; font-size: 12px; border-radius: 6px;">
+                <strong>Filtros aplicados:</strong> ${filtroTexto}
+            </div>
+
+            <table style="width: 100%; border-collapse: collapse; margin-bottom: 30px;">
+                <thead>
+                    <tr style="background-color: #f1f5f9; border-bottom: 2px solid #0f172a;">
+                        <th style="padding: 8px 5px; text-align: left; font-size: 11px;">Data</th>
+                        <th style="padding: 8px 5px; text-align: left; font-size: 11px;">Pedido</th>
+                        <th style="padding: 8px 5px; text-align: left; font-size: 11px;">Cliente</th>
+                        <th style="padding: 8px 5px; text-align: left; font-size: 11px;">Pgto</th>
+                        <th style="padding: 8px 5px; text-align: right; font-size: 11px;">Valor Liq.</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    ${rowsHtml}
+                </tbody>
+            </table>
+
+            <div style="display: flex; justify-content: space-between; gap: 20px;">
+                <div style="width: 45%; border: 1px solid #000; padding: 15px; border-radius: 6px;">
+                    <h4 style="margin: 0 0 10px 0; font-size: 13px; border-bottom: 1px solid #000; padding-bottom: 5px; text-transform: uppercase;">Receitas por Método</h4>
+                    <table style="width: 100%; border-collapse: collapse;">
+                        ${pgtoRowsHtml}
+                    </table>
+                </div>
+
+                <div style="width: 45%; border: 1px solid #000; padding: 15px; border-radius: 6px; background-color: #f8fafc;">
+                    <h4 style="margin: 0 0 10px 0; font-size: 13px; border-bottom: 1px solid #000; padding-bottom: 5px; text-transform: uppercase;">Resumo do Período</h4>
+                    <table style="width: 100%; font-size: 12px; border-collapse: collapse;">
+                        <tr>
+                            <td style="padding: 5px 0;">Qtd. Pedidos:</td>
+                            <td style="padding: 5px 0; text-align: right; font-weight: bold;">${filteredSales.length}</td>
+                        </tr>
+                        <tr>
+                            <td style="padding: 10px 0; font-size: 14px; font-weight: 900; border-top: 1px solid #000; margin-top: 5px;">LÍQUIDO TOTAL:</td>
+                            <td style="padding: 10px 0; font-size: 16px; font-weight: 900; text-align: right; border-top: 1px solid #000; margin-top: 5px; color: #0f172a;">${formatMoney(totalLiquido)}</td>
+                        </tr>
+                    </table>
+                </div>
+            </div>
+        </div>
+    `;
+
+    showLoading(false);
+    closePeriodReportModal();
+    setTimeout(() => {
+        window.print();
+        limparAreaImpressao();
+    }, 500);
+}
+
     </script>
   </body>
 </html>
