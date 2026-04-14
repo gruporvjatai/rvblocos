@@ -3,102 +3,59 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=yes, viewport-fit=cover">
-    <title>RV Blocos Mobile</title>
+    <title>RV Portal - Mobile</title>
     <link rel="icon" type="image/png" href="logo.png">
     <link rel="manifest" href="manifest.json">
     <meta name="theme-color" content="#0f172a">
     <script src="https://cdn.tailwindcss.com"></script>
     <script src="https://unpkg.com/lucide@latest"></script>
     <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/html2pdf.js/0.10.1/html2pdf.bundle.min.js"></script>
     <style>
         * { -webkit-tap-highlight-color: transparent; }
         body { background-color: #f1f5f9; font-family: 'Segoe UI', system-ui, -apple-system, sans-serif; padding-bottom: 70px; }
         .bottom-nav {
-            position: fixed;
-            bottom: 0;
-            left: 0;
-            right: 0;
-            background: rgba(255,255,255,0.96);
-            backdrop-filter: blur(10px);
+            position: fixed; bottom: 0; left: 0; right: 0;
+            background: rgba(255,255,255,0.96); backdrop-filter: blur(10px);
             border-top: 1px solid #e2e8f0;
-            display: flex;
-            justify-content: space-around;
-            align-items: center;
-            padding: 8px 12px 20px;
-            z-index: 40;
+            display: flex; justify-content: space-around; align-items: center;
+            padding: 6px 12px 18px; z-index: 50;
             box-shadow: 0 -2px 15px rgba(0,0,0,0.05);
         }
         .nav-item {
-            display: flex;
-            flex-direction: column;
-            align-items: center;
-            gap: 4px;
-            font-size: 11px;
-            font-weight: 600;
-            color: #94a3b8;
-            transition: all 0.2s;
-            background: transparent;
-            border: none;
-            padding: 6px 12px;
-            border-radius: 30px;
+            display: flex; flex-direction: column; align-items: center; gap: 4px;
+            font-size: 11px; font-weight: 600; color: #94a3b8;
+            transition: all 0.2s; background: transparent; border: none;
+            padding: 6px 12px; border-radius: 30px;
         }
-        .nav-item.active {
-            color: #ea580c;
-            background-color: #fff7ed;
-        }
+        .nav-item.active { color: #059669; background-color: #ecfdf5; }
         .nav-item i { width: 22px; height: 22px; }
         .tab-content { display: none; animation: fade 0.2s ease; }
         .tab-content.active-tab { display: block; }
         @keyframes fade { from { opacity: 0; transform: translateY(5px); } to { opacity: 1; transform: translateY(0); } }
         .sub-tab-bar {
-            display: flex;
-            gap: 12px;
-            background: white;
-            padding: 8px 16px;
-            border-bottom: 1px solid #e2e8f0;
-            margin-bottom: 16px;
-            border-radius: 40px;
-            margin-top: 8px;
+            display: flex; gap: 12px; background: white; padding: 8px 16px;
+            border-bottom: 1px solid #e2e8f0; margin-bottom: 16px; border-radius: 40px; margin-top: 8px;
         }
         .sub-tab {
-            flex: 1;
-            text-align: center;
-            padding: 8px 0;
-            font-weight: 700;
-            font-size: 14px;
-            border-radius: 40px;
-            background: #f1f5f9;
-            color: #475569;
-            transition: all 0.2s;
+            flex: 1; text-align: center; padding: 8px 0; font-weight: 700; font-size: 14px;
+            border-radius: 40px; background: #f1f5f9; color: #475569;
+            transition: all 0.2s; cursor: pointer;
         }
-        .sub-tab.active-sub {
-            background: #ea580c;
-            color: white;
-            box-shadow: 0 4px 8px rgba(234,88,12,0.2);
-        }
+        .sub-tab.active-sub { background: #059669; color: white; box-shadow: 0 4px 8px rgba(5,150,105,0.2); }
         .quick-grid {
-            display: grid;
-            grid-template-columns: repeat(2, 1fr);
-            gap: 16px;
-            padding: 20px;
+            display: grid; grid-template-columns: repeat(2, 1fr); gap: 16px; padding: 8px 4px;
         }
         .quick-card {
-            background: white;
-            border-radius: 24px;
-            padding: 20px 12px;
-            text-align: center;
-            box-shadow: 0 4px 12px rgba(0,0,0,0.05);
-            transition: all 0.2s;
-            border: 1px solid #f1f5f9;
+            background: white; border-radius: 24px; padding: 20px 12px; text-align: center;
+            box-shadow: 0 4px 12px rgba(0,0,0,0.05); border: 1px solid #f1f5f9;
+            transition: all 0.2s; cursor: pointer;
         }
         .quick-card:active { transform: scale(0.97); background: #fef9f5; }
-        .loader { border: 3px solid #e2e8f0; border-top: 3px solid #ea580c; border-radius: 50%; width: 28px; height: 28px; animation: spin 1s linear infinite; }
+        .loader { border: 3px solid #e2e8f0; border-top: 3px solid #059669; border-radius: 50%; width: 28px; height: 28px; animation: spin 1s linear infinite; }
         @keyframes spin { 0% { transform: rotate(0deg); } 100% { transform: rotate(360deg); } }
-        .btn-action { transition: 0.1s; }
-        .btn-action:active { transform: scale(0.96); }
         .modal-mobile { background: rgba(0,0,0,0.6); backdrop-filter: blur(4px); }
-        .cart-item-mobile { background: #faf9fe; border-radius: 20px; margin-bottom: 8px; }
-        ::-webkit-scrollbar { width: 4px; }
+        .btn-action:active { transform: scale(0.96); }
     </style>
 </head>
 <body class="bg-slate-100">
@@ -106,17 +63,17 @@
 <div id="loading" class="hidden fixed inset-0 bg-black/40 z-50 flex items-center justify-center"><div class="bg-white p-6 rounded-2xl flex flex-col items-center shadow-2xl"><div class="loader mb-3"></div><span class="font-bold text-slate-700">Carregando...</span></div></div>
 <div id="toast" class="hidden fixed bottom-24 left-4 right-4 bg-slate-900 text-white text-center py-3 px-4 rounded-xl text-sm font-medium z-50 shadow-xl transition-all"></div>
 
-<!-- CONTEÚDO PRINCIPAL -->
 <main class="px-4 pb-2 pt-2 max-w-3xl mx-auto">
     <!-- ABAS PRINCIPAIS -->
-    <div id="tab-dash" class="tab-content active-tab"><div id="view-dash-mobile"><h2 class="text-xl font-black text-slate-800 mb-4 flex items-center gap-2"><i data-lucide="layout-dashboard"></i> Visão Geral</h2><div id="dash-grid-mobile" class="grid grid-cols-2 gap-4"></div></div></div>
+    <div id="tab-dash" class="tab-content active-tab"><div id="view-dash"><h2 class="text-xl font-black text-slate-800 mb-4 flex items-center gap-2"><i data-lucide="layout-dashboard"></i> Visão Geral - Estoque</h2><div id="dash-grid" class="grid grid-cols-2 gap-4"></div></div></div>
     
     <div id="tab-orcamento" class="tab-content">
         <div class="sub-tab-bar">
-            <button class="sub-tab active-sub" data-sub="pdv">💸 PDV / Venda Rápida</button>
-            <button class="sub-tab" data-sub="list">📄 Orçamentos</button>
+            <div class="sub-tab active-sub" data-sub="pdv">💸 PDV / Venda</div>
+            <div class="sub-tab" data-sub="list">📄 Orçamentos</div>
         </div>
         <div id="sub-pdv" class="sub-content active-sub-content">
+            <!-- PDV completo do segundo código adaptado -->
             <div class="bg-white rounded-2xl shadow-sm p-3 mb-4">
                 <div class="relative"><i data-lucide="search" class="absolute left-3 top-3 text-slate-400 w-4 h-4"></i><input type="text" id="pos-search-mobile" placeholder="Buscar produto..." class="w-full p-3 pl-10 border rounded-xl text-sm bg-white" onkeyup="renderPOSProductsMobile()"></div>
             </div>
@@ -124,14 +81,14 @@
             <div class="fixed bottom-20 left-0 right-0 bg-white border-t shadow-xl rounded-t-2xl p-4 z-30 max-w-3xl mx-auto" style="margin-bottom: 65px;" id="cart-mobile-panel">
                 <div class="flex justify-between items-center mb-2"><span class="font-bold text-slate-700"><i data-lucide="shopping-cart" class="w-4 h-4 inline"></i> CARRINHO <span id="cart-count-mobile">0</span></span><button onclick="clearCartMobile()" class="text-xs text-red-500 font-bold px-2 py-1 bg-red-50 rounded-full">LIMPAR</button></div>
                 <div id="cart-items-mobile" class="max-h-48 overflow-y-auto space-y-2 mb-3"></div>
-                <div class="flex justify-between items-center mb-2"><span class="text-sm font-bold">Total:</span><span id="cart-total-mobile" class="text-xl font-black text-orange-600">R$ 0,00</span></div>
+                <div class="flex justify-between items-center mb-2"><span class="text-sm font-bold">Total:</span><span id="cart-total-mobile" class="text-xl font-black text-emerald-600">R$ 0,00</span></div>
                 <div class="grid grid-cols-2 gap-2 mb-2">
                     <select id="pos-client-mobile" class="p-2 border rounded-xl text-sm bg-white"></select>
-                    <select id="pos-payment-mobile" class="p-2 border rounded-xl text-sm"><option>Dinheiro</option><option>PIX</option><option>Cartão Crédito</option><option>Cartão Débito</option><option>Boleto 5 dias</option><option>Boleto 10 dias</option><option>Boleto 15 dias</option><option>PIX 7 dias</option></select>
+                    <select id="pos-payment-mobile" class="p-2 border rounded-xl text-sm"><option>Dinheiro</option><option>PIX</option><option>Cartão Crédito</option><option>Cartão Débito</option><option>Boleto 21 dias</option><option>Boleto 30 dias</option><option>Carteira</option></select>
                 </div>
                 <div class="flex gap-2">
-                    <button onclick="saveQuoteMobile()" class="flex-1 bg-blue-600 text-white py-3 rounded-xl font-bold text-sm shadow"><i data-lucide="save"></i> Orçamento</button>
-                    <button onclick="finalizeSaleMobile(false)" class="flex-1 bg-green-600 text-white py-3 rounded-xl font-bold text-sm shadow"><i data-lucide="check-circle"></i> Vender</button>
+                    <button onclick="saveQuoteMobile()" class="flex-1 bg-indigo-600 text-white py-3 rounded-xl font-bold text-sm shadow"><i data-lucide="save"></i> Orçamento</button>
+                    <button onclick="finalizeSaleMobile(false)" class="flex-1 bg-emerald-600 text-white py-3 rounded-xl font-bold text-sm shadow"><i data-lucide="check-circle"></i> Vender</button>
                 </div>
             </div>
         </div>
@@ -142,16 +99,16 @@
 
     <div id="tab-financeiro" class="tab-content"><div id="view-fin-mobile"><h2 class="text-xl font-black mb-3">💰 Financeiro</h2><div class="grid grid-cols-3 gap-2 mb-4"><div class="bg-green-50 p-3 rounded-xl text-center"><span class="text-xs text-green-700">Receitas</span><span id="fin-income-mobile" class="block font-bold text-green-700">R$0</span></div><div class="bg-red-50 p-3 rounded-xl text-center"><span class="text-xs text-red-700">Despesas</span><span id="fin-expenses-mobile" class="block font-bold text-red-700">R$0</span></div><div class="bg-blue-50 p-3 rounded-xl text-center"><span class="text-xs text-blue-700">Saldo</span><span id="fin-balance-mobile" class="block font-bold text-blue-700">R$0</span></div></div><div class="bg-white rounded-xl p-3 mb-4"><h3 class="font-bold">📋 Contas a Receber</h3><div id="fin-receivables-mobile" class="divide-y"></div></div><button onclick="document.getElementById('modal-expense').classList.remove('hidden')" class="w-full bg-red-500 text-white py-3 rounded-xl font-bold mb-3">➕ Lançar Saída</button></div></div>
 
-    <div id="tab-relatorios" class="tab-content"><div class="space-y-3 pb-20"><h2 class="text-xl font-black">📊 Relatórios</h2><button onclick="printDailyRevenueMobile()" class="w-full bg-white p-5 rounded-2xl shadow-sm text-left flex items-center gap-4"><i data-lucide="calendar-days" class="text-orange-500"></i><div><span class="font-bold block">Faturamento do Dia</span><span class="text-xs text-slate-500">Resumo de hoje</span></div></button><button onclick="openPeriodReportModalMobile()" class="w-full bg-white p-5 rounded-2xl shadow-sm text-left flex items-center gap-4"><i data-lucide="bar-chart-3" class="text-indigo-500"></i><div><span class="font-bold block">Vendas por Período</span><span class="text-xs text-slate-500">Filtro personalizado</span></div></button></div></div>
+    <div id="tab-relatorios" class="tab-content"><div class="space-y-3 pb-20"><h2 class="text-xl font-black">📊 Relatórios</h2><button onclick="showDailyReportMobile()" class="w-full bg-white p-5 rounded-2xl shadow-sm text-left flex items-center gap-4"><i data-lucide="calendar-days" class="text-emerald-500"></i><div><span class="font-bold block">Faturamento do Dia</span><span class="text-xs text-slate-500">Resumo de hoje</span></div></button><button onclick="openPeriodReportModalMobile()" class="w-full bg-white p-5 rounded-2xl shadow-sm text-left flex items-center gap-4"><i data-lucide="bar-chart-3" class="text-indigo-500"></i><div><span class="font-bold block">Vendas por Período</span><span class="text-xs text-slate-500">Filtro personalizado</span></div></button></div></div>
 
     <div id="tab-mais" class="tab-content">
         <div class="quick-grid">
-            <div class="quick-card" onclick="navigateMobile('clientes')"><i data-lucide="users" class="w-8 h-8 text-blue-600 mx-auto mb-2"></i><span class="font-bold block">Clientes</span></div>
-            <div class="quick-card" onclick="navigateMobile('produtos')"><i data-lucide="package" class="w-8 h-8 text-emerald-600 mx-auto mb-2"></i><span class="font-bold block">Produtos</span></div>
-            <div class="quick-card" onclick="navigateMobile('producao')"><i data-lucide="hammer" class="w-8 h-8 text-amber-600 mx-auto mb-2"></i><span class="font-bold block">Produção</span></div>
-            <div class="quick-card" onclick="navigateMobile('expedicao')"><i data-lucide="truck" class="w-8 h-8 text-slate-700 mx-auto mb-2"></i><span class="font-bold block">Expedição</span></div>
-            <div class="quick-card" onclick="navigateMobile('usuarios')"><i data-lucide="user-cog" class="w-8 h-8 text-purple-600 mx-auto mb-2"></i><span class="font-bold block">Usuários</span></div>
-            <div class="quick-card" onclick="fazerLogoffMobile()"><i data-lucide="log-out" class="w-8 h-8 text-red-500 mx-auto mb-2"></i><span class="font-bold block">Sair</span></div>
+            <div class="quick-card" onclick="navigateModule('clientes')"><i data-lucide="users" class="w-8 h-8 text-blue-600 mx-auto mb-2"></i><span class="font-bold block">Clientes</span></div>
+            <div class="quick-card" onclick="navigateModule('produtos')"><i data-lucide="package" class="w-8 h-8 text-orange-600 mx-auto mb-2"></i><span class="font-bold block">Produtos</span></div>
+            <div class="quick-card" onclick="navigateModule('producao')"><i data-lucide="hammer" class="w-8 h-8 text-amber-600 mx-auto mb-2"></i><span class="font-bold block">Produção</span></div>
+            <div class="quick-card" onclick="navigateModule('expedicao')"><i data-lucide="truck" class="w-8 h-8 text-slate-700 mx-auto mb-2"></i><span class="font-bold block">Expedição</span></div>
+            <div class="quick-card" onclick="navigateModule('usuarios')"><i data-lucide="user-cog" class="w-8 h-8 text-purple-600 mx-auto mb-2"></i><span class="font-bold block">Usuários</span></div>
+            <div class="quick-card" onclick="fazerLogout()"><i data-lucide="log-out" class="w-8 h-8 text-red-500 mx-auto mb-2"></i><span class="font-bold block">Sair</span></div>
         </div>
     </div>
 </main>
@@ -164,239 +121,117 @@
     <button class="nav-item" data-tab="mais"><i data-lucide="grid"></i><span>Mais</span></button>
 </div>
 
-<!-- MODAIS GENÉRICOS -->
-<div id="modal-expense" class="hidden fixed inset-0 bg-black/50 z-50 flex items-center justify-center p-4 modal-mobile"><div class="bg-white rounded-2xl w-full max-w-md p-5"><h3 class="font-bold text-lg mb-3">Nova Saída</h3><select id="exp-item" class="w-full p-3 border rounded-xl mb-2"><option>Cimento</option><option>Areia</option><option>Frete</option><option>Salário</option></select><div class="grid grid-cols-2 gap-2 mb-2"><input type="number" id="exp-qty" placeholder="Qtd" class="p-3 border rounded-xl"><select id="exp-unit" class="p-3 border rounded-xl"><option>Un</option><option>Sc</option><option>Kg</option></select></div><input type="number" id="exp-cost" placeholder="Custo R$" class="w-full p-3 border rounded-xl mb-2"><input type="date" id="exp-date" class="w-full p-3 border rounded-xl mb-2"><input type="text" id="exp-note" placeholder="Obs" class="w-full p-3 border rounded-xl mb-4"><div class="flex gap-3"><button onclick="document.getElementById('modal-expense').classList.add('hidden')" class="flex-1 p-3 bg-slate-200 rounded-xl">Cancelar</button><button onclick="saveExpenseMobile()" class="flex-1 p-3 bg-red-600 text-white rounded-xl">Salvar</button></div></div></div>
+<!-- VIEWS DOS MÓDULOS ADICIONAIS (Clientes, Produtos, Produção, Expedição, Usuários) -->
+<div id="module-view" class="hidden fixed inset-0 bg-slate-100 z-40 flex flex-col" style="top: 0; left: 0; right: 0; bottom: 0;">
+    <div class="bg-white p-4 flex items-center gap-3 shadow-md sticky top-0 z-10">
+        <button onclick="closeModuleView()" class="p-2 bg-slate-100 rounded-full"><i data-lucide="arrow-left" class="w-5 h-5"></i></button>
+        <h2 class="text-xl font-black text-slate-800" id="module-title">Módulo</h2>
+    </div>
+    <div class="flex-1 overflow-y-auto p-4" id="module-content"></div>
+</div>
 
-<div id="client-form-mobile" class="hidden fixed inset-0 bg-black/50 z-50 flex items-center justify-center p-4"><form onsubmit="saveClientMobile(event)" class="bg-white p-5 rounded-2xl w-full max-w-md"><h3 class="font-bold mb-3">Cliente</h3><input type="hidden" id="cli-id-mobile"><input type="text" id="cli-name-mobile" placeholder="Nome" required class="w-full p-3 border rounded-xl mb-2"><input type="text" id="cli-phone-mobile" placeholder="Telefone" class="w-full p-3 border rounded-xl mb-2"><input type="text" id="cli-doc-mobile" placeholder="CPF/CNPJ" class="w-full p-3 border rounded-xl mb-2"><input type="text" id="cli-addr-mobile" placeholder="Endereço" class="w-full p-3 border rounded-xl mb-4"><div class="flex gap-2"><button type="button" onclick="closeClientModal()" class="flex-1 p-3 bg-slate-200 rounded-xl">Cancelar</button><button type="submit" class="flex-1 p-3 bg-blue-600 text-white rounded-xl">Salvar</button></div></form></div>
+<!-- MODAIS GLOBAIS -->
+<div id="modal-expense" class="hidden fixed inset-0 bg-black/50 z-50 flex items-center justify-center p-4 modal-mobile"><div class="bg-white rounded-2xl w-full max-w-md p-5"><h3 class="font-bold text-lg mb-3">Nova Saída</h3><select id="exp-item" class="w-full p-3 border rounded-xl mb-2"><option>Fornecedor</option><option>Salário</option><option>Energia</option><option>Água</option><option>Internet</option><option>Combustível</option><option>Manutenção</option><option>Outros</option></select><input type="text" id="exp-provider" placeholder="Fornecedor/Nome" class="w-full p-3 border rounded-xl mb-2"><input type="number" id="exp-cost" placeholder="Valor R$" class="w-full p-3 border rounded-xl mb-2"><input type="date" id="exp-date" class="w-full p-3 border rounded-xl mb-2"><input type="text" id="exp-note" placeholder="Observação" class="w-full p-3 border rounded-xl mb-4"><div class="flex gap-3"><button onclick="document.getElementById('modal-expense').classList.add('hidden')" class="flex-1 p-3 bg-slate-200 rounded-xl">Cancelar</button><button onclick="saveExpenseMobile()" class="flex-1 p-3 bg-red-600 text-white rounded-xl">Salvar</button></div></div></div>
 
-<div id="prod-form-mobile" class="hidden fixed inset-0 bg-black/50 z-50 flex items-center justify-center p-4"><form onsubmit="saveProductMobile(event)" class="bg-white p-5 rounded-2xl w-full"><h3 class="font-bold">Produto</h3><input type="hidden" id="prd-id-mobile"><input type="text" id="prd-name-mobile" placeholder="Nome" required class="w-full p-3 border rounded-xl my-2"><input type="text" id="prd-cat-mobile" placeholder="Categoria" class="w-full p-3 border rounded-xl mb-2"><input type="number" id="prd-price-mobile" step="0.01" placeholder="Preço" class="w-full p-3 border rounded-xl mb-2"><input type="number" id="prd-stock-mobile" placeholder="Estoque" class="w-full p-3 border rounded-xl mb-4"><div class="flex gap-2"><button type="button" onclick="closeProdModal()" class="flex-1 p-3 bg-slate-200 rounded-xl">Cancelar</button><button type="submit" class="flex-1 p-3 bg-blue-600 rounded-xl text-white">Salvar</button></div></form></div>
+<div id="modal-receivable-edit" class="hidden fixed inset-0 bg-black/50 z-50 flex items-center justify-center p-4 modal-mobile"><div class="bg-white rounded-2xl w-full max-w-md p-5"><h3 class="font-bold text-lg mb-3">Baixar Recebimento</h3><input type="hidden" id="rec-id"><div class="flex justify-between bg-slate-100 p-3 rounded mb-3"><span>Total: <span id="rec-total-lbl"></span></span><span>Falta: <span id="rec-pending-lbl" class="text-red-600"></span></span></div><select id="rec-method" class="w-full p-3 border rounded-xl mb-2"><option>PIX</option><option>Dinheiro</option><option>Cartão</option><option>Transferência</option></select><input type="number" id="rec-pay-val" placeholder="Valor recebido" class="w-full p-3 border rounded-xl mb-4"><div class="flex gap-3"><button onclick="document.getElementById('modal-receivable-edit').classList.add('hidden')" class="flex-1 p-3 bg-slate-200 rounded-xl">Cancelar</button><button onclick="saveReceivableEditMobile()" class="flex-1 p-3 bg-green-600 text-white rounded-xl">Confirmar</button></div></div></div>
 
-<div id="modal-period-report-mobile" class="hidden fixed inset-0 bg-black/50 z-50 flex items-center justify-center p-4"><div class="bg-white rounded-2xl p-5 w-full"><h3 class="font-bold">Filtro de Vendas</h3><div class="grid grid-cols-2 gap-2 my-3"><input type="date" id="rep-per-start-mobile" class="p-2 border rounded"><input type="date" id="rep-per-end-mobile" class="p-2 border rounded"></div><select id="rep-per-payment-mobile" class="w-full p-2 border rounded mb-2"><option value="Todos">Todos os Pagamentos</option><option>Dinheiro</option><option>PIX</option><option>Cartão</option></select><input type="text" id="rep-per-client-mobile" placeholder="Cliente" class="w-full p-2 border rounded mb-4"><div class="flex gap-2"><button onclick="closePeriodModal()" class="flex-1 p-3 bg-slate-200 rounded-xl">Cancelar</button><button onclick="printPeriodReportMobile()" class="flex-1 p-3 bg-indigo-600 text-white rounded-xl">Gerar</button></div></div></div>
+<div id="modal-period-report-mobile" class="hidden fixed inset-0 bg-black/50 z-50 flex items-center justify-center p-4"><div class="bg-white rounded-2xl p-5 w-full"><h3 class="font-bold">Filtro de Vendas</h3><div class="grid grid-cols-2 gap-2 my-3"><input type="date" id="rep-per-start-mobile" class="p-2 border rounded"><input type="date" id="rep-per-end-mobile" class="p-2 border rounded"></div><select id="rep-per-payment-mobile" class="w-full p-2 border rounded mb-2"><option value="Todos">Todos os Pagamentos</option><option>Dinheiro</option><option>PIX</option><option>Cartão Crédito</option><option>Cartão Débito</option></select><input type="text" id="rep-per-client-mobile" placeholder="Cliente" class="w-full p-2 border rounded mb-4"><div class="flex gap-2"><button onclick="closePeriodModal()" class="flex-1 p-3 bg-slate-200 rounded-xl">Cancelar</button><button onclick="printPeriodReportMobile()" class="flex-1 p-3 bg-indigo-600 text-white rounded-xl">Gerar</button></div></div></div>
 
-<!-- JAVASCRIPT PRINCIPAL -->
 <script>
-const supabaseUrl = 'https://irbgmmoxiedhcbfkanmu.supabase.co';
-const supabaseKey = 'sb_publishable_bhGr9DvGGg-gYWXsd_rf3w_CAZdF7n9';
+// ==================== SUPABASE CONFIG ====================
+const supabaseUrl = 'https://lyieiqhkspbowsrlngvn.supabase.co';
+const supabaseKey = 'sb_publishable_B2a4vA22qf4XGcrxPDRAaw_13rW51uI';
 const sb = supabase.createClient(supabaseUrl, supabaseKey);
-let STATE = { products: [], clients: [], logs: [], quotes: [], expenses: [], users: [], custoMaterialB10: 0 };
+
+let STATE = { products: [], clients: [], logs: [], quotes: [], sales: [], expenses: [], users: [] };
 let CART = [];
 let CURRENT_QUOTE_ID = null;
+let currentDocType = 'orcamento';
 
+// ==================== UTILS ====================
 function showToast(msg, err) { const t = document.getElementById('toast'); t.innerText = msg; t.className = `fixed bottom-24 left-4 right-4 text-white text-center py-3 px-4 rounded-xl text-sm font-medium z-50 shadow-xl transition-all ${err ? 'bg-red-600' : 'bg-slate-900'}`; t.style.display = 'block'; setTimeout(()=>t.style.display='none', 3000); }
 function showLoading(show) { document.getElementById('loading').style.display = show ? 'flex' : 'none'; }
 function formatMoney(v) { return parseFloat(v||0).toLocaleString('pt-BR',{style:'currency',currency:'BRL'}); }
 function formatDate(d) { if(!d) return '-'; let p = d.split('T')[0].split('-'); return `${p[2]}/${p[1]}/${p[0]}`; }
 function getHojeLocalStr() { return new Date(new Date().getTime() - (new Date().getTimezoneOffset()*60000)).toISOString().split('T')[0]; }
+function getNextId(arr) { let max=0; arr.forEach(i=>{if(parseInt(i.id)>max) max=parseInt(i.id)}); return max+1; }
 
-// LOAD DATA
-async function loadDataMobile() {
+// ==================== LOAD DATA ====================
+async function loadData() {
     showLoading(true);
     try {
-        const [prod, cli, logs, desp, conf, usr] = await Promise.all([
-            sb.from('produtos').select('*'), sb.from('clientes').select('*'), sb.from('logs').select('*'), sb.from('despesas').select('*'),
-            sb.from('configuracoes').select('*').eq('chave','custo_material_b10').maybeSingle(), sb.from('usuarios').select('*')
+        const [prod, cli, logs, desp, usr] = await Promise.all([
+            sb.from('produtos').select('*'), sb.from('clientes').select('*'), sb.from('logs').select('*'),
+            sb.from('despesas').select('*'), sb.from('usuarios').select('*')
         ]);
         STATE.products = (prod.data||[]).map(p=>({id:p.id,name:p.nome,category:p.categoria,price:Number(p.preco),stock:Number(p.estoque_fisico),committed:Number(p.estoque_comprometido),available:Number(p.estoque_fisico)-Number(p.estoque_comprometido)}));
         STATE.clients = (cli.data||[]).map(c=>({id:c.id,name:c.nome,phone:c.telefone,doc:c.documento,address:c.endereco}));
         STATE.users = (usr.data||[]).map(u=>({id:u.id,name:u.nome,login:u.email,type:u.nivel_acesso,status:u.status}));
-        STATE.expenses = (desp.data||[]).map(e=>({id:e.id,item:e.item,quantity:Number(e.quantidade),unit:e.unidade,cost:Number(e.custo),date:e.data,note:e.observacao}));
-        STATE.custoMaterialB10 = conf.data ? Number(conf.data.valor) : 0;
-        const quotesMap={}; STATE.logs=[];
+        STATE.expenses = (desp.data||[]).map(e=>({id:e.id,item:e.item,cost:Number(e.custo),date:e.data,note:e.observacao,status:e.status||'PENDENTE'}));
+        
+        const quotesMap={}, salesMap={};
+        STATE.logs=[];
         (logs.data||[]).forEach(l=>{
             if(l.tipo==='orcamento'){
-                if(!quotesMap[l.id]) quotesMap[l.id]={id:l.id,date:l.data,clientName:l.cliente_nome,items:[],total:0,status:l.status,discount:Number(l.desconto),discountType:l.status_financeiro||'$',paymentMethod:l.forma_pagamento,deliveryAddress:l.endereco_entrega};
+                if(!quotesMap[l.id]) quotesMap[l.id]={id:l.id,date:l.data,clientName:l.cliente_nome,items:[],total:0,status:l.status||'ABERTO',discount:Number(l.desconto),discountType:l.status_financeiro||'$',paymentMethod:l.forma_pagamento,deliveryAddress:l.endereco_entrega};
                 const unitPrice = l.quantidade>0 ? Number(l.valor_total)/Number(l.quantidade):0;
                 quotesMap[l.id].items.push({name:l.produto_nome,qty:Number(l.quantidade),price:unitPrice,total:Number(l.valor_total)});
                 quotesMap[l.id].total += Number(l.valor_total);
-            } else {
-                STATE.logs.push({uid:l.uid,id:l.id,type:l.tipo,productName:l.produto_nome,quantity:Number(l.quantidade),date:l.data,note:l.observacao,totalValue:Number(l.valor_total),clientName:l.cliente_nome,paymentMethod:l.forma_pagamento,deliveryStatus:l.status_entrega,deliveredQty:Number(l.qtd_entregue),discount:Number(l.desconto),finStatus:l.status_financeiro,dueDate:l.vencimento,paidValue:Number(l.valor_pago),deliveryAddress:l.endereco_entrega});
+            } else if(l.tipo==='venda'){
+                if(!salesMap[l.id]) salesMap[l.id]={id:l.id,date:l.data,clientName:l.cliente_nome,items:[],total:0,paymentMethod:l.forma_pagamento,discount:Number(l.desconto),deliveryAddress:l.endereco_entrega};
+                const unitPrice = l.quantidade>0 ? Number(l.valor_total)/Number(l.quantidade):0;
+                salesMap[l.id].items.push({name:l.produto_nome,qty:Number(l.quantidade),price:unitPrice,total:Number(l.valor_total)});
+                salesMap[l.id].total += Number(l.valor_total);
             }
+            STATE.logs.push({uid:l.uid,id:l.id,type:l.tipo,productName:l.produto_nome,quantity:Number(l.quantidade),date:l.data,totalValue:Number(l.valor_total),clientName:l.cliente_nome,paymentMethod:l.forma_pagamento,finStatus:l.status_financeiro,paidValue:Number(l.valor_pago),dueDate:l.vencimento,deliveryStatus:l.status_entrega,deliveredQty:Number(l.qtd_entregue)});
         });
         STATE.quotes = Object.values(quotesMap);
-        updateClientSelectsMobile();
-        renderDashMobile();
+        STATE.sales = Object.values(salesMap);
+        updateClientSelects();
+        renderDash();
         renderPOSProductsMobile();
         renderQuotesMobile();
         renderFinanceMobile();
         showLoading(false);
-    } catch(e) { showLoading(false); showToast("Erro: "+e.message,true); }
+    } catch(e) { showLoading(false); showToast("Erro ao carregar", true); }
 }
 
-function updateClientSelectsMobile() {
-    const opts = '<option value="">Consumidor Final</option>'+STATE.clients.map(c=>`<option value="${c.id}">${c.name}</option>`).join('');
-    document.getElementById('pos-client-mobile').innerHTML = opts;
-}
-
-function renderDashMobile() {
-    const grid = document.getElementById('dash-grid-mobile');
-    if(!grid) return;
-    grid.innerHTML = STATE.products.map(p=>`<div class="bg-white p-3 rounded-xl shadow-sm border"><div class="font-bold text-sm truncate">${p.name}</div><div class="text-xs text-slate-500">Estoque: ${p.stock}</div><div class="text-green-700 font-bold text-sm">${formatMoney(p.price)}</div></div>`).join('');
-    lucide.createIcons();
-}
-
-function renderPOSProductsMobile() {
-    const term = document.getElementById('pos-search-mobile')?.value.toLowerCase()||'';
-    const grid = document.getElementById('pos-products-mobile');
-    if(!grid) return;
-    grid.innerHTML = STATE.products.filter(p=>p.name.toLowerCase().includes(term)).map(p=>`<button onclick="addToCartMobile('${p.id}')" class="bg-white p-3 rounded-xl shadow-sm text-left hover:border-orange-300 border"><span class="font-bold text-sm block">${p.name}</span><span class="text-orange-600 text-sm font-bold">${formatMoney(p.price)}</span><span class="text-[10px] text-slate-400 block">disp: ${p.available}</span></button>`).join('');
-    lucide.createIcons();
-}
-
-function addToCartMobile(id){
-    const p = STATE.products.find(x=>x.id==id);
-    const idx = CART.findIndex(x=>x.prodId==id);
-    if(idx>=0) CART[idx].qty++;
-    else CART.push({prodId:p.id,name:p.name,price:p.price,qty:1,total:p.price});
-    renderCartMobile();
-}
-function renderCartMobile(){
-    const container = document.getElementById('cart-items-mobile');
-    const total = CART.reduce((a,b)=>a+(b.qty*b.price),0);
-    document.getElementById('cart-total-mobile').innerText = formatMoney(total);
-    document.getElementById('cart-count-mobile').innerText = CART.length;
-    if(!CART.length){ container.innerHTML='<div class="text-center text-slate-400 text-xs py-2">Carrinho vazio</div>'; return; }
-    container.innerHTML = CART.map((i,idx)=>`<div class="flex justify-between items-center bg-slate-50 p-2 rounded-xl"><div><span class="font-medium text-sm">${i.name}</span><div class="text-xs">${formatMoney(i.price)}</div></div><div class="flex items-center gap-2"><button onclick="CART.splice(${idx},1);renderCartMobile()" class="text-red-400"><i data-lucide="trash-2" width="14"></i></button><span class="font-bold">${i.qty}</span><button onclick="CART[${idx}].qty++; renderCartMobile()" class="bg-orange-100 px-2 rounded">+</button></div></div>`).join('');
-    lucide.createIcons();
-}
+function updateClientSelects() { document.getElementById('pos-client-mobile').innerHTML = '<option value="">Consumidor Final</option>' + STATE.clients.map(c=>`<option value="${c.id}">${c.name}</option>`).join(''); }
+function renderDash() { const grid=document.getElementById('dash-grid'); if(grid) grid.innerHTML = STATE.products.map(p=>`<div class="bg-white p-3 rounded-xl shadow-sm border"><div class="font-bold text-sm">${p.name}</div><div class="text-xs text-slate-500">Estoque: ${p.stock}</div><div class="text-emerald-700 font-bold">${formatMoney(p.price)}</div></div>`).join(''); lucide.createIcons(); }
+function renderPOSProductsMobile(){ const term=document.getElementById('pos-search-mobile')?.value||''; const grid=document.getElementById('pos-products-mobile'); if(grid) grid.innerHTML = STATE.products.filter(p=>p.name.toLowerCase().includes(term.toLowerCase())).map(p=>`<button onclick="addToCartMobile('${p.id}')" class="bg-white p-3 rounded-xl shadow-sm text-left border"><span class="font-bold text-sm">${p.name}</span><span class="block text-emerald-600">${formatMoney(p.price)}</span><span class="text-[10px] text-slate-400">disp:${p.available}</span></button>`).join(''); lucide.createIcons(); }
+function addToCartMobile(id){ const p=STATE.products.find(x=>x.id==id); const idx=CART.findIndex(x=>x.prodId==id); if(idx>=0) CART[idx].qty++; else CART.push({prodId:p.id,name:p.name,price:p.price,qty:1,total:p.price}); renderCartMobile(); }
+function renderCartMobile(){ const total=CART.reduce((a,b)=>a+(b.qty*b.price),0); document.getElementById('cart-total-mobile').innerText=formatMoney(total); document.getElementById('cart-count-mobile').innerText=CART.length; const container=document.getElementById('cart-items-mobile'); if(!CART.length){ container.innerHTML='<div class="text-center text-slate-400 text-xs py-2">Carrinho vazio</div>'; return; } container.innerHTML=CART.map((i,idx)=>`<div class="flex justify-between items-center bg-slate-50 p-2 rounded-xl"><div><span class="font-medium text-sm">${i.name}</span><div class="text-xs">${formatMoney(i.price)}</div></div><div class="flex items-center gap-2"><button onclick="CART.splice(${idx},1);renderCartMobile()" class="text-red-400"><i data-lucide="trash-2" width="14"></i></button><span class="font-bold">${i.qty}</span><button onclick="CART[${idx}].qty++; renderCartMobile()" class="bg-emerald-100 px-2 rounded">+</button></div></div>`).join(''); lucide.createIcons(); }
 function clearCartMobile(){ CART=[]; CURRENT_QUOTE_ID=null; renderCartMobile(); }
-
-async function finalizeSaleMobile(isPronta=true){
-    if(!CART.length) return showToast("Carrinho vazio",true);
-    showLoading(true);
-    const cliId = document.getElementById('pos-client-mobile').value;
-    const client = STATE.clients.find(c=>c.id==cliId);
-    const clientName = client ? client.name : 'Consumidor Final';
-    const payment = document.getElementById('pos-payment-mobile').value;
-    const timestamp = new Date().toISOString();
-    const saleId = CURRENT_QUOTE_ID || (Math.floor(Math.random()*9000)+1000);
-    for(let item of CART){
-        const prod = STATE.products.find(p=>p.id==item.prodId);
-        if(prod){
-            let physical = prod.stock, committed = prod.committed;
-            if(isPronta) await sb.from('produtos').update({estoque_fisico: Math.max(0, physical - item.qty)}).eq('id',prod.id);
-            else await sb.from('produtos').update({estoque_comprometido: committed + item.qty}).eq('id',prod.id);
-        }
-        await sb.from('logs').insert([{id:saleId,tipo:'venda',produto_nome:item.name,quantidade:item.qty,data:timestamp,observacao:isPronta?'Pronta Entrega':'Venda PDV',valor_total:item.qty*item.price,cliente_nome:clientName,forma_pagamento:payment,status:'ATIVO',status_entrega:isPronta?'ENTREGUE':'PENDENTE',qtd_entregue:isPronta?item.qty:0,desconto:0,status_financeiro:'A RECEBER',vencimento:new Date(Date.now()+86400000*7).toISOString(),valor_pago:0}]);
-        if(isPronta) await sb.from('logs').insert([{id:Math.floor(Math.random()*9999),tipo:'entrega',produto_nome:item.name,quantidade:item.qty,data:timestamp,observacao:`Ref Venda #${saleId}`,cliente_nome:clientName,status_entrega:'ENTREGUE'}]);
-    }
-    if(CURRENT_QUOTE_ID) await sb.from('logs').delete().eq('id',CURRENT_QUOTE_ID).eq('tipo','orcamento');
-    clearCartMobile();
-    showLoading(false);
-    showToast("Venda concluída!");
-    loadDataMobile();
-    if(!isPronta) navigateMobile('expedicao');
-}
-
-async function saveQuoteMobile(){
-    if(!CART.length) return showToast("Adicione itens",true);
-    showLoading(true);
-    const cliId = document.getElementById('pos-client-mobile').value;
-    const client = STATE.clients.find(c=>c.id==cliId);
-    const clientName = client ? client.name : 'Consumidor Final';
-    const payment = document.getElementById('pos-payment-mobile').value;
-    const budgetId = CURRENT_QUOTE_ID || Math.floor(Math.random()*9000)+1000;
-    if(CURRENT_QUOTE_ID) await sb.from('logs').delete().eq('id',budgetId).eq('tipo','orcamento');
-    for(let item of CART){
-        await sb.from('logs').insert([{id:budgetId,tipo:'orcamento',produto_nome:item.name,quantidade:item.qty,data:new Date().toISOString(),valor_total:item.qty*item.price,cliente_nome:clientName,forma_pagamento:payment,status:'ABERTO',desconto:0,status_financeiro:'$'}]);
-    }
-    clearCartMobile();
-    showLoading(false);
-    showToast("Orçamento salvo!");
-    loadDataMobile();
-    document.querySelector('.sub-tab[data-sub="list"]').click();
-}
-
-function renderQuotesMobile(){
-    const container = document.getElementById('quotes-list-mobile');
-    if(!container) return;
-    container.innerHTML = STATE.quotes.slice().reverse().map(q=>`<div class="bg-white p-4 rounded-2xl shadow-sm"><div class="flex justify-between"><span class="font-bold">${q.clientName}</span><span class="text-orange-600">${formatMoney(q.total)}</span></div><div class="text-xs text-slate-400">#${q.id} - ${formatDate(q.date)}</div><div class="flex gap-2 mt-3"><button onclick="loadQuoteToCartMobile('${q.id}')" class="flex-1 bg-amber-100 text-amber-700 py-2 rounded-xl text-sm">Editar</button><button onclick="printQuoteMobile('${q.id}')" class="flex-1 bg-slate-800 text-white py-2 rounded-xl text-sm">Imprimir</button></div></div>`).join('');
-    lucide.createIcons();
-}
-function loadQuoteToCartMobile(id){
-    const q = STATE.quotes.find(x=>x.id==id);
-    if(q){ CART = q.items.map(i=>({prodId:null,name:i.name,price:i.price,qty:i.qty,total:i.total})); CURRENT_QUOTE_ID = q.id; renderCartMobile(); showToast("Orçamento carregado"); document.querySelector('.sub-tab[data-sub="pdv"]').click(); }
-}
-function printQuoteMobile(id){ const q = STATE.quotes.find(x=>x.id==id); const printWin = window.open('','_blank'); printWin.document.write(`<html><head><title>Orçamento RV</title><style>body{font-family:sans-serif;padding:20px}</style></head><body><h2>RV Blocos</h2><p>Cliente: ${q.clientName}</p><p>Valor: ${formatMoney(q.total)}</p><ul>${q.items.map(i=>`<li>${i.name} x${i.qty} = ${formatMoney(i.total)}</li>`).join('')}</ul></body></html>`); printWin.document.close(); printWin.print(); }
-function renderFinanceMobile(){
-    let totalIncome=0, totalExp=0;
-    STATE.logs.filter(l=>l.type==='venda' && l.finStatus==='PAGO').forEach(l=>totalIncome+=l.totalValue);
-    STATE.expenses.forEach(e=>totalExp+=e.cost);
-    document.getElementById('fin-income-mobile').innerText=formatMoney(totalIncome);
-    document.getElementById('fin-expenses-mobile').innerText=formatMoney(totalExp);
-    document.getElementById('fin-balance-mobile').innerText=formatMoney(totalIncome-totalExp);
-    const rec = STATE.logs.filter(l=>l.type==='venda' && l.finStatus!=='PAGO');
-    const recDiv = document.getElementById('fin-receivables-mobile');
-    recDiv.innerHTML = rec.length? rec.map(l=>`<div class="py-2 flex justify-between"><span>#${l.id} ${l.clientName}</span><span>${formatMoney(l.totalValue - (l.paidValue||0))}</span><button onclick="alert('Baixa parcial ainda não implementada no mobile rápido')" class="text-blue-500 text-xs">Baixar</button></div>`).join('') : '<div class="text-slate-400 text-center py-2">Nenhuma pendência</div>';
-}
-async function saveExpenseMobile(){
-    const item = document.getElementById('exp-item').value;
-    const cost = document.getElementById('exp-cost').value;
-    if(!cost) return showToast("Valor obrigatório",true);
-    await sb.from('despesas').insert([{id:Date.now(),item:item,quantidade:Number(document.getElementById('exp-qty').value)||0,unidade:document.getElementById('exp-unit').value,custo:Number(cost),data:document.getElementById('exp-date').value||new Date().toISOString(),observacao:document.getElementById('exp-note').value}]);
-    await sb.from('logs').insert([{id:Date.now(),tipo:'despesa',produto_nome:item,valor_total:Number(cost),data:new Date().toISOString()}]);
-    document.getElementById('modal-expense').classList.add('hidden');
-    showToast("Despesa registrada");
-    loadDataMobile();
-}
-function printDailyRevenueMobile(){
-    const hoje = getHojeLocalStr();
-    const vendas = STATE.logs.filter(l=>l.type==='venda' && (l.date||'').split('T')[0]===hoje);
-    let total=0; vendas.forEach(v=>total+=v.totalValue);
-    const printWin = window.open('','_blank');
-    printWin.document.write(`<html><head><title>Faturamento Dia</title></head><body><h2>RV Blocos - Faturamento ${formatDate(hoje)}</h2><p>Total vendido: ${formatMoney(total)}</p><p>Qtd pedidos: ${vendas.length}</p></body></html>`);
-    printWin.document.close(); printWin.print();
-}
+async function finalizeSaleMobile(isPronta=true){ if(!CART.length) return showToast("Carrinho vazio",true); showLoading(true); const cliId=document.getElementById('pos-client-mobile').value; const client=STATE.clients.find(c=>c.id==cliId); const clientName=client?client.name:'Consumidor Final'; const payment=document.getElementById('pos-payment-mobile').value; const timestamp=new Date().toISOString(); const saleId=CURRENT_QUOTE_ID||Math.floor(Math.random()*9000)+1000; for(let item of CART){ const prod=STATE.products.find(p=>p.id==item.prodId); if(prod){ let physical=prod.stock, committed=prod.committed; if(isPronta) await sb.from('produtos').update({estoque_fisico: Math.max(0, physical - item.qty)}).eq('id',prod.id); else await sb.from('produtos').update({estoque_comprometido: committed + item.qty}).eq('id',prod.id); } await sb.from('logs').insert([{id:saleId,tipo:'venda',produto_nome:item.name,quantidade:item.qty,data:timestamp,valor_total:item.qty*item.price,cliente_nome:clientName,forma_pagamento:payment,status:'ATIVO',status_entrega:isPronta?'ENTREGUE':'PENDENTE',qtd_entregue:isPronta?item.qty:0,desconto:0,status_financeiro:'A RECEBER',vencimento:new Date(Date.now()+86400000*7).toISOString(),valor_pago:0}]); if(isPronta) await sb.from('logs').insert([{id:Math.floor(Math.random()*9999),tipo:'entrega',produto_nome:item.name,quantidade:item.qty,data:timestamp,observacao:`Ref Venda #${saleId}`,cliente_nome:clientName,status_entrega:'ENTREGUE'}]); } if(CURRENT_QUOTE_ID) await sb.from('logs').delete().eq('id',CURRENT_QUOTE_ID).eq('tipo','orcamento'); clearCartMobile(); showLoading(false); showToast("Venda concluída!"); loadData(); }
+async function saveQuoteMobile(){ if(!CART.length) return showToast("Adicione itens",true); showLoading(true); const cliId=document.getElementById('pos-client-mobile').value; const client=STATE.clients.find(c=>c.id==cliId); const clientName=client?client.name:'Consumidor Final'; const payment=document.getElementById('pos-payment-mobile').value; const budgetId=CURRENT_QUOTE_ID||Math.floor(Math.random()*9000)+1000; if(CURRENT_QUOTE_ID) await sb.from('logs').delete().eq('id',budgetId).eq('tipo','orcamento'); for(let item of CART){ await sb.from('logs').insert([{id:budgetId,tipo:'orcamento',produto_nome:item.name,quantidade:item.qty,data:new Date().toISOString(),valor_total:item.qty*item.price,cliente_nome:clientName,forma_pagamento:payment,status:'ABERTO',desconto:0,status_financeiro:'$'}]); } clearCartMobile(); showLoading(false); showToast("Orçamento salvo!"); loadData(); document.querySelector('.sub-tab[data-sub="list"]').click(); }
+function renderQuotesMobile(){ const container=document.getElementById('quotes-list-mobile'); if(!container) return; container.innerHTML = STATE.quotes.slice().reverse().map(q=>`<div class="bg-white p-4 rounded-2xl shadow-sm"><div class="flex justify-between"><span class="font-bold">${q.clientName}</span><span class="text-emerald-600">${formatMoney(q.total)}</span></div><div class="text-xs text-slate-400">#${q.id} - ${formatDate(q.date)}</div><div class="flex gap-2 mt-3"><button onclick="loadQuoteToCartMobile('${q.id}')" class="flex-1 bg-amber-100 text-amber-700 py-2 rounded-xl text-sm">Editar</button><button onclick="shareQuoteMobile('${q.id}')" class="flex-1 bg-slate-800 text-white py-2 rounded-xl text-sm">Compartilhar</button></div></div>`).join(''); lucide.createIcons(); }
+function loadQuoteToCartMobile(id){ const q=STATE.quotes.find(x=>x.id==id); if(q){ CART=q.items.map(i=>({prodId:null,name:i.name,price:i.price,qty:i.qty,total:i.total})); CURRENT_QUOTE_ID=q.id; renderCartMobile(); showToast("Orçamento carregado"); document.querySelector('.sub-tab[data-sub="pdv"]').click(); } }
+function shareQuoteMobile(id){ let q=STATE.quotes.find(x=>x.id==id); if(!q) q=STATE.sales.find(x=>x.id==id); if(!q) return; const total=formatMoney(q.total); const itemsText=q.items.map(i=>`${i.qty}x ${i.name}`).join(', '); if(navigator.share) navigator.share({title:`Documento #${q.id}`,text:`Cliente: ${q.clientName}\nTotal: ${total}\nItens: ${itemsText}`,url:window.location.href}).catch(()=>showToast("Compartilhamento cancelado")); else showToast("Seu navegador não suporta compartilhamento nativo"); }
+function renderFinanceMobile(){ let totalIncome=0,totalExp=0; STATE.logs.filter(l=>l.type==='venda' && l.finStatus==='PAGO').forEach(l=>totalIncome+=l.totalValue); STATE.expenses.filter(e=>e.status==='PAGO').forEach(e=>totalExp+=e.cost); document.getElementById('fin-income-mobile').innerText=formatMoney(totalIncome); document.getElementById('fin-expenses-mobile').innerText=formatMoney(totalExp); document.getElementById('fin-balance-mobile').innerText=formatMoney(totalIncome-totalExp); const rec=STATE.logs.filter(l=>l.type==='venda' && l.finStatus!=='PAGO'); const recDiv=document.getElementById('fin-receivables-mobile'); recDiv.innerHTML=rec.length? rec.map(l=>`<div class="py-2 flex justify-between items-center"><span>#${l.id} ${l.clientName}</span><span>${formatMoney(l.totalValue-(l.paidValue||0))}</span><button onclick="openBaixaMobile('${l.id}',${l.totalValue},${l.paidValue||0})" class="text-green-600 text-xs bg-green-50 px-2 py-1 rounded">Baixar</button></div>`).join(''):'<div class="text-slate-400 text-center py-2">Nenhuma pendência</div>'; }
+function openBaixaMobile(id,total,paid){ document.getElementById('rec-id').value=id; document.getElementById('rec-total-lbl').innerText=formatMoney(total); document.getElementById('rec-pending-lbl').innerText=formatMoney(total-paid); document.getElementById('rec-pay-val').value=''; document.getElementById('modal-receivable-edit').classList.remove('hidden'); }
+async function saveReceivableEditMobile(){ const id=document.getElementById('rec-id').value; const method=document.getElementById('rec-method').value; const payVal=Number(document.getElementById('rec-pay-val').value)||0; if(payVal<=0) return showToast("Valor inválido",true); showLoading(true); try{ const rows=STATE.logs.filter(l=>String(l.id)===id && l.type==='venda'); if(!rows.length) throw new Error(); let orderTotal=rows.reduce((a,b)=>a+b.totalValue,0); let orderPaid=rows.reduce((a,b)=>Math.max(a,b.paidValue),0); let newPaid=orderPaid+payVal; let status=newPaid>=orderTotal?'PAGO':(newPaid>0?'PARCIAL':'PENDENTE'); for(let row of rows){ await sb.from('logs').update({valor_pago:newPaid,status_financeiro:status}).eq('uid',row.uid); } await sb.from('logs').insert([{id:getNextId(STATE.logs),tipo:'recebimento',produto_nome:'Baixa',valor_total:payVal,data:getHojeLocalStr(),observacao:`Ref Lanc #${id}`,cliente_nome:rows[0].clientName,forma_pagamento:method,status_financeiro:'PAGO'}]); document.getElementById('modal-receivable-edit').classList.add('hidden'); showToast("Baixa registrada"); loadData(); }catch(e){ showLoading(false); showToast("Erro",true); } }
+async function saveExpenseMobile(){ const item=document.getElementById('exp-item').value; const cost=document.getElementById('exp-cost').value; if(!cost) return showToast("Valor obrigatório",true); await sb.from('despesas').insert([{id:Date.now(),item:item,custo:Number(cost),data:document.getElementById('exp-date').value||getHojeLocalStr(),observacao:document.getElementById('exp-note').value,status:'PENDENTE'}]); document.getElementById('modal-expense').classList.add('hidden'); showToast("Despesa registrada"); loadData(); }
+function showDailyReportMobile(){ const hoje=getHojeLocalStr(); const vendas=STATE.sales.filter(s=>(s.date||'').split('T')[0]===hoje); let total=0; vendas.forEach(v=>total+=v.total); const msg=`Faturamento do Dia ${formatDate(hoje)}: ${formatMoney(total)} (${vendas.length} vendas)`; alert(msg); }
 function openPeriodReportModalMobile(){ document.getElementById('modal-period-report-mobile').classList.remove('hidden'); }
 function closePeriodModal(){ document.getElementById('modal-period-report-mobile').classList.add('hidden'); }
-function printPeriodReportMobile(){
-    const start = document.getElementById('rep-per-start-mobile').value;
-    const end = document.getElementById('rep-per-end-mobile').value;
-    const filtered = STATE.logs.filter(l=>l.type==='venda' && (!start || (l.date||'').split('T')[0]>=start) && (!end || (l.date||'').split('T')[0]<=end));
-    let total=0; filtered.forEach(f=>total+=f.totalValue);
-    const printWin = window.open('','_blank');
-    printWin.document.write(`<html><head><title>Relatório</title></head><body><h2>Relatório de Vendas</h2><p>Período: ${start||'início'} até ${end||'hoje'}</p><p>Total líquido: ${formatMoney(total)}</p><p>Qtd: ${filtered.length}</p></body></html>`);
-    printWin.document.close(); printWin.print();
-    closePeriodModal();
-}
-function saveClientMobile(e){ e.preventDefault(); alert("Funcionalidade completa: integrar com Supabase igual à versão desktop"); closeClientModal(); loadDataMobile(); }
-function saveProductMobile(e){ e.preventDefault(); alert("Produto salvo (simulação)"); closeProdModal(); loadDataMobile(); }
-function closeClientModal(){ document.getElementById('client-form-mobile').classList.add('hidden'); }
-function closeProdModal(){ document.getElementById('prod-form-mobile').classList.add('hidden'); }
-function navigateMobile(view){
-    document.querySelectorAll('.tab-content').forEach(t=>t.classList.remove('active-tab'));
-    if(view === 'clientes') window.location.href = 'mobile.html?view=clientes'; // fallback simples
-    else if(view === 'produtos') window.location.href = 'mobile.html?view=produtos';
-    else if(view === 'producao') window.location.href = 'mobile.html?view=producao';
-    else if(view === 'expedicao') window.location.href = 'mobile.html?view=expedicao';
-    else if(view === 'usuarios') alert("Acesso usuários em breve");
-    else showToast("Módulo em construção", false);
-}
-function fazerLogoffMobile(){ localStorage.removeItem('rv_user'); window.location.href='index.html'; }
+function printPeriodReportMobile(){ const start=document.getElementById('rep-per-start-mobile').value; const end=document.getElementById('rep-per-end-mobile').value; let filtered=STATE.sales; if(start) filtered=filtered.filter(s=>(s.date||'').split('T')[0]>=start); if(end) filtered=filtered.filter(s=>(s.date||'').split('T')[0]<=end); let total=0; filtered.forEach(f=>total+=f.total); alert(`Relatório de Vendas\nPeríodo: ${start||'início'} até ${end||'hoje'}\nTotal: ${formatMoney(total)}\nQtd: ${filtered.length}`); closePeriodModal(); }
+function navigateModule(module){ const titles={clientes:'Clientes',produtos:'Produtos',producao:'Produção',expedicao:'Expedição',usuarios:'Usuários'}; document.getElementById('module-title').innerText=titles[module]; const content=document.getElementById('module-content'); if(module==='clientes') renderClientsModule(); if(module==='produtos') renderProductsModule(); if(module==='producao') renderProducaoModule(); if(module==='expedicao') renderExpedicaoModule(); if(module==='usuarios') renderUsuariosModule(); document.getElementById('module-view').classList.remove('hidden'); }
+function closeModuleView(){ document.getElementById('module-view').classList.add('hidden'); }
+function renderClientsModule(){ const list=STATE.clients.map(c=>`<div class="bg-white p-3 rounded-xl mb-2 flex justify-between items-center"><div><div class="font-bold">${c.name}</div><div class="text-xs text-slate-500">${c.phone||'-'}</div></div><button onclick="alert('Editar cliente funcionalidade futura')" class="text-blue-500"><i data-lucide="edit-3" class="w-4 h-4"></i></button></div>`).join(''); document.getElementById('module-content').innerHTML=`<div class="space-y-2">${list||'<div class="text-center text-slate-400">Nenhum cliente</div>'}</div>`; lucide.createIcons(); }
+function renderProductsModule(){ const list=STATE.products.map(p=>`<div class="bg-white p-3 rounded-xl mb-2"><div class="font-bold">${p.name}</div><div class="flex justify-between mt-1"><span class="text-emerald-600">${formatMoney(p.price)}</span><span class="text-xs">Estoque: ${p.stock}</span></div></div>`).join(''); document.getElementById('module-content').innerHTML=`<div class="space-y-2">${list}</div>`; }
+function renderProducaoModule(){ const html=`<div class="bg-white p-4 rounded-2xl mb-4"><h3 class="font-bold mb-2">Registrar Produção</h3><select id="prod-select" class="w-full p-2 border rounded mb-2"><option value="">Selecione</option>${STATE.products.map(p=>`<option value="${p.id}">${p.name}</option>`).join('')}</select><input type="number" id="prod-qty" placeholder="Quantidade" class="w-full p-2 border rounded mb-2"><input type="text" id="prod-obs" placeholder="Obs" class="w-full p-2 border rounded mb-2"><button onclick="registrarProducao()" class="w-full bg-emerald-600 text-white p-2 rounded-xl">Registrar</button></div><div id="prod-historico" class="space-y-2"></div>`; document.getElementById('module-content').innerHTML=html; carregarHistoricoProducao(); }
+async function registrarProducao(){ const prodId=document.getElementById('prod-select').value; const qty=parseFloat(document.getElementById('prod-qty').value); if(!prodId||!qty) return showToast("Preencha todos",true); showLoading(true); const prod=STATE.products.find(p=>p.id==prodId); if(prod){ await sb.from('produtos').update({estoque_fisico: prod.stock + qty}).eq('id',prod.id); await sb.from('logs').insert([{id:getNextId(STATE.logs),tipo:'fabricacao',produto_nome:prod.name,quantidade:qty,data:new Date().toISOString(),observacao:document.getElementById('prod-obs').value||''}]); showToast("Produção registrada"); loadData(); closeModuleView(); } else showLoading(false); }
+async function carregarHistoricoProducao(){ const logs=STATE.logs.filter(l=>l.type==='fabricacao').slice(0,20).reverse(); const html=logs.map(l=>`<div class="bg-white p-2 rounded border"><span class="font-bold">${l.productName}</span> +${l.quantity} em ${formatDate(l.date)}</div>`).join(''); document.getElementById('prod-historico').innerHTML=html||'<div class="text-center text-slate-400">Nenhuma produção</div>'; }
+function renderExpedicaoModule(){ const pendentes=STATE.logs.filter(l=>l.type==='venda' && l.deliveryStatus!=='ENTREGUE'); const html=pendentes.map(v=>`<div class="bg-white p-3 rounded-xl mb-3 border-l-4 border-emerald-500"><div class="font-bold">#${v.id} - ${v.clientName}</div><div>${v.productName} - Qtd: ${v.quantity} | Entregue: ${v.deliveredQty||0}</div><input type="number" id="qtd-${v.uid}" placeholder="Qtd a entregar" class="w-full p-1 border rounded mt-2 text-sm"><button onclick="registrarEntrega('${v.uid}','${v.productName}',${v.quantity})" class="mt-2 bg-blue-600 text-white p-1 rounded text-sm w-full">Registrar Entrega</button></div>`).join(''); document.getElementById('module-content').innerHTML=html||'<div class="text-center">Nenhum pedido pendente</div>'; }
+async function registrarEntrega(uid,prodName,totalQty){ const input=document.getElementById(`qtd-${uid}`); const qty=parseFloat(input.value); if(!qty||qty<=0) return showToast("Quantidade inválida",true); showLoading(true); const venda=STATE.logs.find(l=>l.uid===uid); if(venda){ let newDelivered=(venda.deliveredQty||0)+qty; let newStatus=newDelivered>=totalQty?'ENTREGUE':'PARCIAL'; await sb.from('logs').update({qtd_entregue:newDelivered,status_entrega:newStatus}).eq('uid',uid); const prod=STATE.products.find(p=>p.name===prodName); if(prod){ let physical=prod.stock; let committed=prod.committed; await sb.from('produtos').update({estoque_fisico:physical-qty,estoque_comprometido:committed-qty}).eq('id',prod.id); } await sb.from('logs').insert([{id:getNextId(STATE.logs),tipo:'entrega',produto_nome:prodName,quantidade:qty,data:new Date().toISOString(),observacao:`Ref Venda #${venda.id}`,cliente_nome:venda.clientName,status_entrega:'ENTREGUE'}]); showToast("Entrega registrada"); loadData(); closeModuleView(); } else showLoading(false); }
+function renderUsuariosModule(){ const list=STATE.users.map(u=>`<div class="bg-white p-3 rounded-xl mb-2 flex justify-between items-center"><div><div class="font-bold">${u.name}</div><div class="text-xs text-slate-500">${u.login} - ${u.type}</div></div><button onclick="alert('Gerenciar usuário via desktop')" class="text-purple-500"><i data-lucide="user-cog" class="w-4 h-4"></i></button></div>`).join(''); document.getElementById('module-content').innerHTML=`<div class="space-y-2">${list}</div>`; lucide.createIcons(); }
+function fazerLogout(){ localStorage.removeItem('rv_user'); window.location.replace('index.html'); }
 
 // Navegação abas inferiores
-document.querySelectorAll('.nav-item').forEach(btn=>{
-    btn.addEventListener('click',()=>{
-        const tab = btn.dataset.tab;
-        document.querySelectorAll('.tab-content').forEach(t=>t.classList.remove('active-tab'));
-        document.getElementById(`tab-${tab}`).classList.add('active-tab');
-        document.querySelectorAll('.nav-item').forEach(b=>b.classList.remove('active'));
-        btn.classList.add('active');
-        if(tab==='orcamento'){ document.querySelector('.sub-tab[data-sub="pdv"]').click(); }
-        lucide.createIcons();
-    });
-});
-document.querySelectorAll('.sub-tab').forEach(sub=>{
-    sub.addEventListener('click',()=>{
-        const target = sub.dataset.sub;
-        document.querySelectorAll('.sub-content').forEach(c=>c.style.display='none');
-        document.getElementById(`sub-${target}`).style.display='block';
-        document.querySelectorAll('.sub-tab').forEach(st=>st.classList.remove('active-sub'));
-        sub.classList.add('active-sub');
-        if(target==='list') renderQuotesMobile();
-        lucide.createIcons();
-    });
-});
-loadDataMobile();
+document.querySelectorAll('.nav-item').forEach(btn=>{ btn.addEventListener('click',()=>{ const tab=btn.dataset.tab; document.querySelectorAll('.tab-content').forEach(t=>t.classList.remove('active-tab')); document.getElementById(`tab-${tab}`).classList.add('active-tab'); document.querySelectorAll('.nav-item').forEach(b=>b.classList.remove('active')); btn.classList.add('active'); if(tab==='orcamento') document.querySelector('.sub-tab.active-sub')?.click(); lucide.createIcons(); }); });
+document.querySelectorAll('.sub-tab').forEach(sub=>{ sub.addEventListener('click',()=>{ const target=sub.dataset.sub; document.querySelectorAll('.sub-content').forEach(c=>c.style.display='none'); document.getElementById(`sub-${target}`).style.display='block'; document.querySelectorAll('.sub-tab').forEach(st=>st.classList.remove('active-sub')); sub.classList.add('active-sub'); if(target==='list') renderQuotesMobile(); lucide.createIcons(); }); });
+
+loadData();
 window.addEventListener('load',()=>{ lucide.createIcons(); });
 </script>
 </body>
