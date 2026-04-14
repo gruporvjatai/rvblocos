@@ -2754,8 +2754,12 @@ function printPeriodReport() {
     }
 
     let totalLiquido = 0;
+    let pagamentosMap = {};
     let rowsHtml = filteredSales.map(s => {
         totalLiquido += s.totalValue;
+        const pgto = s.paymentMethod;
+        if (!pagamentosMap[pgto]) pagamentosMap[pgto] = 0;
+        pagamentosMap[pgto] += s.totalValue;
         return `<tr style="border-bottom:1px solid #e2e8f0;">
             <td style="padding:8px 5px; font-size:11px;">${formatDate(s.date)}</td>
             <td style="padding:8px 5px; font-size:11px; font-weight:bold;">#${s.id}</td>
@@ -2764,6 +2768,13 @@ function printPeriodReport() {
             <td style="padding:8px 5px; text-align:right; font-weight:bold; color:#059669;">${formatMoney(s.totalValue)}</td>
         </tr>`;
     }).join('');
+
+    let pgtoRowsHtml = Object.entries(pagamentosMap).map(([metodo, valor]) => `
+        <tr>
+            <td style="padding:6px; border-bottom:1px dashed #ccc; font-size:12px;">${metodo}</td>
+            <td style="padding:6px; border-bottom:1px dashed #ccc; text-align:right; font-weight:bold; font-size:12px;">${formatMoney(valor)}</td>
+        </tr>
+    `).join('');
 
     const company = {
         name: "RV BLOCOS E ESTRUTURAS",
@@ -2807,13 +2818,30 @@ function printPeriodReport() {
                 <tbody>
                     ${rowsHtml}
                 </tbody>
-                <tfoot>
-                    <tr style="background-color: #f8fafc; border-top: 2px solid #0f172a;">
-                        <td colspan="4" style="padding: 10px 5px; text-align: right; font-weight: bold; font-size: 13px;">TOTAL LÍQUIDO:</td>
-                        <td style="padding: 10px 5px; text-align: right; font-weight: 900; font-size: 14px; color: #0f172a;">${formatMoney(totalLiquido)}</td>
-                    </tr>
-                </tfoot>
             </table>
+
+            <div style="display: flex; justify-content: space-between; gap: 20px;">
+                <div style="width: 45%; border: 1px solid #000; padding: 15px; border-radius: 6px;">
+                    <h4 style="margin: 0 0 10px 0; font-size: 13px; border-bottom: 1px solid #000; padding-bottom: 5px; text-transform: uppercase;">Receitas por Método</h4>
+                    <table style="width: 100%; border-collapse: collapse;">
+                        ${pgtoRowsHtml}
+                    </table>
+                </div>
+
+                <div style="width: 45%; border: 1px solid #000; padding: 15px; border-radius: 6px; background-color: #f8fafc;">
+                    <h4 style="margin: 0 0 10px 0; font-size: 13px; border-bottom: 1px solid #000; padding-bottom: 5px; text-transform: uppercase;">Resumo do Período</h4>
+                    <table style="width: 100%; font-size: 12px; border-collapse: collapse;">
+                        <tr>
+                            <td style="padding: 5px 0;">Qtd. Pedidos:</td>
+                            <td style="padding: 5px 0; text-align: right; font-weight: bold;">${filteredSales.length}</td>
+                        </tr>
+                        <tr>
+                            <td style="padding: 10px 0; font-size: 14px; font-weight: 900; border-top: 1px solid #000; margin-top: 5px;">LÍQUIDO TOTAL:</td>
+                            <td style="padding: 10px 0; font-size: 16px; font-weight: 900; text-align: right; border-top: 1px solid #000; margin-top: 5px; color: #0f172a;">${formatMoney(totalLiquido)}</td>
+                        </tr>
+                    </table>
+                </div>
+            </div>
         </div>
     `;
 
