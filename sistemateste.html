@@ -2240,30 +2240,48 @@ function renderInvoice(sale, isQuote) {
     const el = document.getElementById('print-area');
     const title = isQuote ? "ORÇAMENTO" : "VENDA / PEDIDO";
     const clientName = sale.clientName || 'Consumidor Final';
-    const cli = STATE.clients.find(c => c.name === clientName) || { name: clientName, doc: '', phone: '', address: '' };
+    
+    // Busca cliente no cadastro, se não encontrar usa os dados básicos do log
+    const cliFromState = STATE.clients.find(c => c.name === clientName);
+    const cli = cliFromState || { 
+        name: clientName, 
+        doc: '', 
+        phone: '', 
+        address: '' 
+    };
 
     let subtotal = 0;
     const itemsHtml = sale.items.map(i => {
         const itemTotal = i.qty * i.price;
         subtotal += itemTotal;
-        return `<tr><td>${i.name}</td><td align="center">${i.qty}</td><td align="right">${formatMoney(i.price)}</td><td align="right">${formatMoney(itemTotal)}</td></tr>`;
+        return `<tr>
+            <td>${i.name}</td>
+            <td align="center">${i.qty}</td>
+            <td align="right">${formatMoney(i.price)}</td>
+            <td align="right">${formatMoney(itemTotal)}</td>
+        </tr>`;
     }).join('');
 
     const discount = Number(sale.discount) || 0;
-    const finalTotal = subtotal - discount;
+    const finalTotal = Math.max(0, subtotal - discount);
     
+    // Endereço prioritário: campo específico da venda, senão endereço do cliente
     const addressToShow = sale.deliveryAddress 
-        ? `<div style="padding: 4px; background-color: #fef3c7; border-left: 3px solid #f59e0b; margin-top: 5px;"><!--<strong>ENTREGA:</strong>--><br>${sale.deliveryAddress}</div>` 
-        : cli.address;
+        ? `<div style="padding: 4px; background-color: #fef3c7; border-left: 3px solid #f59e0b; margin-top: 5px;">
+            <strong>ENTREGA:</strong><br>${sale.deliveryAddress}
+           </div>` 
+        : (cli.address || 'Endereço não informado');
 
     el.innerHTML = `
     <div class="invoice-full">
         <div class="header-section">
-            <div class="logo-area"><img src="https://lh3.googleusercontent.com/d/1SIoZ2JlalfMnGDZTXBk7ZYuPgwxX3odF" style="max-height: 80px;" /></div>
+            <div class="logo-area">
+                <img src="https://lh3.googleusercontent.com/d/1SIoZ2JlalfMnGDZTXBk7ZYuPgwxX3odF" style="max-height: 80px;" />
+            </div>
             <div class="company-details">
                 <h2 class="company-title">RV BLOCOS E ESTRUTURAS</h2>
-                <div class="company-info">CNPJ: 46.889.791/0001-53 </div>
-                <div class="company-info">Rua Mineiros, 532 | Jataí - GO | (64) 3636-4861 </div>
+                <div class="company-info">CNPJ: 46.889.791/0001-53</div>
+                <div class="company-info">Rua Mineiros, 532 | Jataí - GO | (64) 3636-4861</div>
             </div>
             <div class="doc-meta">
                 <div class="doc-title">${title}</div>
@@ -2274,23 +2292,51 @@ function renderInvoice(sale, isQuote) {
         <div class="info-grid">
             <div class="info-col">
                 <div class="col-header">Dados do Cliente</div>
-                <div class="col-content"><strong>${cli.name}</strong><br>${cli.doc}<br>${cli.phone}<br>${addressToShow}</div>
+                <div class="col-content">
+                    <strong>${cli.name}</strong><br>
+                    ${cli.doc || 'CPF/CNPJ não informado'}<br>
+                    ${cli.phone || 'Telefone não informado'}<br>
+                    ${addressToShow}
+                </div>
             </div>
             <div class="info-col">
                 <div class="col-header">Pagamento</div>
-                <div class="col-content"><strong>Forma:</strong> ${sale.paymentMethod || 'A Combinar'}<br><strong>Vendedor:</strong> RV Blocos</div>
+                <div class="col-content">
+                    <strong>Forma:</strong> ${sale.paymentMethod || 'A Combinar'}<br>
+                    <strong>Vendedor:</strong> RV Blocos
+                </div>
             </div>
         </div>
         <table class="full-table">
-            <thead><tr><th>Descrição</th><th align="center">Qtd</th><th align="right">Unit.</th><th align="right">Total</th></tr></thead>
+            <thead>
+                <tr>
+                    <th>Descrição</th>
+                    <th align="center">Qtd</th>
+                    <th align="right">Unit.</th>
+                    <th align="right">Total</th>
+                </tr>
+            </thead>
             <tbody>${itemsHtml}</tbody>
         </table>
         <div class="footer-section">
-            <div class="notes-area"><div class="notes-title">Observações:</div><div class="notes-text">Válido por 7 dias. Verifique os produtos no ato da entrega.</div></div>
+            <div class="notes-area">
+                <div class="notes-title">Observações:</div>
+                <div class="notes-text">Válido por 7 dias. Verifique os produtos no ato da entrega.</div>
+            </div>
             <div class="totals-area">
-                <div class="total-row"><span>Subtotal:</span><span>${formatMoney(subtotal)}</span></div>
-                ${discount > 0 ? `<div class="total-row" style="color:red"><span>Desconto:</span><span>- ${formatMoney(discount)}</span></div>` : ''}
-                <div class="total-row final"><span>TOTAL A PAGAR:</span><span>${formatMoney(finalTotal)}</span></div>
+                <div class="total-row">
+                    <span>Subtotal:</span>
+                    <span>${formatMoney(subtotal)}</span>
+                </div>
+                ${discount > 0 ? `
+                <div class="total-row" style="color:red">
+                    <span>Desconto:</span>
+                    <span>- ${formatMoney(discount)}</span>
+                </div>` : ''}
+                <div class="total-row final">
+                    <span>TOTAL A PAGAR:</span>
+                    <span>${formatMoney(finalTotal)}</span>
+                </div>
             </div>
         </div>
     </div>`;
@@ -2500,35 +2546,54 @@ function printExpeditionHistory() {
 }
 
 function reprintSale(id) {
-    const items = STATE.logs.filter(l => String(l.id) === String(id));
-    if(!items.length) return;
+    // Filtra APENAS logs do tipo 'venda' com o ID informado
+    const items = STATE.logs.filter(l => String(l.id) === String(id) && l.type === 'venda');
+    if (!items.length) {
+        showToast("Venda não encontrada", true);
+        return;
+    }
+
+    // Desconto total (mesmo para todos os itens da venda)
+    const totalDiscount = Number(items[0].discount) || 0;
     
-    const totalDiscount = items[0].discount || 0;
-    const netTotal = items.reduce((acc, i) => acc + i.totalValue, 0);
+    // Soma dos valores líquidos (já com desconto aplicado)
+    const netTotal = items.reduce((acc, i) => acc + (Number(i.totalValue) || 0), 0);
     
+    // Valor bruto (antes do desconto)
     const grossTotal = netTotal + totalDiscount;
-    const fator = netTotal > 0 ? (grossTotal / netTotal) : 1;
     
+    // Fator para recompor o valor bruto de cada item
+    const fator = netTotal > 0 ? (grossTotal / netTotal) : 1;
+
+    // Monta objeto compatível com renderInvoice
     const saleObj = {
-        id: id, 
-        date: items[0].date, 
-        clientName: items[0].clientName, 
-        paymentMethod: items[0].paymentMethod, 
+        id: id,
+        date: items[0].date,
+        clientName: items[0].clientName || 'Consumidor Final',
+        paymentMethod: items[0].paymentMethod || 'Não informado',
         discount: totalDiscount,
-        deliveryAddress: items[0].deliveryAddress,
+        deliveryAddress: items[0].deliveryAddress || '',
         items: items.map(i => {
-            const grossItemTotal = i.totalValue * fator; 
-            return { 
-                name: i.productName, 
-                qty: i.quantity, 
-                price: grossItemTotal / i.quantity, 
-                total: grossItemTotal 
+            const grossItemTotal = (Number(i.totalValue) || 0) * fator;
+            const qty = Number(i.quantity) || 1;
+            return {
+                name: i.productName,
+                qty: qty,
+                price: grossItemTotal / qty,
+                total: grossItemTotal
             };
         })
     };
+
+    // Limpa área de impressão antes de inserir novo conteúdo
+    document.getElementById('print-area').innerHTML = '';
     
-    renderInvoice(saleObj, false); 
-    setTimeout(() => { window.print(); limparAreaImpressao(); }, 500);
+    renderInvoice(saleObj, false);
+    
+    setTimeout(() => {
+        window.print();
+        limparAreaImpressao();
+    }, 300);
 }
 
 function printProductionHistory() {
