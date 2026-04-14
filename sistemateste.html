@@ -2574,28 +2574,26 @@ function reprintSale(id) {
     const printArea = document.getElementById('print-area');
     printArea.innerHTML = '';
     renderInvoice(saleObj, false);
-    
-    // Força a área de impressão a ficar visível e esconde o modal
-    printArea.classList.remove('print-only');
-    printArea.style.display = 'block';
+
+    // Apenas esconde o modal para que ele não apareça na impressão
     const modal = document.getElementById('pos-history-modal');
     if (modal) modal.style.display = 'none';
 
+    // Aguarda a renderização completa antes de imprimir
     setTimeout(() => {
         window.print();
-        // Restaura após a impressão (o evento afterprint também fará isso)
-    }, 100);
+        // Restaura o modal após a janela de impressão ser fechada
+        setTimeout(limparAreaImpressao, 500);
+    }, 200);
 }
 
 function limparAreaImpressao() {
     const printArea = document.getElementById('print-area');
-    printArea.innerHTML = '';
-    printArea.classList.add('print-only');
-    printArea.style.display = '';
+    printArea.innerHTML = '';  // limpa conteúdo gerado
     const modal = document.getElementById('pos-history-modal');
     if (modal) modal.style.display = ''; // restaura o display original (flex)
 }
-
+      
 function printProductionHistory() {
     const prodLogs = (STATE.logs || [])
         .filter(l => l.type === 'fabricacao' && l.status !== 'CANCELADO')
