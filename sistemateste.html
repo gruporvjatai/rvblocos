@@ -2230,11 +2230,6 @@ function renderProductionDash() {
     }
 }
 
-function limparAreaImpressao() {
-    setTimeout(() => {
-        document.getElementById('print-area').innerHTML = '';
-    }, 1000);
-}
 
 function renderInvoice(sale, isQuote) {
     const el = document.getElementById('print-area');
@@ -2546,26 +2541,17 @@ function printExpeditionHistory() {
 }
 
 function reprintSale(id) {
-    // Filtra APENAS logs do tipo 'venda' com o ID informado
     const items = STATE.logs.filter(l => String(l.id) === String(id) && l.type === 'venda');
     if (!items.length) {
         showToast("Venda não encontrada", true);
         return;
     }
 
-    // Desconto total (mesmo para todos os itens da venda)
     const totalDiscount = Number(items[0].discount) || 0;
-    
-    // Soma dos valores líquidos (já com desconto aplicado)
     const netTotal = items.reduce((acc, i) => acc + (Number(i.totalValue) || 0), 0);
-    
-    // Valor bruto (antes do desconto)
     const grossTotal = netTotal + totalDiscount;
-    
-    // Fator para recompor o valor bruto de cada item
     const fator = netTotal > 0 ? (grossTotal / netTotal) : 1;
 
-    // Monta objeto compatível com renderInvoice
     const saleObj = {
         id: id,
         date: items[0].date,
@@ -2585,15 +2571,29 @@ function reprintSale(id) {
         })
     };
 
-    // Limpa área de impressão antes de inserir novo conteúdo
-    document.getElementById('print-area').innerHTML = '';
-    
+    const printArea = document.getElementById('print-area');
+    printArea.innerHTML = '';
     renderInvoice(saleObj, false);
     
+    // Força a área de impressão a ficar visível e esconde o modal
+    printArea.classList.remove('print-only');
+    printArea.style.display = 'block';
+    const modal = document.getElementById('pos-history-modal');
+    if (modal) modal.style.display = 'none';
+
     setTimeout(() => {
         window.print();
-        limparAreaImpressao();
-    }, 300);
+        // Restaura após a impressão (o evento afterprint também fará isso)
+    }, 100);
+}
+
+function limparAreaImpressao() {
+    const printArea = document.getElementById('print-area');
+    printArea.innerHTML = '';
+    printArea.classList.add('print-only');
+    printArea.style.display = '';
+    const modal = document.getElementById('pos-history-modal');
+    if (modal) modal.style.display = ''; // restaura o display original (flex)
 }
 
 function printProductionHistory() {
