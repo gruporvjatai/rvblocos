@@ -5,11 +5,12 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <script src="https://cdn.tailwindcss.com"></script>
     <script src="https://unpkg.com/lucide@latest"></script>
-    <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+   <!-- <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
       <script src="https://cdnjs.cloudflare.com/ajax/libs/html2pdf.js/0.10.1/html2pdf.bundle.min.js" 
       integrity="sha512-GsLlZN/3F2ErC5ifS5QtgpiJtWd43JWSuIgh7mbzZ8zBps+dvLusV+eNQATqgA/HdeKFVgA5v3S/cIrLF7QnIg==" 
       crossorigin="anonymous" referrerpolicy="no-referrer">
-      </script>
+      </script> -->
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/html2pdf.js/0.10.1/html2pdf.bundle.min.js"></script>
          <script>
               if (!localStorage.getItem('rv_user')) {
                   window.location.replace("index.html");
@@ -2062,45 +2063,49 @@ async function duplicateQuote(id) {
       
 
 async function downloadQuotePDF(id) {
-    const quote = STATE.quotes.find(q => String(q.id) === String(id));
-    if (!quote) {
-        showToast("Orçamento não encontrado", true);
-        return;
-    }
-    showLoading(true);
-    
-    // Gera o HTML completo do orçamento
-    const htmlContent = getQuoteHTMLForPDF(quote);
-    
-    // Cria um elemento temporário para renderizar o HTML
-    const element = document.createElement('div');
-    element.innerHTML = htmlContent;
-    element.style.position = 'absolute';
-    element.style.left = '-9999px';
-    element.style.top = '-9999px';
-    document.body.appendChild(element);
-    
-    // Opções do html2pdf (qualidade A4)
-    const opt = {
-        margin:        [0.5, 0.5, 0.5, 0.5], // margens em polegadas
-        filename:      `orcamento_${quote.id}.pdf`,
-        image:         { type: 'jpeg', quality: 0.98 },
-        html2canvas:   { scale: 2, letterRendering: true, useCORS: true },
-        jsPDF:         { unit: 'in', format: 'a4', orientation: 'portrait' }
-    };
-    
-    try {
-        await html2pdf().set(opt).from(element).save();
-        showToast(`PDF do orçamento #${quote.id} baixado!`);
-    } catch (err) {
-        console.error(err);
-        showToast("Erro ao gerar PDF", true);
-    } finally {
-        document.body.removeChild(element);
-        showLoading(false);
-    }
-}
+  const quote = STATE.quotes.find(q => String(q.id) === String(id));
+  if (!quote) {
+    showToast("Orçamento não encontrado", true);
+    return;
+  }
+  showLoading(true);
 
+  // 1. Renderiza o orçamento no print-area (usando a mesma função de impressão)
+  renderInvoice(quote, true);  // gera o HTML dentro de #print-area
+
+  // 2. Aguarda um pequeno delay para garantir que a imagem seja carregada
+  await new Promise(resolve => setTimeout(resolve, 500));
+
+  // 3. Captura o elemento #print-area (que contém o orçamento renderizado)
+  const element = document.getElementById('print-area');
+  if (!element || element.innerHTML.trim() === '') {
+    showLoading(false);
+    showToast("Erro ao gerar conteúdo do PDF", true);
+    return;
+  }
+
+  // 4. Opções de qualidade e formato
+  const opt = {
+    margin:        [0.5, 0.5, 0.5, 0.5], // margens em polegadas
+    filename:      `orcamento_${quote.id}.pdf`,
+    image:         { type: 'jpeg', quality: 0.98 },
+    html2canvas:   { scale: 2, letterRendering: true, useCORS: true, logging: false },
+    jsPDF:         { unit: 'in', format: 'a4', orientation: 'portrait' }
+  };
+
+  try {
+    // 5. Gera o PDF e faz o download
+    await html2pdf().set(opt).from(element).save();
+    showToast(`PDF do orçamento #${quote.id} baixado com sucesso!`);
+  } catch (error) {
+    console.error("Erro no html2pdf:", error);
+    showToast("Erro ao gerar PDF. Tente novamente.", true);
+  } finally {
+    // 6. Limpa o print-area para não interferir em próximas impressões
+    document.getElementById('print-area').innerHTML = '';
+    showLoading(false);
+  }
+}
       
       
 
