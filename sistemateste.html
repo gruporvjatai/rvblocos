@@ -6,6 +6,8 @@
     <script src="https://cdn.tailwindcss.com"></script>
     <script src="https://unpkg.com/lucide@latest"></script>
     <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/pdfmake/0.2.7/pdfmake.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/pdfmake/0.2.7/vfs_fonts.js"></script>
          <script>
               if (!localStorage.getItem('rv_user')) {
                   window.location.replace("index.html");
@@ -985,12 +987,20 @@ function onDataLoaded() {
     showLoading(false);
 }
 
-function getNextId(array) {
-    let max = 0;
-    array.forEach(item => { const val = parseInt(item.id); if(!isNaN(val) && val > max) max = val; });
-    return max + 1;
+function getNextId() {
+  let maxId = 0;
+  if (STATE.logs) {
+    STATE.logs.forEach(log => { const id = parseInt(log.id); if (!isNaN(id) && id > maxId) maxId = id; });
+  }
+  if (STATE.quotes) {
+    STATE.quotes.forEach(quote => { const id = parseInt(quote.id); if (!isNaN(id) && id > maxId) maxId = id; });
+  }
+  // também verifica produtos, clientes etc para evitar colisão (opcional)
+  if (STATE.products) {
+    STATE.products.forEach(p => { const id = parseInt(p.id); if (!isNaN(id) && id > maxId) maxId = id; });
+  }
+  return maxId + 1;
 }
-
 // --- FUNÇÕES CRUD DE USUÁRIOS ---
 function renderUsers() {
     const list = document.getElementById('users-list');
@@ -1902,9 +1912,12 @@ async function duplicateQuote(id) {
   }
   
   showLoading(true);
-  const newId = getNextId(STATE.logs, STATE.quotes);
+  
+  // Gera um novo ID único
+  const newId = getNextId();
   const date = new Date(new Date().getTime() - (new Date().getTimezoneOffset() * 60000)).toISOString();
   
+  // Prepara os itens para inserção (cada item é um registro na tabela logs)
   const newItems = original.items.map(item => ({
     id: newId,
     tipo: 'orcamento',
@@ -1925,15 +1938,19 @@ async function duplicateQuote(id) {
     valor_pago: 0
   }));
   
+  // Insere no Supabase
   const { error } = await sb.from('logs').insert(newItems);
+  
   if (error) {
     showLoading(false);
-    return showToast("Erro ao duplicar: " + error.message, true);
+    console.error("Erro ao duplicar:", error);
+    return showToast("Erro ao duplicar orçamento: " + error.message, true);
   }
   
   showToast("Orçamento duplicado com sucesso!");
-  await loadData();
-  navigate('quotes');
+  await loadData();               // recarrega todos os dados
+  navigate('quotes');            // vai para a aba de orçamentos
+  showLoading(false);
 }
 
 // Função para baixar o orçamento como PDF (usando window.print)
@@ -1943,13 +1960,176 @@ function downloadQuotePDF(id) {
     showToast("Orçamento não encontrado", true);
     return;
   }
+
+  // Dados da empresa
+  const company = {
+    name: "RV BLOCOS E ESTRUTURAS",
+    cnpj: "46.889.791/0001-53",
+    phone: "(64) 3636-4861",
+    address: "Rua Mineiros, 532, Jataí - GO",
+    logo: "https://lh3.googleusercontent.com/d/1SIoZ2JlalfMnGDZTXBk7ZYuPgwxX3odF" // URL da logo (pode ser base64 se preferir)
+  };
+
+  // Busca cliente cadastrado (para telefone/endereço)
+  const client = STATE.clients.find(c => c.name === quote.clientName) || { 
+    name: quote.clientName, 
+    doc: '', 
+    phone: '', 
+    address: quote.deliveryAddress || '' 
+  };
   
-  // Usa a mesma função de impressão, mas o usuário pode escolher "Salvar como PDF"
-  printQuote(id);
-  // Opcional: mostrar um toast informativo
-  setTimeout(() => {
-    showToast("Na janela de impressão, escolha 'Salvar como PDF' para baixar o arquivo.");
-  }, 1000);
+  const subtotal = quote.items.reduce((acc, i) => acc + i.total, 0);
+  const discount = quote.discount || 0;
+  const total = subtotal - discount;
+  
+  // Monta as linhas da tabela de itens
+  const bodyItems = quote.items.map(item => [
+    { text: item.name, style: 'tableText' },
+    { text: item.qty.toString(), alignment: 'center', style: 'tableText' },
+    { text: formatMoney(item.price), alignment: 'right', style: 'tableText' },
+    { text: formatMoney(item.total), alignment: 'right', style: 'tableText' }
+  ]);
+  
+  // Linha de desconto (se houver)
+  if (discount > 0) {
+    bodyItems.push([
+      { text: '', colSpan: 3, border: [false, false, false, false] }, {},
+      { text: 'Desconto:', alignment: 'right', style: 'tableText', bold: true },
+      { text: `- ${formatMoney(discount)}`, alignment: 'right', style: 'tableText', color: 'red' }
+    ]);
+  }
+  
+  // Linha do total
+  bodyItems.push([
+    { text: '', colSpan: 3, border: [false, false, false, false] }, {},
+    { text: 'TOTAL:', alignment: 'right', style: 'tableText', bold: true, fontSize: 12 },
+    { text: formatMoney(total), alignment: 'right', style: 'tableText', bold: true, fontSize: 12 }
+  ]);
+  
+  const docDefinition = {
+    pageSize: 'A4',
+    pageMargins: [40, 60, 40, 60],
+    content: [
+      // Cabeçalho com logo e dados da empresa
+      {
+        columns: [
+          {
+            width: 100,
+            image: company.logo,
+            fit: [80, 80],
+            alignment: 'left'
+          },
+          {
+            width: '*',
+            stack: [
+              { text: company.name, style: 'companyName' },
+              { text: `CNPJ: ${company.cnpj}`, style: 'companyInfo' },
+              { text: company.address, style: 'companyInfo' },
+              { text: `Tel: ${company.phone}`, style: 'companyInfo' }
+            ],
+            alignment: 'center'
+          },
+          {
+            width: 120,
+            stack: [
+              { text: 'ORÇAMENTO', style: 'docTitle' },
+              { text: `Nº ${quote.id}`, style: 'docNumber' },
+              { text: formatDate(quote.date), style: 'docDate' }
+            ],
+            alignment: 'right'
+          }
+        ]
+      },
+      { text: '', margin: [0, 20, 0, 10] },
+      // Dados do cliente
+      {
+        columns: [
+          {
+            width: '*',
+            stack: [
+              { text: 'DADOS DO CLIENTE', style: 'sectionTitle' },
+              { text: `Nome: ${client.name}`, style: 'clientInfo' },
+              { text: `Documento: ${client.doc || 'Não informado'}`, style: 'clientInfo' },
+              { text: `Telefone: ${client.phone || 'Não informado'}`, style: 'clientInfo' }
+            ]
+          },
+          {
+            width: '*',
+            stack: [
+              { text: 'ENDEREÇO DE ENTREGA', style: 'sectionTitle' },
+              { text: quote.deliveryAddress || client.address || 'Endereço não informado', style: 'clientInfo' }
+            ]
+          }
+        ]
+      },
+      { text: '', margin: [0, 15, 0, 5] },
+      // Tabela de itens
+      {
+        table: {
+          headerRows: 1,
+          widths: ['*', 'auto', 'auto', 'auto'],
+          body: [
+            [
+              { text: 'Produto', style: 'tableHeader' },
+              { text: 'Qtd', style: 'tableHeader', alignment: 'center' },
+              { text: 'Unitário', style: 'tableHeader', alignment: 'right' },
+              { text: 'Total', style: 'tableHeader', alignment: 'right' }
+            ],
+            ...bodyItems
+          ]
+        },
+        layout: 'lightHorizontalLines'
+      },
+      { text: '', margin: [0, 30, 0, 10] },
+      // Observações
+      {
+        text: 'Observações:',
+        style: 'sectionTitle'
+      },
+      {
+        text: 'Este orçamento é válido por 7 dias. Os preços estão sujeitos a reajuste sem aviso prévio. Verifique os produtos no ato da entrega.',
+        style: 'notes'
+      },
+      { text: '', margin: [0, 40, 0, 10] },
+      // Assinaturas
+      {
+        columns: [
+          {
+            width: '*',
+            stack: [
+              { text: '_________________________', alignment: 'center' },
+              { text: 'Cliente / Responsável', alignment: 'center', fontSize: 9 }
+            ]
+          },
+          {
+            width: '*',
+            stack: [
+              { text: '_________________________', alignment: 'center' },
+              { text: 'RV BLOCOS', alignment: 'center', fontSize: 9 }
+            ]
+          }
+        ]
+      }
+    ],
+    styles: {
+      companyName: { fontSize: 16, bold: true, color: '#ea580c', margin: [0, 0, 0, 4] },
+      companyInfo: { fontSize: 9, color: '#475569', margin: [0, 2, 0, 0] },
+      docTitle: { fontSize: 14, bold: true, color: '#0f172a' },
+      docNumber: { fontSize: 12, bold: true, margin: [0, 5, 0, 0] },
+      docDate: { fontSize: 9, color: '#64748b', margin: [0, 3, 0, 0] },
+      sectionTitle: { fontSize: 11, bold: true, color: '#334155', margin: [0, 0, 0, 5], decoration: 'underline' },
+      clientInfo: { fontSize: 10, margin: [0, 2, 0, 0] },
+      tableHeader: { fontSize: 10, bold: true, fillColor: '#f1f5f9', color: '#1e293b' },
+      tableText: { fontSize: 9 },
+      notes: { fontSize: 9, color: '#64748b', italics: true }
+    },
+    defaultStyle: {
+      font: 'Roboto'
+    }
+  };
+  
+  // Gera o PDF e faz o download
+  pdfMake.createPdf(docDefinition).download(`orcamento_${quote.id}.pdf`);
 }
 
 // Função para limpar o filtro de busca
