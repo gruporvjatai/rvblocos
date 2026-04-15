@@ -1953,13 +1953,35 @@ async function duplicateQuote(id) {
   showLoading(false);
 }
 
-// Função para baixar o orçamento como PDF (usando window.print)
-function downloadQuotePDF(id) {
+// Função auxiliar para converter imagem URL para Base64
+async function getLogoBase64(url) {
+  return new Promise((resolve) => {
+    const img = new Image();
+    img.crossOrigin = 'Anonymous'; // importante para imagens externas
+    img.onload = () => {
+      const canvas = document.createElement('canvas');
+      canvas.width = img.width;
+      canvas.height = img.height;
+      const ctx = canvas.getContext('2d');
+      ctx.drawImage(img, 0, 0);
+      resolve(canvas.toDataURL('image/png'));
+    };
+    img.onerror = () => {
+      console.warn("Não foi possível carregar a logo:", url);
+      resolve(null);
+    };
+    img.src = url;
+  });
+}
+
+async function downloadQuotePDF(id) {
   const quote = STATE.quotes.find(q => String(q.id) === String(id));
   if (!quote) {
     showToast("Orçamento não encontrado", true);
     return;
   }
+
+  showLoading(true);
 
   // Dados da empresa
   const company = {
@@ -1967,21 +1989,24 @@ function downloadQuotePDF(id) {
     cnpj: "46.889.791/0001-53",
     phone: "(64) 3636-4861",
     address: "Rua Mineiros, 532, Jataí - GO",
-    logo: "https://lh3.googleusercontent.com/d/1SIoZ2JlalfMnGDZTXBk7ZYuPgwxX3odF" // URL da logo (pode ser base64 se preferir)
+    logoUrl: "https://lh3.googleusercontent.com/d/1SIoZ2JlalfMnGDZTXBk7ZYuPgwxX3odF"
   };
 
-  // Busca cliente cadastrado (para telefone/endereço)
+  // Busca cliente cadastrado
   const client = STATE.clients.find(c => c.name === quote.clientName) || { 
     name: quote.clientName, 
     doc: '', 
     phone: '', 
     address: quote.deliveryAddress || '' 
   };
+
+  // Converte a logo para base64
+  const logoBase64 = await getLogoBase64(company.logoUrl);
   
   const subtotal = quote.items.reduce((acc, i) => acc + i.total, 0);
   const discount = quote.discount || 0;
   const total = subtotal - discount;
-  
+
   // Monta as linhas da tabela de itens
   const bodyItems = quote.items.map(item => [
     { text: item.name, style: 'tableText' },
@@ -1989,8 +2014,7 @@ function downloadQuotePDF(id) {
     { text: formatMoney(item.price), alignment: 'right', style: 'tableText' },
     { text: formatMoney(item.total), alignment: 'right', style: 'tableText' }
   ]);
-  
-  // Linha de desconto (se houver)
+
   if (discount > 0) {
     bodyItems.push([
       { text: '', colSpan: 3, border: [false, false, false, false] }, {},
@@ -1998,50 +2022,47 @@ function downloadQuotePDF(id) {
       { text: `- ${formatMoney(discount)}`, alignment: 'right', style: 'tableText', color: 'red' }
     ]);
   }
-  
-  // Linha do total
+
   bodyItems.push([
     { text: '', colSpan: 3, border: [false, false, false, false] }, {},
     { text: 'TOTAL:', alignment: 'right', style: 'tableText', bold: true, fontSize: 12 },
     { text: formatMoney(total), alignment: 'right', style: 'tableText', bold: true, fontSize: 12 }
   ]);
-  
+
+  // Cabeçalho com logo (se disponível)
+  const headerColumns = [
+    {
+      width: 100,
+      stack: logoBase64 ? [{ image: logoBase64, width: 80, alignment: 'left' }] : [],
+      alignment: 'left'
+    },
+    {
+      width: '*',
+      stack: [
+        { text: company.name, style: 'companyName' },
+        { text: `CNPJ: ${company.cnpj}`, style: 'companyInfo' },
+        { text: company.address, style: 'companyInfo' },
+        { text: `Tel: ${company.phone}`, style: 'companyInfo' }
+      ],
+      alignment: 'center'
+    },
+    {
+      width: 120,
+      stack: [
+        { text: 'ORÇAMENTO', style: 'docTitle' },
+        { text: `Nº ${quote.id}`, style: 'docNumber' },
+        { text: formatDate(quote.date), style: 'docDate' }
+      ],
+      alignment: 'right'
+    }
+  ];
+
   const docDefinition = {
     pageSize: 'A4',
     pageMargins: [40, 60, 40, 60],
     content: [
-      // Cabeçalho com logo e dados da empresa
-      {
-        columns: [
-          {
-            width: 100,
-            image: company.logo,
-            fit: [80, 80],
-            alignment: 'left'
-          },
-          {
-            width: '*',
-            stack: [
-              { text: company.name, style: 'companyName' },
-              { text: `CNPJ: ${company.cnpj}`, style: 'companyInfo' },
-              { text: company.address, style: 'companyInfo' },
-              { text: `Tel: ${company.phone}`, style: 'companyInfo' }
-            ],
-            alignment: 'center'
-          },
-          {
-            width: 120,
-            stack: [
-              { text: 'ORÇAMENTO', style: 'docTitle' },
-              { text: `Nº ${quote.id}`, style: 'docNumber' },
-              { text: formatDate(quote.date), style: 'docDate' }
-            ],
-            alignment: 'right'
-          }
-        ]
-      },
-      { text: '', margin: [0, 20, 0, 10] },
-      // Dados do cliente
+      { columns: headerColumns, margin: [0, 0, 0, 10] },
+      { canvas: [{ type: 'line', x1: 0, y1: 0, x2: 515, y2: 0, lineWidth: 1 }], margin: [0, 0, 0, 20] },
       {
         columns: [
           {
@@ -2060,10 +2081,9 @@ function downloadQuotePDF(id) {
               { text: quote.deliveryAddress || client.address || 'Endereço não informado', style: 'clientInfo' }
             ]
           }
-        ]
+        ],
+        margin: [0, 0, 0, 20]
       },
-      { text: '', margin: [0, 15, 0, 5] },
-      // Tabela de itens
       {
         table: {
           headerRows: 1,
@@ -2078,20 +2098,18 @@ function downloadQuotePDF(id) {
             ...bodyItems
           ]
         },
-        layout: 'lightHorizontalLines'
+        layout: 'lightHorizontalLines',
+        margin: [0, 0, 0, 20]
       },
-      { text: '', margin: [0, 30, 0, 10] },
-      // Observações
       {
         text: 'Observações:',
         style: 'sectionTitle'
       },
       {
         text: 'Este orçamento é válido por 7 dias. Os preços estão sujeitos a reajuste sem aviso prévio. Verifique os produtos no ato da entrega.',
-        style: 'notes'
+        style: 'notes',
+        margin: [0, 5, 0, 40]
       },
-      { text: '', margin: [0, 40, 0, 10] },
-      // Assinaturas
       {
         columns: [
           {
@@ -2127,10 +2145,13 @@ function downloadQuotePDF(id) {
       font: 'Roboto'
     }
   };
-  
-  // Gera o PDF e faz o download
+
+  // Gera e baixa o PDF
   pdfMake.createPdf(docDefinition).download(`orcamento_${quote.id}.pdf`);
+  showLoading(false);
+  showToast(`PDF do orçamento #${quote.id} gerado com sucesso!`);
 }
+      
 
 // Função para limpar o filtro de busca
 function clearQuoteFilters() {
