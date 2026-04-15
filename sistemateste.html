@@ -6,8 +6,10 @@
     <script src="https://cdn.tailwindcss.com"></script>
     <script src="https://unpkg.com/lucide@latest"></script>
     <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
-    <script src="https://cdnjs.cloudflare.com/ajax/libs/pdfmake/0.2.7/pdfmake.min.js"></script>
-    <script src="https://cdnjs.cloudflare.com/ajax/libs/pdfmake/0.2.7/vfs_fonts.js"></script>
+      <script src="https://cdnjs.cloudflare.com/ajax/libs/html2pdf.js/0.10.1/html2pdf.bundle.min.js" 
+      integrity="sha512-GsLlZN/3F2ErC5ifS5QtgpiJtWd43JWSuIgh7mbzZ8zBps+dvLusV+eNQATqgA/HdeKFVgA5v3S/cIrLF7QnIg==" 
+      crossorigin="anonymous" referrerpolicy="no-referrer">
+      </script>
          <script>
               if (!localStorage.getItem('rv_user')) {
                   window.location.replace("index.html");
@@ -1855,7 +1857,7 @@ function renderQuotesList() {
               <i data-lucide="copy" width="18"></i>
             </button>
             <button onclick="downloadQuotePDF('${q.id}')" class="text-indigo-600 hover:text-indigo-800 p-1" title="Download PDF">
-              <i data-lucide="file-down" width="18"></i>
+                <i data-lucide="file-down" width="18"></i>
             </button>
             <button onclick="printQuote('${q.id}')" class="text-slate-600 hover:text-slate-800 p-1" title="Imprimir">
               <i data-lucide="printer" width="18"></i>
@@ -1953,269 +1955,153 @@ async function duplicateQuote(id) {
   showLoading(false);
 }
 
-// Função auxiliar para converter imagem URL para Base64
-async function getLogoBase64(url) {
-  return new Promise((resolve) => {
-    const img = new Image();
-    img.crossOrigin = 'Anonymous';
-    img.onload = () => {
-      const canvas = document.createElement('canvas');
-      canvas.width = img.width;
-      canvas.height = img.height;
-      const ctx = canvas.getContext('2d');
-      ctx.drawImage(img, 0, 0);
-      resolve(canvas.toDataURL('image/png'));
+
+    function getQuoteHTMLForPDF(quote) {
+    const title = "ORÇAMENTO";
+    const clientName = quote.clientName || 'Consumidor Final';
+    
+    const cliFromState = STATE.clients.find(c => c.name === clientName);
+    const cli = cliFromState || { 
+        name: clientName, 
+        doc: '', 
+        phone: '', 
+        address: '' 
     };
-    img.onerror = () => {
-      console.warn("Logo não carregada:", url);
-      resolve(null);
-    };
-    img.src = url;
-  });
+
+    let subtotal = 0;
+    const itemsHtml = quote.items.map(i => {
+        const itemTotal = i.qty * i.price;
+        subtotal += itemTotal;
+        return `<tr>
+            <td style="border-bottom: 1px solid #000; padding: 8px;">${i.name}</td>
+            <td align="center" style="border-bottom: 1px solid #000; padding: 8px;">${i.qty}</td>
+            <td align="right" style="border-bottom: 1px solid #000; padding: 8px;">${formatMoney(i.price)}</td>
+            <td align="right" style="border-bottom: 1px solid #000; padding: 8px;">${formatMoney(itemTotal)}</td>
+        </tr>`;
+    }).join('');
+
+    const discount = Number(quote.discount) || 0;
+    const finalTotal = Math.max(0, subtotal - discount);
+    
+    const addressToShow = quote.deliveryAddress 
+        ? `<div style="padding: 4px; background-color: #fef3c7; border-left: 3px solid #f59e0b; margin-top: 5px;">
+            <strong>ENTREGA:</strong><br>${quote.deliveryAddress}
+           </div>` 
+        : (cli.address || 'Endereço não informado');
+
+    return `
+    <div class="invoice-full" style="width: 100%; max-width: 800px; margin: 0 auto; font-family: 'Helvetica', Arial, sans-serif; background: white; padding: 20px; border: 1px solid #000;">
+        <div class="header-section" style="display: flex; border-bottom: 2px solid #000; padding-bottom: 15px; margin-bottom: 20px;">
+            <div class="logo-area" style="width: 120px; display: flex; align-items: center; justify-content: center; border-right: 1px solid #e2e8f0; padding-right: 15px; margin-right: 15px;">
+                <img src="https://lh3.googleusercontent.com/d/1SIoZ2JlalfMnGDZTXBk7ZYuPgwxX3odF" style="max-height: 80px;" />
+            </div>
+            <div class="company-details" style="flex: 1;">
+                <h2 class="company-title" style="font-size: 20px; font-weight: 800; color: #ea580c; text-transform: uppercase; margin: 0;">RV BLOCOS E ESTRUTURAS</h2>
+                <div class="company-info" style="font-size: 11px; color: #475569; line-height: 1.4; margin-top: 5px;">CNPJ: 46.889.791/0001-53</div>
+                <div class="company-info" style="font-size: 11px; color: #475569; line-height: 1.4;">Rua Mineiros, 532 | Jataí - GO | (64) 3636-4861</div>
+            </div>
+            <div class="doc-meta" style="width: 180px; text-align: right; margin-right: 20px;">
+                <div class="doc-title" style="font-size: 16px; font-weight: 900; color: #0f172a; text-transform: uppercase; margin-bottom: 5px;">${title}</div>
+                <div class="meta-row" style="font-size: 11px; margin-bottom: 2px;"><strong>Nº:</strong> ${quote.id}</div>
+                <div class="meta-row" style="font-size: 11px; margin-bottom: 2px;"><strong>Data:</strong> ${formatDate(quote.date)}</div>
+            </div>
+        </div>
+        <div class="info-grid" style="display: flex; gap: 20px; margin-bottom: 20px;">
+            <div class="info-col" style="flex: 1; border: 1px solid #000; border-radius: 6px; overflow: hidden;">
+                <div class="col-header" style="background-color: #f1f5f9; padding: 5px 10px; font-size: 10px; font-weight: bold; text-transform: uppercase; color: #64748b; border-bottom: 1px solid #000;">Dados do Cliente</div>
+                <div class="col-content" style="padding: 10px; font-size: 11px; line-height: 1.5;">
+                    <strong>${cli.name}</strong><br>
+                    ${cli.doc || 'CPF/CNPJ não informado'}<br>
+                    ${cli.phone || 'Telefone não informado'}<br>
+                    ${addressToShow}
+                </div>
+            </div>
+            <div class="info-col" style="flex: 1; border: 1px solid #000; border-radius: 6px; overflow: hidden;">
+                <div class="col-header" style="background-color: #f1f5f9; padding: 5px 10px; font-size: 10px; font-weight: bold; text-transform: uppercase; color: #64748b; border-bottom: 1px solid #000;">Pagamento</div>
+                <div class="col-content" style="padding: 10px; font-size: 11px; line-height: 1.5;">
+                    <strong>Forma:</strong> ${quote.paymentMethod || 'A Combinar'}<br>
+                    <strong>Vendedor:</strong> RV Blocos
+                </div>
+            </div>
+        </div>
+        <table class="full-table" style="width: 100%; border-collapse: collapse; font-size: 11px; margin-bottom: 20px;">
+            <thead>
+                <tr>
+                    <th style="background-color: #0f172a; color: white; padding: 8px; text-align: left; font-weight: bold; text-transform: uppercase; font-size: 10px;">Descrição</th>
+                    <th align="center" style="background-color: #0f172a; color: white; padding: 8px; text-align: center; font-weight: bold; text-transform: uppercase; font-size: 10px;">Qtd</th>
+                    <th align="right" style="background-color: #0f172a; color: white; padding: 8px; text-align: right; font-weight: bold; text-transform: uppercase; font-size: 10px;">Unit.</th>
+                    <th align="right" style="background-color: #0f172a; color: white; padding: 8px; text-align: right; font-weight: bold; text-transform: uppercase; font-size: 10px;">Total</th>
+                </tr>
+            </thead>
+            <tbody>${itemsHtml}</tbody>
+        </table>
+        <div class="footer-section" style="display: flex; gap: 30px; margin-top: 10px;">
+            <div class="notes-area" style="flex: 1; border: 1px dashed #cbd5e1; padding: 10px; border-radius: 6px;">
+                <div class="notes-title" style="font-size: 10px; font-weight: bold; margin-bottom: 5px; color: #64748b;">Observações:</div>
+                <div class="notes-text" style="font-size: 10px; color: #334155;">Válido por 7 dias. Verifique os produtos no ato da entrega.</div>
+            </div>
+            <div class="totals-area" style="width: 250px;">
+                <div class="total-row" style="display: flex; justify-content: space-between; padding: 5px 0; font-size: 11px; border-bottom: 1px solid #e2e8f0;">
+                    <span>Subtotal:</span>
+                    <span>${formatMoney(subtotal)}</span>
+                </div>
+                ${discount > 0 ? `
+                <div class="total-row" style="display: flex; justify-content: space-between; padding: 5px 0; font-size: 11px; color: red; border-bottom: 1px solid #e2e8f0;">
+                    <span>Desconto:</span>
+                    <span>- ${formatMoney(discount)}</span>
+                </div>` : ''}
+                <div class="total-row final" style="display: flex; justify-content: space-between; border-bottom: none; border-top: 2px solid #0f172a; font-size: 14px; font-weight: 900; margin-top: 5px; padding-top: 10px; background-color: #f1f5f9; padding: 10px;">
+                    <span>TOTAL A PAGAR:</span>
+                    <span>${formatMoney(finalTotal)}</span>
+                </div>
+            </div>
+        </div>
+    </div>`;
 }
 
-// Função principal de download do PDF (estilo idêntico ao invoice)
+      
+
 async function downloadQuotePDF(id) {
-  const quote = STATE.quotes.find(q => String(q.id) === String(id));
-  if (!quote) {
-    showToast("Orçamento não encontrado", true);
-    return;
-  }
-
-  showLoading(true);
-
-  // Dados da empresa (mesmos do invoice)
-  const company = {
-    name: "RV BLOCOS E ESTRUTURAS",
-    cnpj: "46.889.791/0001-53",
-    phone: "(64) 3636-4861",
-    address: "Rua Mineiros, 532, Jataí - GO",
-    logoUrl: "https://lh3.googleusercontent.com/d/1SIoZ2JlalfMnGDZTXBk7ZYuPgwxX3odF"
-  };
-
-  // Cliente (busca cadastro ou usa dados do orçamento)
-  const client = STATE.clients.find(c => c.name === quote.clientName) || {
-    name: quote.clientName,
-    doc: '',
-    phone: '',
-    address: quote.deliveryAddress || ''
-  };
-
-  const logoBase64 = await getLogoBase64(company.logoUrl);
-
-  const subtotal = quote.items.reduce((acc, i) => acc + i.total, 0);
-  const discount = quote.discount || 0;
-  const finalTotal = subtotal - discount;
-
-  // Monta as linhas da tabela de itens (igual ao HTML do invoice)
-  const tableBody = quote.items.map(item => [
-    { text: item.name, style: 'tableCell' },
-    { text: item.qty.toString(), alignment: 'center', style: 'tableCell' },
-    { text: formatMoney(item.price), alignment: 'right', style: 'tableCell' },
-    { text: formatMoney(item.total), alignment: 'right', style: 'tableCell' }
-  ]);
-
-  // Linha de desconto (se houver)
-  if (discount > 0) {
-    tableBody.push([
-      { text: '', colSpan: 3, border: [false, false, false, false] }, {},
-      { text: 'Desconto:', alignment: 'right', style: 'tableCellBold' },
-      { text: `- ${formatMoney(discount)}`, alignment: 'right', style: 'tableCellRed' }
-    ]);
-  }
-
-  // Linha do total (igual ao invoice: "TOTAL A PAGAR")
-  tableBody.push([
-    { text: '', colSpan: 3, border: [false, false, false, false] }, {},
-    { text: 'TOTAL A PAGAR:', alignment: 'right', style: 'totalLabel' },
-    { text: formatMoney(finalTotal), alignment: 'right', style: 'totalValue' }
-  ]);
-
-  // Endereço de entrega (se houver, com destaque)
-  const addressHtml = quote.deliveryAddress 
-    ? `ENTREGA: ${quote.deliveryAddress}` 
-    : (client.address || 'Endereço não informado');
-
-  // Define o documento PDF
-  const docDefinition = {
-    pageSize: 'A4',
-    pageMargins: [40, 50, 40, 50],
-    content: [
-      // ========== CABEÇALHO (igual ao invoice) ==========
-      {
-        columns: [
-          {
-            width: 100,
-            stack: logoBase64 ? [{ image: logoBase64, width: 80, alignment: 'left' }] : [],
-            alignment: 'left'
-          },
-          {
-            width: '*',
-            stack: [
-              { text: company.name, style: 'companyName' },
-              { text: `CNPJ: ${company.cnpj}`, style: 'companyInfo' },
-              { text: company.address, style: 'companyInfo' },
-              { text: `Tel: ${company.phone}`, style: 'companyInfo' }
-            ],
-            alignment: 'center'
-          },
-          {
-            width: 130,
-            stack: [
-              { text: 'ORÇAMENTO', style: 'docTitle' },
-              { text: `Nº ${quote.id}`, style: 'docNumber' },
-              { text: formatDate(quote.date), style: 'docDate' }
-            ],
-            alignment: 'right'
-          }
-        ],
-        margin: [0, 0, 0, 10]
-      },
-      { canvas: [{ type: 'line', x1: 0, y1: 0, x2: 515, y2: 0, lineWidth: 1.5 }], margin: [0, 0, 0, 20] },
-
-      // ========== DADOS DO CLIENTE E PAGAMENTO (caixas com borda) ==========
-      {
-        columns: [
-          {
-            width: '*',
-            stack: [
-              { text: 'DADOS DO CLIENTE', style: 'boxHeader' },
-              {
-                stack: [
-                  { text: client.name, style: 'clientInfo', bold: true },
-                  { text: client.doc || 'CPF/CNPJ não informado', style: 'clientInfo' },
-                  { text: client.phone || 'Telefone não informado', style: 'clientInfo' },
-                  { text: addressHtml, style: 'clientInfo', italics: true }
-                ],
-                margin: [6, 6, 6, 6]
-              }
-            ],
-            margin: [0, 0, 5, 0],
-            border: [true, true, true, true],
-            borderWidth: 0.5,
-            borderColor: '#000000'
-          },
-          {
-            width: '*',
-            stack: [
-              { text: 'PAGAMENTO', style: 'boxHeader' },
-              {
-                stack: [
-                  { text: `Forma: ${quote.paymentMethod || 'A Combinar'}`, style: 'clientInfo' },
-                  { text: `Vendedor: RV Blocos`, style: 'clientInfo' }
-                ],
-                margin: [6, 6, 6, 6]
-              }
-            ],
-            margin: [5, 0, 0, 0],
-            border: [true, true, true, true],
-            borderWidth: 0.5,
-            borderColor: '#000000'
-          }
-        ],
-        margin: [0, 0, 0, 20]
-      },
-
-      // ========== TABELA DE PRODUTOS (com cabeçalho escuro e bordas) ==========
-      {
-        table: {
-          headerRows: 1,
-          widths: ['*', 'auto', 'auto', 'auto'],
-          body: [
-            [
-              { text: 'Descrição', style: 'tableHeader' },
-              { text: 'Qtd', style: 'tableHeader', alignment: 'center' },
-              { text: 'Unitário', style: 'tableHeader', alignment: 'right' },
-              { text: 'Total', style: 'tableHeader', alignment: 'right' }
-            ],
-            ...tableBody
-          ]
-        },
-        layout: {
-          hLineWidth: () => 0.5,
-          vLineWidth: () => 0.5,
-          hLineColor: () => '#000000',
-          vLineColor: () => '#000000',
-          paddingLeft: () => 8,
-          paddingRight: () => 8,
-          paddingTop: () => 6,
-          paddingBottom: () => 6
-        },
-        margin: [0, 0, 0, 20]
-      },
-
-      // ========== RODAPÉ: OBSERVAÇÕES (esquerda) e TOTAIS (direita) ==========
-      {
-        columns: [
-          {
-            width: '*',
-            stack: [
-              { text: 'Observações:', style: 'notesTitle' },
-              { text: 'Válido por 7 dias. Verifique os produtos no ato da entrega.', style: 'notesText' }
-            ]
-          },
-          {
-            width: 'auto',
-            stack: [
-              { text: `Subtotal: ${formatMoney(subtotal)}`, alignment: 'right', style: 'totalRow' },
-              discount > 0 ? { text: `Desconto: - ${formatMoney(discount)}`, alignment: 'right', style: 'totalRowRed' } : null,
-              { text: `TOTAL A PAGAR: ${formatMoney(finalTotal)}`, alignment: 'right', style: 'totalRowFinal' }
-            ].filter(Boolean)
-          }
-        ],
-        margin: [0, 0, 0, 40]
-      },
-
-      // ========== ASSINATURAS ==========
-      {
-        columns: [
-          {
-            width: '*',
-            stack: [
-              { canvas: [{ type: 'line', x1: 0, y1: 0, x2: 200, y2: 0, lineWidth: 0.5 }], margin: [0, 0, 0, 5] },
-              { text: 'Assinatura do Cliente', alignment: 'center', fontSize: 9 }
-            ]
-          },
-          {
-            width: '*',
-            stack: [
-              { canvas: [{ type: 'line', x1: 0, y1: 0, x2: 200, y2: 0, lineWidth: 0.5 }], margin: [0, 0, 0, 5] },
-              { text: 'RV BLOCOS', alignment: 'center', fontSize: 9 }
-            ]
-          }
-        ],
-        margin: [0, 0, 0, 20]
-      }
-    ],
-    styles: {
-      companyName: { fontSize: 16, bold: true, color: '#ea580c', margin: [0, 0, 0, 4] },
-      companyInfo: { fontSize: 9, color: '#475569', margin: [0, 2, 0, 0] },
-      docTitle: { fontSize: 14, bold: true, color: '#0f172a' },
-      docNumber: { fontSize: 12, bold: true, margin: [0, 5, 0, 0] },
-      docDate: { fontSize: 9, color: '#64748b', margin: [0, 3, 0, 0] },
-      boxHeader: { fontSize: 10, bold: true, fillColor: '#f1f5f9', margin: [4, 4, 4, 4], border: [false, false, false, true], borderWidth: 0.5, borderColor: '#000000' },
-      clientInfo: { fontSize: 10, margin: [0, 2, 0, 0] },
-      tableHeader: { fontSize: 10, bold: true, fillColor: '#0f172a', color: '#ffffff', alignment: 'left' },
-      tableCell: { fontSize: 9 },
-      tableCellBold: { fontSize: 9, bold: true },
-      tableCellRed: { fontSize: 9, color: 'red' },
-      totalRow: { fontSize: 10, margin: [0, 2, 0, 2] },
-      totalRowRed: { fontSize: 10, color: 'red', margin: [0, 2, 0, 2] },
-      totalRowFinal: { fontSize: 12, bold: true, margin: [0, 8, 0, 0], color: '#0f172a' },
-      notesTitle: { fontSize: 10, bold: true, margin: [0, 0, 0, 5] },
-      notesText: { fontSize: 9, color: '#334155', italics: true },
-      totalLabel: { fontSize: 11, bold: true },
-      totalValue: { fontSize: 13, bold: true, color: '#0f172a' }
-    },
-    defaultStyle: {
-      font: 'Roboto'
+    const quote = STATE.quotes.find(q => String(q.id) === String(id));
+    if (!quote) {
+        showToast("Orçamento não encontrado", true);
+        return;
     }
-  };
-
-  pdfMake.createPdf(docDefinition).download(`orcamento_${quote.id}.pdf`);
-  showLoading(false);
-  showToast(`PDF do orçamento #${quote.id} baixado!`);
+    showLoading(true);
+    
+    // Gera o HTML completo do orçamento
+    const htmlContent = getQuoteHTMLForPDF(quote);
+    
+    // Cria um elemento temporário para renderizar o HTML
+    const element = document.createElement('div');
+    element.innerHTML = htmlContent;
+    element.style.position = 'absolute';
+    element.style.left = '-9999px';
+    element.style.top = '-9999px';
+    document.body.appendChild(element);
+    
+    // Opções do html2pdf (qualidade A4)
+    const opt = {
+        margin:        [0.5, 0.5, 0.5, 0.5], // margens em polegadas
+        filename:      `orcamento_${quote.id}.pdf`,
+        image:         { type: 'jpeg', quality: 0.98 },
+        html2canvas:   { scale: 2, letterRendering: true, useCORS: true },
+        jsPDF:         { unit: 'in', format: 'a4', orientation: 'portrait' }
+    };
+    
+    try {
+        await html2pdf().set(opt).from(element).save();
+        showToast(`PDF do orçamento #${quote.id} baixado!`);
+    } catch (err) {
+        console.error(err);
+        showToast("Erro ao gerar PDF", true);
+    } finally {
+        document.body.removeChild(element);
+        showLoading(false);
+    }
 }
+
+      
       
 
 // Função para limpar o filtro de busca
