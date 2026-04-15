@@ -1751,14 +1751,212 @@ function renderRecentHistoryModal() {
             <td class="p-3 truncate text-xs font-bold text-slate-700" style="max-width:120px">${r.client}</td>
             <td class="p-3 text-right text-sm text-green-700 font-bold">${formatMoney(r.valorFinal)}</td>
             <td class="p-3 text-center flex gap-1 justify-center">
-                <button onclick="reprintSale('${r.id}')" class="text-slate-600 hover:text-orange-600 bg-white border border-slate-200 p-2 rounded shadow-sm" title="Imprimir"><i data-lucide="printer" width="14"></i></button>
-                <button onclick="duplicateSaleToQuote('${r.id}')" class="text-amber-500 hover:text-amber-700 bg-white border border-amber-200 p-2 rounded shadow-sm" title="Duplicar para Orçamento"><i data-lucide="copy" width="14"></i></button>
-                <button onclick="estornarVenda('${r.id}')" class="text-red-500 hover:text-red-700 bg-white border border-red-200 p-2 rounded shadow-sm" title="Estornar para Orçamento"><i data-lucide="rotate-ccw" width="14"></i></button>
+                <button onclick="downloadSalePDF('${r.id}')" class="text-indigo-600 hover:text-indigo-800 bg-white border border-indigo-200 p-2 rounded shadow-sm" title="Download PDF">
+                    <i data-lucide="file-down" width="14"></i>
+                </button>
+                <button onclick="reprintSale('${r.id}')" class="text-slate-600 hover:text-orange-600 bg-white border border-slate-200 p-2 rounded shadow-sm" title="Imprimir">
+                    <i data-lucide="printer" width="14"></i>
+                </button>
+                <button onclick="duplicateSaleToQuote('${r.id}')" class="text-amber-500 hover:text-amber-700 bg-white border border-amber-200 p-2 rounded shadow-sm" title="Duplicar para Orçamento">
+                    <i data-lucide="copy" width="14"></i>
+                </button>
+                <button onclick="estornarVenda('${r.id}')" class="text-red-500 hover:text-red-700 bg-white border border-red-200 p-2 rounded shadow-sm" title="Estornar para Orçamento">
+                    <i data-lucide="rotate-ccw" width="14"></i>
+                </button>
             </td>
         </tr>`;
     }).join(''); 
     lucide.createIcons();
 }
+
+
+
+      async function downloadSalePDF(id) {
+  // Busca todos os itens da venda (pode ter múltiplas linhas para o mesmo id)
+  const saleItems = STATE.logs.filter(l => String(l.id) === String(id) && l.type === 'venda' && l.status !== 'CANCELADO');
+  if (!saleItems.length) {
+    showToast("Venda não encontrada", true);
+    return;
+  }
+
+  showLoading(true);
+
+  // Calcula o desconto total (assumindo que todas as linhas têm o mesmo desconto)
+  const totalDiscount = Number(saleItems[0]?.discount) || 0;
+  const netTotal = saleItems.reduce((acc, i) => acc + (Number(i.totalValue) || 0), 0);
+  const grossTotal = netTotal + totalDiscount;
+  const fator = netTotal > 0 ? (grossTotal / netTotal) : 1;
+
+  // Monta o objeto de venda no mesmo formato que o renderInvoice espera
+  const saleObj = {
+    id: id,
+    date: saleItems[0].date,
+    clientName: saleItems[0].clientName || 'Consumidor Final',
+    paymentMethod: saleItems[0].paymentMethod || 'Não informado',
+    discount: totalDiscount,
+    deliveryAddress: saleItems[0].deliveryAddress || '',
+    items: saleItems.map(i => {
+      const grossItemTotal = (Number(i.totalValue) || 0) * fator;
+      const qty = Number(i.quantity) || 1;
+      return {
+        name: i.productName,
+        qty: qty,
+        price: grossItemTotal / qty,
+        total: grossItemTotal
+      };
+    })
+  };
+
+  // Busca os dados completos do cliente
+  const clientName = saleObj.clientName;
+  const cli = STATE.clients.find(c => c.name === clientName) || { 
+    name: clientName, 
+    doc: '', 
+    phone: '', 
+    address: saleObj.deliveryAddress || '' 
+  };
+
+  let subtotal = 0;
+  const itemsHtml = saleObj.items.map((i, index) => {
+    const itemTotal = i.qty * i.price;
+    subtotal += itemTotal;
+    const bgColor = index % 2 === 0 ? '#ffffff' : '#f8fafc';
+    return `
+      <tr style="background-color: ${bgColor};">
+        <td style="border-bottom: 1px solid #000; padding: 8px;">${i.name}</td>
+        <td align="center" style="border-bottom: 1px solid #000; padding: 8px;">${i.qty}</td>
+        <td align="right" style="border-bottom: 1px solid #000; padding: 8px;">${formatMoney(i.price)}</td>
+        <td align="right" style="border-bottom: 1px solid #000; padding: 8px;">${formatMoney(itemTotal)}</td>
+      </tr>`;
+  }).join('');
+
+  const discount = saleObj.discount || 0;
+  const finalTotal = subtotal - discount;
+  const addressToShow = saleObj.deliveryAddress 
+    ? `<strong>ENTREGA:</strong> ${saleObj.deliveryAddress}` 
+    : (cli.address || 'Endereço não informado');
+  const obsText = saleObj.observacao && saleObj.observacao !== 'Venda PDV' && saleObj.observacao !== 'Pronta Entrega PDV' 
+                  ? saleObj.observacao 
+                  : 'Venda registrada no sistema RV Blocos.';
+
+  const htmlString = `
+    <div style="font-family: 'Helvetica', 'Arial', sans-serif; color: #1e293b; padding: 15px; background-color: #ffffff; width: 100%; box-sizing: border-box; border: 1px solid #000; min-height: 27.5cm; position: relative; z-index: 1;">
+      
+      <!-- Logo de fundo (marca d'água) -->
+      <div style="position: absolute; top: 50%; left: 50%; transform: translate(-50%, -50%); width: 450px; height: 450px; opacity: 0.1; z-index: -1;">
+        <img src="https://lh3.googleusercontent.com/d/1SIoZ2JlalfMnGDZTXBk7ZYuPgwxX3odF" crossorigin="anonymous" style="width: 100%; height: 100%; object-fit: contain;" />
+      </div>
+
+      <!-- Cabeçalho -->
+      <table width="100%" style="border-bottom: 2px solid #000; padding-bottom: 15px; margin-bottom: 20px;">
+        <tr>
+          <td width="130" valign="middle" style="border-right: 1px solid #e2e8f0; padding-right: 15px;">
+            <img src="https://lh3.googleusercontent.com/d/1SIoZ2JlalfMnGDZTXBk7ZYuPgwxX3odF" crossorigin="anonymous" style="max-height: 80px; max-width: 120px; display: block; margin: 0 auto;" />
+          </td>
+          <td valign="middle" style="padding-left: 15px;">
+            <h2 style="margin: 0; color: #ea580c; font-size: 20px; font-weight: 800;">RV BLOCOS E ESTRUTURAS</h2>
+            <div style="font-size: 11px; color: #475569; margin-top: 5px; line-height: 1.4;">CNPJ: 46.889.791/0001-53</div>
+            <div style="font-size: 11px; color: #475569; line-height: 1.4;">Rua Mineiros, 532 | Jataí - GO | (64) 3636-4861</div>
+          </td>
+          <td align="right" valign="top">
+            <h2 style="margin: 0 0 5px 0; font-size: 16px; font-weight: 900; color: #0f172a;">VENDA / PEDIDO</h2>
+            <div style="font-size: 11px; margin-bottom: 2px;"><strong>Nº:</strong> ${saleObj.id}</div>
+            <div style="font-size: 11px;"><strong>Data:</strong> ${formatDate(saleObj.date)}</div>
+          </td>
+        </tr>
+      </table>
+
+      <!-- Dados do cliente e pagamento -->
+      <table width="100%" style="margin-bottom: 20px; border-spacing: 0;">
+        <tr>
+          <td width="48%" valign="top" style="border: 1px solid #000; border-radius: 6px; padding: 0; overflow: hidden;">
+            <div style="background-color: #f1f5f9; padding: 5px 10px; font-size: 10px; font-weight: bold; text-transform: uppercase; color: #64748b; border-bottom: 1px solid #000;">Dados do Cliente</div>
+            <div style="padding: 10px; font-size: 11px; line-height: 1.5;">
+              <strong>${cli.name}</strong><br>
+              ${cli.doc || 'CPF/CNPJ não informado'}<br>
+              ${cli.phone || 'Telefone não informado'}<br>
+              ${addressToShow}
+            </div>
+          </td>
+          <td width="4%"></td>
+          <td width="48%" valign="top" style="border: 1px solid #000; border-radius: 6px; padding: 0; overflow: hidden;">
+            <div style="background-color: #f1f5f9; padding: 5px 10px; font-size: 10px; font-weight: bold; text-transform: uppercase; color: #64748b; border-bottom: 1px solid #000;">Pagamento</div>
+            <div style="padding: 10px; font-size: 11px; line-height: 1.5;">
+              <strong>Forma:</strong> ${saleObj.paymentMethod}<br>
+              <strong>Vendedor:</strong> RV Blocos
+            </div>
+          </td>
+        </tr>
+      </table>
+
+      <!-- Tabela de itens -->
+      <table width="100%" style="border-collapse: collapse; margin-bottom: 20px; font-size: 11px;">
+        <thead>
+          <tr>
+            <th align="left" style="background-color: #0f172a; color: #ffffff; padding: 8px; font-size: 10px; text-transform: uppercase;">Descrição</th>
+            <th align="center" style="background-color: #0f172a; color: #ffffff; padding: 8px; font-size: 10px; text-transform: uppercase; width: 50px;">Qtd</th>
+            <th align="right" style="background-color: #0f172a; color: #ffffff; padding: 8px; font-size: 10px; text-transform: uppercase; width: 90px;">Unit.</th>
+            <th align="right" style="background-color: #0f172a; color: #ffffff; padding: 8px; font-size: 10px; text-transform: uppercase; width: 90px;">Total</th>
+          </tr>
+        </thead>
+        <tbody>
+          ${itemsHtml}
+        </tbody>
+      </table>
+
+      <!-- Rodapé: observações e totais -->
+      <table width="100%" style="margin-top: 10px;">
+        <tr>
+          <td valign="top" style="padding-right: 30px;">
+            <div style="border: 1px dashed #cbd5e1; border-radius: 6px; padding: 10px;">
+              <div style="font-size: 10px; font-weight: bold; color: #64748b; margin-bottom: 5px;">Observações:</div>
+              <div style="font-size: 10px; color: #334155;">${obsText}</div>
+            </div>
+          </td>
+          <td width="250" valign="top">
+            <table width="100%" style="font-size: 11px; border-collapse: collapse;">
+              <tr>
+                <td style="padding: 5px 0; border-bottom: 1px solid #e2e8f0;">Subtotal:</td>
+                <td align="right" style="padding: 5px 0; border-bottom: 1px solid #e2e8f0;">${formatMoney(subtotal)}</td>
+              </tr>
+              ${discount > 0 ? `
+              <tr>
+                <td style="padding: 5px 0; border-bottom: 1px solid #e2e8f0; color: red;">Desconto:</td>
+                <td align="right" style="padding: 5px 0; border-bottom: 1px solid #e2e8f0; color: red;">- ${formatMoney(discount)}</td>
+              </tr>` : ''}
+              <tr>
+                <td style="padding: 10px 10px 10px 0; font-size: 12px; font-weight: 900; border-top: 2px solid #0f172a; background-color: #f1f5f9;">TOTAL A PAGAR:</td>
+                <td align="right" style="padding: 10px; font-size: 14px; font-weight: 900; border-top: 2px solid #0f172a; background-color: #f1f5f9;">${formatMoney(finalTotal)}</td>
+              </tr>
+            <td>
+          </td>
+        </tr>
+      </table>
+    </div>
+  `;
+
+  const opt = {
+    margin:       10,
+    filename:     `RV Blocos - Venda #${id}.pdf`,
+    image:        { type: 'jpeg', quality: 1 },
+    html2canvas:  { scale: 2, useCORS: true, letterRendering: true },
+    jsPDF:        { unit: 'mm', format: 'a4', orientation: 'portrait' }
+  };
+
+  setTimeout(() => {
+    html2pdf().set(opt).from(htmlString).save()
+      .then(() => {
+        showLoading(false);
+        showToast(`PDF da venda #${id} baixado!`);
+      })
+      .catch(err => {
+        console.error("Erro PDF:", err);
+        showLoading(false);
+        showToast("Erro ao gerar PDF da venda", true);
+      });
+  }, 500);
+}
+      
 
 async function duplicateSaleToQuote(saleId) {
     if(!confirm("Deseja duplicar esta venda para um novo orçamento?")) return;
