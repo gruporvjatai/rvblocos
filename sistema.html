@@ -6,6 +6,11 @@
     <script src="https://cdn.tailwindcss.com"></script>
     <script src="https://unpkg.com/lucide@latest"></script>
     <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+      <!--<script src="https://cdnjs.cloudflare.com/ajax/libs/html2pdf.js/0.10.1/html2pdf.bundle.min.js" 
+      integrity="sha512-GsLlZN/3F2ErC5ifS5QtgpiJtWd43JWSuIgh7mbzZ8zBps+dvLusV+eNQATqgA/HdeKFVgA5v3S/cIrLF7QnIg==" 
+      crossorigin="anonymous" referrerpolicy="no-referrer">
+      </script> -->
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/html2pdf.js/0.10.1/html2pdf.bundle.min.js"></script>
          <script>
               if (!localStorage.getItem('rv_user')) {
                   window.location.replace("index.html");
@@ -280,8 +285,40 @@
          </div>
       </div>
 
-      <div id="view-quotes" class="hidden-section"><h2 class="text-2xl font-bold text-slate-800 mb-4 flex items-center gap-2"><i data-lucide="folder-open"></i> Orçamentos Salvos</h2><div id="quotes-list" class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4 max-h-[70vh] overflow-y-auto"></div></div>
-
+      <div id="view-quotes" class="hidden-section">
+        <div class="flex justify-between items-center mb-6 flex-wrap gap-4">
+          <h2 class="text-2xl font-bold text-slate-800 flex items-center gap-2">
+            <i data-lucide="folder-open"></i> Orçamentos
+          </h2>
+          <div class="flex gap-2">
+            <input type="text" id="quotes-search" placeholder="Buscar cliente ou ID..." 
+                   class="p-2 border rounded-lg text-sm w-64 focus:ring-2 focus:ring-orange-500 outline-none"
+                   onkeyup="renderQuotesList()">
+            <button onclick="clearQuoteFilters()" class="p-2 bg-slate-200 rounded-lg hover:bg-slate-300">
+              <i data-lucide="x" class="w-4 h-4"></i>
+            </button>
+          </div>
+        </div>
+      
+        <div class="bg-white rounded-xl border shadow-sm overflow-hidden">
+          <div class="overflow-x-auto">
+            <table class="w-full text-sm text-left">
+              <thead class="bg-slate-50 text-slate-700 border-b">
+                <tr>
+                  <th class="p-4">ID</th>
+                  <th class="p-4">Cliente</th>
+                  <th class="p-4">Data</th>
+                  <th class="p-4">Itens</th>
+                  <th class="p-4 text-right">Valor (R$)</th>
+                  <th class="p-4 text-center">Ações</th>
+                </tr>
+              </thead>
+              <tbody id="quotes-list" class="divide-y"></tbody>
+            </table>
+          </div>
+        </div>
+      </div>
+      
       <div id="view-fin" class="hidden-section">
         <div class="flex justify-between items-center mb-6">
             <h2 class="text-2xl font-bold text-slate-800">Financeiro & Caixa</h2>
@@ -953,12 +990,20 @@ function onDataLoaded() {
     showLoading(false);
 }
 
-function getNextId(array) {
-    let max = 0;
-    array.forEach(item => { const val = parseInt(item.id); if(!isNaN(val) && val > max) max = val; });
-    return max + 1;
+function getNextId() {
+  let maxId = 0;
+  if (STATE.logs) {
+    STATE.logs.forEach(log => { const id = parseInt(log.id); if (!isNaN(id) && id > maxId) maxId = id; });
+  }
+  if (STATE.quotes) {
+    STATE.quotes.forEach(quote => { const id = parseInt(quote.id); if (!isNaN(id) && id > maxId) maxId = id; });
+  }
+  // também verifica produtos, clientes etc para evitar colisão (opcional)
+  if (STATE.products) {
+    STATE.products.forEach(p => { const id = parseInt(p.id); if (!isNaN(id) && id > maxId) maxId = id; });
+  }
+  return maxId + 1;
 }
-
 // --- FUNÇÕES CRUD DE USUÁRIOS ---
 function renderUsers() {
     const list = document.getElementById('users-list');
@@ -1706,14 +1751,212 @@ function renderRecentHistoryModal() {
             <td class="p-3 truncate text-xs font-bold text-slate-700" style="max-width:120px">${r.client}</td>
             <td class="p-3 text-right text-sm text-green-700 font-bold">${formatMoney(r.valorFinal)}</td>
             <td class="p-3 text-center flex gap-1 justify-center">
-                <button onclick="reprintSale('${r.id}')" class="text-slate-600 hover:text-orange-600 bg-white border border-slate-200 p-2 rounded shadow-sm" title="Imprimir"><i data-lucide="printer" width="14"></i></button>
-                <button onclick="duplicateSaleToQuote('${r.id}')" class="text-amber-500 hover:text-amber-700 bg-white border border-amber-200 p-2 rounded shadow-sm" title="Duplicar para Orçamento"><i data-lucide="copy" width="14"></i></button>
-                <button onclick="estornarVenda('${r.id}')" class="text-red-500 hover:text-red-700 bg-white border border-red-200 p-2 rounded shadow-sm" title="Estornar para Orçamento"><i data-lucide="rotate-ccw" width="14"></i></button>
+                <button onclick="downloadSalePDF('${r.id}')" class="text-indigo-600 hover:text-indigo-800 bg-white border border-indigo-200 p-2 rounded shadow-sm" title="Download PDF">
+                    <i data-lucide="file-down" width="14"></i>
+                </button>
+                <button onclick="reprintSale('${r.id}')" class="text-slate-600 hover:text-orange-600 bg-white border border-slate-200 p-2 rounded shadow-sm" title="Imprimir">
+                    <i data-lucide="printer" width="14"></i>
+                </button>
+                <button onclick="duplicateSaleToQuote('${r.id}')" class="text-amber-500 hover:text-amber-700 bg-white border border-amber-200 p-2 rounded shadow-sm" title="Duplicar para Orçamento">
+                    <i data-lucide="copy" width="14"></i>
+                </button>
+                <button onclick="estornarVenda('${r.id}')" class="text-red-500 hover:text-red-700 bg-white border border-red-200 p-2 rounded shadow-sm" title="Estornar para Orçamento">
+                    <i data-lucide="rotate-ccw" width="14"></i>
+                </button>
             </td>
         </tr>`;
     }).join(''); 
     lucide.createIcons();
 }
+
+
+
+      async function downloadSalePDF(id) {
+  // Busca todos os itens da venda (pode ter múltiplas linhas para o mesmo id)
+  const saleItems = STATE.logs.filter(l => String(l.id) === String(id) && l.type === 'venda' && l.status !== 'CANCELADO');
+  if (!saleItems.length) {
+    showToast("Venda não encontrada", true);
+    return;
+  }
+
+  showLoading(true);
+
+  // Calcula o desconto total (assumindo que todas as linhas têm o mesmo desconto)
+  const totalDiscount = Number(saleItems[0]?.discount) || 0;
+  const netTotal = saleItems.reduce((acc, i) => acc + (Number(i.totalValue) || 0), 0);
+  const grossTotal = netTotal + totalDiscount;
+  const fator = netTotal > 0 ? (grossTotal / netTotal) : 1;
+
+  // Monta o objeto de venda no mesmo formato que o renderInvoice espera
+  const saleObj = {
+    id: id,
+    date: saleItems[0].date,
+    clientName: saleItems[0].clientName || 'Consumidor Final',
+    paymentMethod: saleItems[0].paymentMethod || 'Não informado',
+    discount: totalDiscount,
+    deliveryAddress: saleItems[0].deliveryAddress || '',
+    items: saleItems.map(i => {
+      const grossItemTotal = (Number(i.totalValue) || 0) * fator;
+      const qty = Number(i.quantity) || 1;
+      return {
+        name: i.productName,
+        qty: qty,
+        price: grossItemTotal / qty,
+        total: grossItemTotal
+      };
+    })
+  };
+
+  // Busca os dados completos do cliente
+  const clientName = saleObj.clientName;
+  const cli = STATE.clients.find(c => c.name === clientName) || { 
+    name: clientName, 
+    doc: '', 
+    phone: '', 
+    address: saleObj.deliveryAddress || '' 
+  };
+
+  let subtotal = 0;
+  const itemsHtml = saleObj.items.map((i, index) => {
+    const itemTotal = i.qty * i.price;
+    subtotal += itemTotal;
+    const bgColor = index % 2 === 0 ? '#ffffff' : '#f8fafc';
+    return `
+      <tr style="background-color: ${bgColor};">
+        <td style="border-bottom: 1px solid #000; padding: 8px;">${i.name}</td>
+        <td align="center" style="border-bottom: 1px solid #000; padding: 8px;">${i.qty}</td>
+        <td align="right" style="border-bottom: 1px solid #000; padding: 8px;">${formatMoney(i.price)}</td>
+        <td align="right" style="border-bottom: 1px solid #000; padding: 8px;">${formatMoney(itemTotal)}</td>
+      </tr>`;
+  }).join('');
+
+  const discount = saleObj.discount || 0;
+  const finalTotal = subtotal - discount;
+  const addressToShow = saleObj.deliveryAddress 
+    ? `<strong>ENTREGA:</strong> ${saleObj.deliveryAddress}` 
+    : (cli.address || 'Endereço não informado');
+  const obsText = saleObj.observacao && saleObj.observacao !== 'Venda PDV' && saleObj.observacao !== 'Pronta Entrega PDV' 
+                  ? saleObj.observacao 
+                  : 'Venda registrada no sistema RV Blocos.';
+
+  const htmlString = `
+    <div style="font-family: 'Helvetica', 'Arial', sans-serif; color: #1e293b; padding: 15px; background-color: #ffffff; width: 100%; box-sizing: border-box; border: 1px solid #000; min-height: 27.5cm; position: relative; z-index: 1;">
+      
+      <!-- Logo de fundo (marca d'água) -->
+      <div style="position: absolute; top: 50%; left: 50%; transform: translate(-50%, -50%); width: 450px; height: 450px; opacity: 0.1; z-index: -1;">
+        <img src="https://lh3.googleusercontent.com/d/1SIoZ2JlalfMnGDZTXBk7ZYuPgwxX3odF" crossorigin="anonymous" style="width: 100%; height: 100%; object-fit: contain;" />
+      </div>
+
+      <!-- Cabeçalho -->
+      <table width="100%" style="border-bottom: 2px solid #000; padding-bottom: 15px; margin-bottom: 20px;">
+        <tr>
+          <td width="130" valign="middle" style="border-right: 1px solid #e2e8f0; padding-right: 15px;">
+            <img src="https://lh3.googleusercontent.com/d/1SIoZ2JlalfMnGDZTXBk7ZYuPgwxX3odF" crossorigin="anonymous" style="max-height: 80px; max-width: 120px; display: block; margin: 0 auto;" />
+          </td>
+          <td valign="middle" style="padding-left: 15px;">
+            <h2 style="margin: 0; color: #ea580c; font-size: 20px; font-weight: 800;">RV BLOCOS E ESTRUTURAS</h2>
+            <div style="font-size: 11px; color: #475569; margin-top: 5px; line-height: 1.4;">CNPJ: 46.889.791/0001-53</div>
+            <div style="font-size: 11px; color: #475569; line-height: 1.4;">Rua Mineiros, 532 | Jataí - GO | (64) 3636-4861</div>
+          </td>
+          <td align="right" valign="top">
+            <h2 style="margin: 0 0 5px 0; font-size: 16px; font-weight: 900; color: #0f172a;">VENDA / PEDIDO</h2>
+            <div style="font-size: 11px; margin-bottom: 2px;"><strong>Nº:</strong> ${saleObj.id}</div>
+            <div style="font-size: 11px;"><strong>Data:</strong> ${formatDate(saleObj.date)}</div>
+          </td>
+        </tr>
+      </table>
+
+      <!-- Dados do cliente e pagamento -->
+      <table width="100%" style="margin-bottom: 20px; border-spacing: 0;">
+        <tr>
+          <td width="48%" valign="top" style="border: 1px solid #000; border-radius: 6px; padding: 0; overflow: hidden;">
+            <div style="background-color: #f1f5f9; padding: 5px 10px; font-size: 10px; font-weight: bold; text-transform: uppercase; color: #64748b; border-bottom: 1px solid #000;">Dados do Cliente</div>
+            <div style="padding: 10px; font-size: 11px; line-height: 1.5;">
+              <strong>${cli.name}</strong><br>
+              ${cli.doc || 'CPF/CNPJ não informado'}<br>
+              ${cli.phone || 'Telefone não informado'}<br>
+              ${addressToShow}
+            </div>
+          </td>
+          <td width="4%"></td>
+          <td width="48%" valign="top" style="border: 1px solid #000; border-radius: 6px; padding: 0; overflow: hidden;">
+            <div style="background-color: #f1f5f9; padding: 5px 10px; font-size: 10px; font-weight: bold; text-transform: uppercase; color: #64748b; border-bottom: 1px solid #000;">Pagamento</div>
+            <div style="padding: 10px; font-size: 11px; line-height: 1.5;">
+              <strong>Forma:</strong> ${saleObj.paymentMethod}<br>
+              <strong>Vendedor:</strong> RV Blocos
+            </div>
+          </td>
+        </tr>
+      </table>
+
+      <!-- Tabela de itens -->
+      <table width="100%" style="border-collapse: collapse; margin-bottom: 20px; font-size: 11px;">
+        <thead>
+          <tr>
+            <th align="left" style="background-color: #0f172a; color: #ffffff; padding: 8px; font-size: 10px; text-transform: uppercase;">Descrição</th>
+            <th align="center" style="background-color: #0f172a; color: #ffffff; padding: 8px; font-size: 10px; text-transform: uppercase; width: 50px;">Qtd</th>
+            <th align="right" style="background-color: #0f172a; color: #ffffff; padding: 8px; font-size: 10px; text-transform: uppercase; width: 90px;">Unit.</th>
+            <th align="right" style="background-color: #0f172a; color: #ffffff; padding: 8px; font-size: 10px; text-transform: uppercase; width: 90px;">Total</th>
+          </tr>
+        </thead>
+        <tbody>
+          ${itemsHtml}
+        </tbody>
+      </table>
+
+      <!-- Rodapé: observações e totais -->
+      <table width="100%" style="margin-top: 10px;">
+        <tr>
+          <td valign="top" style="padding-right: 30px;">
+            <div style="border: 1px dashed #cbd5e1; border-radius: 6px; padding: 10px;">
+              <div style="font-size: 10px; font-weight: bold; color: #64748b; margin-bottom: 5px;">Observações:</div>
+              <div style="font-size: 10px; color: #334155;">${obsText}</div>
+            </div>
+          </td>
+          <td width="250" valign="top">
+            <table width="100%" style="font-size: 11px; border-collapse: collapse;">
+              <tr>
+                <td style="padding: 5px 0; border-bottom: 1px solid #e2e8f0;">Subtotal:</td>
+                <td align="right" style="padding: 5px 0; border-bottom: 1px solid #e2e8f0;">${formatMoney(subtotal)}</td>
+              </tr>
+              ${discount > 0 ? `
+              <tr>
+                <td style="padding: 5px 0; border-bottom: 1px solid #e2e8f0; color: red;">Desconto:</td>
+                <td align="right" style="padding: 5px 0; border-bottom: 1px solid #e2e8f0; color: red;">- ${formatMoney(discount)}</td>
+              </tr>` : ''}
+              <tr>
+                <td style="padding: 10px 10px 10px 0; font-size: 12px; font-weight: 900; border-top: 2px solid #0f172a; background-color: #f1f5f9;">TOTAL A PAGAR:</td>
+                <td align="right" style="padding: 10px; font-size: 14px; font-weight: 900; border-top: 2px solid #0f172a; background-color: #f1f5f9;">${formatMoney(finalTotal)}</td>
+              </tr>
+            <td>
+          </td>
+        </tr>
+      </table>
+    </div>
+  `;
+
+  const opt = {
+    margin:       10,
+    filename:     `RV Blocos - Venda #${id}.pdf`,
+    image:        { type: 'jpeg', quality: 1 },
+    html2canvas:  { scale: 2, useCORS: true, letterRendering: true },
+    jsPDF:        { unit: 'mm', format: 'a4', orientation: 'portrait' }
+  };
+
+  setTimeout(() => {
+    html2pdf().set(opt).from(htmlString).save()
+      .then(() => {
+        showLoading(false);
+        showToast(`PDF da venda #${id} baixado!`);
+      })
+      .catch(err => {
+        console.error("Erro PDF:", err);
+        showLoading(false);
+        showToast("Erro ao gerar PDF da venda", true);
+      });
+  }, 500);
+}
+      
 
 async function duplicateSaleToQuote(saleId) {
     if(!confirm("Deseja duplicar esta venda para um novo orçamento?")) return;
@@ -1766,25 +2009,432 @@ async function duplicateSaleToQuote(saleId) {
 }
 
 function renderQuotesList() {
-    const list = document.getElementById('quotes-list');
-    if(!list) return;
-    if(!(STATE.quotes||[]).length) { list.innerHTML='<p class="text-slate-400 col-span-3 text-center">Nenhum orçamento salvo.</p>'; return; }
-    list.innerHTML = STATE.quotes.slice().reverse().map(q=> {
+  const tbody = document.getElementById('quotes-list');
+  if (!tbody) return;
+
+  let quotes = [...(STATE.quotes || [])];
+  
+  // Filtro de busca
+  const searchTerm = document.getElementById('quotes-search')?.value.toLowerCase() || '';
+  if (searchTerm) {
+    quotes = quotes.filter(q => 
+      String(q.id).includes(searchTerm) || 
+      (q.clientName && q.clientName.toLowerCase().includes(searchTerm))
+    );
+  }
+
+  if (quotes.length === 0) {
+    tbody.innerHTML = '<tr><td colspan="6" class="p-8 text-center text-slate-400">Nenhum orçamento encontrado.</td></tr>';
+    lucide.createIcons();
+    return;
+  }
+
+  // Ordenar do mais recente para o mais antigo
+  quotes.sort((a, b) => new Date(b.date) - new Date(a.date));
+
+  tbody.innerHTML = quotes.map(q => {
     const valorLiquido = q.total - (q.discount || 0);
-    return `<div class="p-4 border rounded-xl hover:shadow-md transition bg-white flex flex-col justify-between">
-        <div>
-            <div class="flex justify-between font-bold text-slate-800 text-lg"><span>${q.clientName}</span><span>${formatMoney(valorLiquido)}</span></div>
-            <div class="flex justify-between items-center mt-1"><span class="text-xs font-bold text-orange-600 bg-orange-100 px-2 rounded">#${q.id}</span><span class="text-xs text-slate-400"><i data-lucide="calendar" width="12" class="inline"></i> ${formatDate(q.date)}</span></div>
-            <p class="text-xs text-slate-500 mt-2 bg-slate-50 p-2 rounded border border-slate-100 truncate">${q.itemsText || '...'}</p>
+    const clientPhone = getClientPhoneByName(q.clientName);
+    const whatsappLink = clientPhone ? `https://wa.me/55${clientPhone.replace(/\D/g, '')}?text=Olá! Gostaria de mais informações sobre o orçamento #${q.id}` : '#';
+    
+    return `
+      <tr class="hover:bg-slate-50 transition">
+        <td class="p-4 font-mono text-xs font-bold text-slate-500">#${q.id}</td>
+        <td class="p-4 font-medium text-slate-700">${escapeHtml(q.clientName)}</td>
+        <td class="p-4 text-slate-500">${formatDate(q.date)}</td>
+        <td class="p-4 text-slate-600 max-w-xs truncate" title="${escapeHtml(q.itemsText || '')}">${escapeHtml(q.itemsText || '-')}</td>
+        <td class="p-4 text-right font-bold text-green-600">${formatMoney(valorLiquido)}</td>
+        <td class="p-4 text-center">
+          <div class="flex justify-center gap-2 flex-wrap">
+            <button onclick="sendQuoteWhatsApp('${q.id}')" class="text-green-600 hover:text-green-800 p-1" title="WhatsApp">
+              <i data-lucide="message-circle" width="18"></i>
+            </button>
+            <button onclick="loadQuoteToCart('${q.id}')" class="text-blue-600 hover:text-blue-800 p-1" title="Editar">
+              <i data-lucide="edit-3" width="18"></i>
+            </button>
+            <button onclick="duplicateQuote('${q.id}')" class="text-amber-600 hover:text-amber-800 p-1" title="Duplicar">
+              <i data-lucide="copy" width="18"></i>
+            </button>
+            <button onclick="downloadQuotePDF('${q.id}')" class="text-indigo-600 hover:text-indigo-800 p-1" title="Download PDF">
+                <i data-lucide="file-down" width="18"></i>
+            </button>
+            <button onclick="printQuote('${q.id}')" class="text-slate-600 hover:text-slate-800 p-1" title="Imprimir">
+              <i data-lucide="printer" width="18"></i>
+            </button>
+            <button onclick="deleteQuote('${q.id}')" class="text-red-600 hover:text-red-800 p-1" title="Excluir">
+              <i data-lucide="trash-2" width="18"></i>
+            </button>
+          </div>
+        </td>
+      </tr>
+    `;
+  }).join('');
+  
+  lucide.createIcons();
+}
+
+      // Função para obter telefone do cliente pelo nome
+function getClientPhoneByName(clientName) {
+  if (!clientName || clientName === 'Consumidor Final') return null;
+  const client = STATE.clients.find(c => c.name === clientName);
+  return client?.phone || null;
+}
+
+// Função para enviar orçamento pelo WhatsApp
+async function sendQuoteWhatsApp(id) {
+  const quote = STATE.quotes.find(q => String(q.id) === String(id));
+  if (!quote) {
+    showToast("Orçamento não encontrado", true);
+    return;
+  }
+  
+  const phone = getClientPhoneByName(quote.clientName);
+  if (!phone) {
+    showToast("Cliente não possui telefone cadastrado", true);
+    return;
+  }
+  
+  // Montar mensagem com resumo do orçamento
+  const itemsText = quote.items.map(i => `${i.name} (x${i.qty})`).join(', ');
+  const total = formatMoney(quote.total - (quote.discount || 0));
+  const message = `*ORÇAMENTO RV BLOCOS #${quote.id}*\n\nCliente: ${quote.clientName}\nData: ${formatDate(quote.date)}\nItens: ${itemsText}\nTotal: ${total}\n\n*Para confirmar ou alterar, entre em contato conosco.*`;
+  
+  const encodedMsg = encodeURIComponent(message);
+  const whatsappUrl = `https://wa.me/55${phone.replace(/\D/g, '')}?text=${encodedMsg}`;
+  window.open(whatsappUrl, '_blank');
+}
+
+// Função para duplicar um orçamento existente
+async function duplicateQuote(id) {
+  const original = STATE.quotes.find(q => String(q.id) === String(id));
+  if (!original) {
+    showToast("Orçamento original não encontrado", true);
+    return;
+  }
+  
+  showLoading(true);
+  
+  // Gera um novo ID único
+  const newId = getNextId();
+  const date = new Date(new Date().getTime() - (new Date().getTimezoneOffset() * 60000)).toISOString();
+  
+  // Prepara os itens para inserção (cada item é um registro na tabela logs)
+  const newItems = original.items.map(item => ({
+    id: newId,
+    tipo: 'orcamento',
+    produto_nome: item.name,
+    quantidade: item.qty,
+    data: date,
+    observacao: '',
+    valor_total: item.total,
+    cliente_nome: original.clientName,
+    forma_pagamento: original.paymentMethod || 'Dinheiro',
+    status: 'ABERTO',
+    desconto: original.discount || 0,
+    status_financeiro: original.discountType || '$',
+    endereco_entrega: original.deliveryAddress || '',
+    status_entrega: '',
+    qtd_entregue: 0,
+    vencimento: date,
+    valor_pago: 0
+  }));
+  
+  // Insere no Supabase
+  const { error } = await sb.from('logs').insert(newItems);
+  
+  if (error) {
+    showLoading(false);
+    console.error("Erro ao duplicar:", error);
+    return showToast("Erro ao duplicar orçamento: " + error.message, true);
+  }
+  
+  showToast("Orçamento duplicado com sucesso!");
+  await loadData();               // recarrega todos os dados
+  navigate('quotes');            // vai para a aba de orçamentos
+  showLoading(false);
+}
+
+
+    function getQuoteHTMLForPDF(quote) {
+    const title = "ORÇAMENTO";
+    const clientName = quote.clientName || 'Consumidor Final';
+    
+    const cliFromState = STATE.clients.find(c => c.name === clientName);
+    const cli = cliFromState || { 
+        name: clientName, 
+        doc: '', 
+        phone: '', 
+        address: '' 
+    };
+
+    let subtotal = 0;
+    const itemsHtml = quote.items.map(i => {
+        const itemTotal = i.qty * i.price;
+        subtotal += itemTotal;
+        return `<tr>
+            <td style="border-bottom: 1px solid #000; padding: 8px;">${i.name}</td>
+            <td align="center" style="border-bottom: 1px solid #000; padding: 8px;">${i.qty}</td>
+            <td align="right" style="border-bottom: 1px solid #000; padding: 8px;">${formatMoney(i.price)}</td>
+            <td align="right" style="border-bottom: 1px solid #000; padding: 8px;">${formatMoney(itemTotal)}</td>
+        </tr>`;
+    }).join('');
+
+    const discount = Number(quote.discount) || 0;
+    const finalTotal = Math.max(0, subtotal - discount);
+    
+    const addressToShow = quote.deliveryAddress 
+        ? `<div style="padding: 4px; background-color: #fef3c7; border-left: 3px solid #f59e0b; margin-top: 5px;">
+            <strong>ENTREGA:</strong><br>${quote.deliveryAddress}
+           </div>` 
+        : (cli.address || 'Endereço não informado');
+
+    return `
+    <div class="invoice-full" style="width: 100%; max-width: 800px; margin: 0 auto; font-family: 'Helvetica', Arial, sans-serif; background: white; padding: 20px; border: 1px solid #000;">
+        <div class="header-section" style="display: flex; border-bottom: 2px solid #000; padding-bottom: 15px; margin-bottom: 20px;">
+            <div class="logo-area" style="width: 120px; display: flex; align-items: center; justify-content: center; border-right: 1px solid #e2e8f0; padding-right: 15px; margin-right: 15px;">
+                <img src="https://lh3.googleusercontent.com/d/1SIoZ2JlalfMnGDZTXBk7ZYuPgwxX3odF" style="max-height: 80px;" />
+            </div>
+            <div class="company-details" style="flex: 1;">
+                <h2 class="company-title" style="font-size: 20px; font-weight: 800; color: #ea580c; text-transform: uppercase; margin: 0;">RV BLOCOS E ESTRUTURAS</h2>
+                <div class="company-info" style="font-size: 11px; color: #475569; line-height: 1.4; margin-top: 5px;">CNPJ: 46.889.791/0001-53</div>
+                <div class="company-info" style="font-size: 11px; color: #475569; line-height: 1.4;">Rua Mineiros, 532 | Jataí - GO | (64) 3636-4861</div>
+            </div>
+            <div class="doc-meta" style="width: 180px; text-align: right; margin-right: 20px;">
+                <div class="doc-title" style="font-size: 16px; font-weight: 900; color: #0f172a; text-transform: uppercase; margin-bottom: 5px;">${title}</div>
+                <div class="meta-row" style="font-size: 11px; margin-bottom: 2px;"><strong>Nº:</strong> ${quote.id}</div>
+                <div class="meta-row" style="font-size: 11px; margin-bottom: 2px;"><strong>Data:</strong> ${formatDate(quote.date)}</div>
+            </div>
         </div>
-        <div class="grid grid-cols-2 gap-2 mt-4">
-            <button onclick="loadQuoteToCart('${q.id}')" class="py-2 bg-orange-100 text-orange-700 text-xs font-bold rounded flex items-center justify-center gap-1"><i data-lucide="edit" width="14"></i> Editar/Faturar</button>
-            <button onclick="printQuote('${q.id}')" class="py-2 bg-slate-800 text-white text-xs font-bold rounded flex justify-center gap-2 items-center"><i data-lucide="printer" width="14"></i> Imprimir</button>
-            <button onclick='deleteQuote("${q.id}")' class="col-span-2 py-2 text-red-500 text-xs font-bold rounded border border-red-100 flex items-center justify-center gap-1"><i data-lucide="trash-2" width="14"></i> Excluir</button>
+        <div class="info-grid" style="display: flex; gap: 20px; margin-bottom: 20px;">
+            <div class="info-col" style="flex: 1; border: 1px solid #000; border-radius: 6px; overflow: hidden;">
+                <div class="col-header" style="background-color: #f1f5f9; padding: 5px 10px; font-size: 10px; font-weight: bold; text-transform: uppercase; color: #64748b; border-bottom: 1px solid #000;">Dados do Cliente</div>
+                <div class="col-content" style="padding: 10px; font-size: 11px; line-height: 1.5;">
+                    <strong>${cli.name}</strong><br>
+                    ${cli.doc || 'CPF/CNPJ não informado'}<br>
+                    ${cli.phone || 'Telefone não informado'}<br>
+                    ${addressToShow}
+                </div>
+            </div>
+            <div class="info-col" style="flex: 1; border: 1px solid #000; border-radius: 6px; overflow: hidden;">
+                <div class="col-header" style="background-color: #f1f5f9; padding: 5px 10px; font-size: 10px; font-weight: bold; text-transform: uppercase; color: #64748b; border-bottom: 1px solid #000;">Pagamento</div>
+                <div class="col-content" style="padding: 10px; font-size: 11px; line-height: 1.5;">
+                    <strong>Forma:</strong> ${quote.paymentMethod || 'A Combinar'}<br>
+                    <strong>Vendedor:</strong> RV Blocos
+                </div>
+            </div>
+        </div>
+        <table class="full-table" style="width: 100%; border-collapse: collapse; font-size: 11px; margin-bottom: 20px;">
+            <thead>
+                <tr>
+                    <th style="background-color: #0f172a; color: white; padding: 8px; text-align: left; font-weight: bold; text-transform: uppercase; font-size: 10px;">Descrição</th>
+                    <th align="center" style="background-color: #0f172a; color: white; padding: 8px; text-align: center; font-weight: bold; text-transform: uppercase; font-size: 10px;">Qtd</th>
+                    <th align="right" style="background-color: #0f172a; color: white; padding: 8px; text-align: right; font-weight: bold; text-transform: uppercase; font-size: 10px;">Unit.</th>
+                    <th align="right" style="background-color: #0f172a; color: white; padding: 8px; text-align: right; font-weight: bold; text-transform: uppercase; font-size: 10px;">Total</th>
+                </tr>
+            </thead>
+            <tbody>${itemsHtml}</tbody>
+        </table>
+        <div class="footer-section" style="display: flex; gap: 30px; margin-top: 10px;">
+            <div class="notes-area" style="flex: 1; border: 1px dashed #cbd5e1; padding: 10px; border-radius: 6px;">
+                <div class="notes-title" style="font-size: 10px; font-weight: bold; margin-bottom: 5px; color: #64748b;">Observações:</div>
+                <div class="notes-text" style="font-size: 10px; color: #334155;">Válido por 7 dias. Verifique os produtos no ato da entrega.</div>
+            </div>
+            <div class="totals-area" style="width: 250px;">
+                <div class="total-row" style="display: flex; justify-content: space-between; padding: 5px 0; font-size: 11px; border-bottom: 1px solid #e2e8f0;">
+                    <span>Subtotal:</span>
+                    <span>${formatMoney(subtotal)}</span>
+                </div>
+                ${discount > 0 ? `
+                <div class="total-row" style="display: flex; justify-content: space-between; padding: 5px 0; font-size: 11px; color: red; border-bottom: 1px solid #e2e8f0;">
+                    <span>Desconto:</span>
+                    <span>- ${formatMoney(discount)}</span>
+                </div>` : ''}
+                <div class="total-row final" style="display: flex; justify-content: space-between; border-bottom: none; border-top: 2px solid #0f172a; font-size: 14px; font-weight: 900; margin-top: 5px; padding-top: 10px; background-color: #f1f5f9; padding: 10px;">
+                    <span>TOTAL A PAGAR:</span>
+                    <span>${formatMoney(finalTotal)}</span>
+                </div>
+            </div>
         </div>
     </div>`;
-    }).join('');
-    lucide.createIcons();
+}
+
+      
+
+async function downloadQuotePDF(id) {
+  const q = STATE.quotes.find(x => x.id == id);
+  if (!q) {
+    showToast("Orçamento não encontrado", true);
+    return;
+  }
+
+  showLoading(true);
+
+  const clientName = q.clientName || 'Consumidor Final';
+  const cli = STATE.clients.find(c => c.name === clientName) || { 
+    name: clientName, 
+    doc: '', 
+    phone: '', 
+    address: '' 
+  };
+
+  let subtotal = 0;
+  const itemsHtml = q.items.map((i, index) => {
+    const itemTotal = i.qty * i.price;
+    subtotal += itemTotal;
+    const bgColor = index % 2 === 0 ? '#ffffff' : '#f8fafc';
+    return `
+      <tr style="background-color: ${bgColor};">
+        <td style="border-bottom: 1px solid #000; padding: 8px;">${i.name}</td>
+        <td align="center" style="border-bottom: 1px solid #000; padding: 8px;">${i.qty}</td>
+        <td align="right" style="border-bottom: 1px solid #000; padding: 8px;">${formatMoney(i.price)}</td>
+        <td align="right" style="border-bottom: 1px solid #000; padding: 8px;">${formatMoney(itemTotal)}</td>
+      </tr>`;
+  }).join('');
+
+  const discount = Number(q.discount) || 0;
+  const finalTotal = subtotal - discount;
+  const addressToShow = q.deliveryAddress 
+    ? `<strong>ENTREGA:</strong> ${q.deliveryAddress}` 
+    : (cli.address || 'Endereço não informado');
+  const obsText = 'Válido por 7 dias. Verifique os produtos no ato da entrega.';
+
+  const htmlString = `
+    <div style="font-family: 'Helvetica', 'Arial', sans-serif; color: #1e293b; padding: 15px; background-color: #ffffff; width: 100%; box-sizing: border-box; border: 1px solid #000; min-height: 27.5cm; position: relative; z-index: 1;">
+      
+      <!-- Logo de fundo (marca d'água) -->
+      <div style="position: absolute; top: 50%; left: 50%; transform: translate(-50%, -50%); width: 450px; height: 450px; opacity: 0.1; z-index: -1;">
+        <img src="https://lh3.googleusercontent.com/d/1SIoZ2JlalfMnGDZTXBk7ZYuPgwxX3odF" crossorigin="anonymous" style="width: 100%; height: 100%; object-fit: contain;" />
+      </div>
+
+      <!-- Cabeçalho -->
+      <table width="100%" style="border-bottom: 2px solid #000; padding-bottom: 15px; margin-bottom: 20px;">
+        <tr>
+          <td width="130" valign="middle" style="border-right: 1px solid #e2e8f0; padding-right: 15px;">
+            <img src="https://lh3.googleusercontent.com/d/1SIoZ2JlalfMnGDZTXBk7ZYuPgwxX3odF" crossorigin="anonymous" style="max-height: 80px; max-width: 120px; display: block; margin: 0 auto;" />
+          </td>
+          <td valign="middle" style="padding-left: 15px;">
+            <h2 style="margin: 0; color: #ea580c; font-size: 20px; font-weight: 800;">RV BLOCOS E ESTRUTURAS</h2>
+            <div style="font-size: 11px; color: #475569; margin-top: 5px; line-height: 1.4;">CNPJ: 46.889.791/0001-53</div>
+            <div style="font-size: 11px; color: #475569; line-height: 1.4;">Rua Mineiros, 532 | Jataí - GO | (64) 3636-4861</div>
+          </td>
+          <td align="right" valign="top">
+            <h2 style="margin: 0 0 5px 0; font-size: 16px; font-weight: 900; color: #0f172a;">ORÇAMENTO</h2>
+            <div style="font-size: 11px; margin-bottom: 2px;"><strong>Nº:</strong> ${q.id}</div>
+            <div style="font-size: 11px;"><strong>Data:</strong> ${formatDate(q.date)}</div>
+          </td>
+        </tr>
+      </table>
+
+      <!-- Dados do cliente e pagamento -->
+      <table width="100%" style="margin-bottom: 20px; border-spacing: 0;">
+        <tr>
+          <td width="48%" valign="top" style="border: 1px solid #000; border-radius: 6px; padding: 0; overflow: hidden;">
+            <div style="background-color: #f1f5f9; padding: 5px 10px; font-size: 10px; font-weight: bold; text-transform: uppercase; color: #64748b; border-bottom: 1px solid #000;">Dados do Cliente</div>
+            <div style="padding: 10px; font-size: 11px; line-height: 1.5;">
+              <strong>${cli.name}</strong><br>
+              ${cli.doc || 'CPF/CNPJ não informado'}<br>
+              ${cli.phone || 'Telefone não informado'}<br>
+              ${addressToShow}
+            </div>
+          </td>
+          <td width="4%"></td>
+          <td width="48%" valign="top" style="border: 1px solid #000; border-radius: 6px; padding: 0; overflow: hidden;">
+            <div style="background-color: #f1f5f9; padding: 5px 10px; font-size: 10px; font-weight: bold; text-transform: uppercase; color: #64748b; border-bottom: 1px solid #000;">Pagamento</div>
+            <div style="padding: 10px; font-size: 11px; line-height: 1.5;">
+              <strong>Forma:</strong> ${q.paymentMethod || 'A Combinar'}<br>
+              <strong>Vendedor:</strong> RV Blocos
+            </div>
+          </td>
+        </tr>
+      </table>
+
+      <!-- Tabela de itens -->
+      <table width="100%" style="border-collapse: collapse; margin-bottom: 20px; font-size: 11px;">
+        <thead>
+          <tr>
+            <th align="left" style="background-color: #0f172a; color: #ffffff; padding: 8px; font-size: 10px; text-transform: uppercase;">Descrição</th>
+            <th align="center" style="background-color: #0f172a; color: #ffffff; padding: 8px; font-size: 10px; text-transform: uppercase; width: 50px;">Qtd</th>
+            <th align="right" style="background-color: #0f172a; color: #ffffff; padding: 8px; font-size: 10px; text-transform: uppercase; width: 90px;">Unit.</th>
+            <th align="right" style="background-color: #0f172a; color: #ffffff; padding: 8px; font-size: 10px; text-transform: uppercase; width: 90px;">Total</th>
+          </tr>
+        </thead>
+        <tbody>
+          ${itemsHtml}
+        </tbody>
+      </table>
+
+      <!-- Rodapé: observações e totais -->
+      <table width="100%" style="margin-top: 10px;">
+        <tr>
+          <td valign="top" style="padding-right: 30px;">
+            <div style="border: 1px dashed #cbd5e1; border-radius: 6px; padding: 10px;">
+              <div style="font-size: 10px; font-weight: bold; color: #64748b; margin-bottom: 5px;">Observações:</div>
+              <div style="font-size: 10px; color: #334155;">${obsText}</div>
+            </div>
+          </td>
+          <td width="250" valign="top">
+            <table width="100%" style="font-size: 11px; border-collapse: collapse;">
+              <tr>
+                <td style="padding: 5px 0; border-bottom: 1px solid #e2e8f0;">Subtotal:</td>
+                <td align="right" style="padding: 5px 0; border-bottom: 1px solid #e2e8f0;">${formatMoney(subtotal)}</td>
+              </tr>
+              ${discount > 0 ? `
+              <tr>
+                <td style="padding: 5px 0; border-bottom: 1px solid #e2e8f0; color: red;">Desconto:</td>
+                <td align="right" style="padding: 5px 0; border-bottom: 1px solid #e2e8f0; color: red;">- ${formatMoney(discount)}</td>
+              </tr>` : ''}
+              <tr>
+                <td style="padding: 10px 10px 10px 0; font-size: 12px; font-weight: 900; border-top: 2px solid #0f172a; background-color: #f1f5f9;">TOTAL A PAGAR:</td>
+                <td align="right" style="padding: 10px; font-size: 14px; font-weight: 900; border-top: 2px solid #0f172a; background-color: #f1f5f9;">${formatMoney(finalTotal)}</td>
+              </tr>
+            </table>
+          </td>
+        </tr>
+      </table>
+    </div>
+  `;
+
+  // Configuração do html2pdf (igual ao exemplo que funciona)
+  const opt = {
+    margin:       10,  // em mm
+    filename:     `RV Blocos - ${clientName} - #${q.id}.pdf`,
+    image:        { type: 'jpeg', quality: 1 },
+    html2canvas:  { scale: 2, useCORS: true, letterRendering: true },
+    jsPDF:        { unit: 'mm', format: 'a4', orientation: 'portrait' }
+  };
+
+  // Delay para garantir processamento
+  setTimeout(() => {
+    html2pdf().set(opt).from(htmlString).save()
+      .then(() => {
+        showLoading(false);
+        showToast(`PDF do orçamento #${q.id} baixado!`);
+      })
+      .catch(err => {
+        console.error("Erro PDF:", err);
+        showLoading(false);
+        showToast("Erro ao gerar PDF", true);
+      });
+  }, 500);
+}
+      
+      
+
+// Função para limpar o filtro de busca
+function clearQuoteFilters() {
+  document.getElementById('quotes-search').value = '';
+  renderQuotesList();
+}
+
+// Função para escapar HTML (evitar XSS)
+function escapeHtml(str) {
+  if (!str) return '';
+  return str.replace(/[&<>]/g, function(m) {
+    if (m === '&') return '&amp;';
+    if (m === '<') return '&lt;';
+    if (m === '>') return '&gt;';
+    return m;
+  });
 }
 
 function loadQuoteToCart(id) {
@@ -2231,113 +2881,122 @@ function renderProductionDash() {
 }
 
 
-function renderInvoice(sale, isQuote) {
-    const el = document.getElementById('print-area');
-    const title = isQuote ? "ORÇAMENTO" : "VENDA / PEDIDO";
-    const clientName = sale.clientName || 'Consumidor Final';
+function printOrder(id, encodedProdName) {
+    const productName = decodeURIComponent(encodedProdName);
+    const item = STATE.logs.find(l => String(l.id) === String(id) && l.productName === productName);
+    if(!item) return showToast("Pedido não encontrado", true);
+
+    const cli = STATE.clients.find(c => c.name === item.clientName) || { name: item.clientName, doc: '-', phone: '-', address: '-' };
+    const delivered = item.deliveredQty || 0;
+    const remain = item.quantity - delivered;
     
-    // Busca cliente no cadastro, se não encontrar usa os dados básicos do log
-    const cliFromState = STATE.clients.find(c => c.name === clientName);
-    const cli = cliFromState || { 
-        name: clientName, 
-        doc: '', 
-        phone: '', 
-        address: '' 
+    const company = {
+        name: "RV BLOCOS E ESTRUTURAS",
+        cnpj: "46.889.791/0001-53",
+        phone: "(64) 3636-4861",
+        address: "Jataí - GO",
+        logoUrl: "https://lh3.googleusercontent.com/d/1SIoZ2JlalfMnGDZTXBk7ZYuPgwxX3odF" 
     };
-
-    let subtotal = 0;
-    const itemsHtml = sale.items.map(i => {
-        const itemTotal = i.qty * i.price;
-        subtotal += itemTotal;
-        return `<tr>
-            <td>${i.name}</td>
-            <td align="center">${i.qty}</td>
-            <td align="right">${formatMoney(i.price)}</td>
-            <td align="right">${formatMoney(itemTotal)}</td>
-        </tr>`;
-    }).join('');
-
-    const discount = Number(sale.discount) || 0;
-    const finalTotal = Math.max(0, subtotal - discount);
     
-    // Endereço prioritário: campo específico da venda, senão endereço do cliente
-    const addressToShow = sale.deliveryAddress 
-        ? `<div style="padding: 4px; background-color: #fef3c7; border-left: 3px solid #f59e0b; margin-top: 5px;">
-            <strong>ENTREGA:</strong><br>${sale.deliveryAddress}
-           </div>` 
-        : (cli.address || 'Endereço não informado');
-
+    const addressToShow = item.deliveryAddress 
+    ? `<span style="background-color: #fffbeb; padding: 2px 5px; font-weight: bold; color: #b45309; border: 1px dashed #f59e0b;">ENTREGA: ${item.deliveryAddress}</span>` 
+    : (cli.address || '-');
+    
+    const el = document.getElementById('print-area');
     el.innerHTML = `
-    <div class="invoice-full">
-        <div class="header-section">
-            <div class="logo-area">
-                <img src="https://lh3.googleusercontent.com/d/1SIoZ2JlalfMnGDZTXBk7ZYuPgwxX3odF" style="max-height: 80px;" />
+    <style>
+        .invoice-box-orig::before {
+            content: none !important;
+            background-image: none !important;
+            opacity: 0 !important;
+            display: none !important;
+        }
+    </style>
+    <div class="invoice-box-orig" style="font-family: 'Helvetica', sans-serif; max-width: 800px; margin: auto; padding: 15px;">
+        <div class="header-orig" style="display: flex; border: 1px solid #000; margin-bottom: 0;">
+            <div class="logo-box-orig" style="width: 100px; padding: 5px; border-right: 1px solid #000; display: flex; align-items: center; justify-content: center;">
+                <img src="${company.logoUrl}" style="max-height: 80px; max-width: 100%;" />
             </div>
-            <div class="company-details">
-                <h2 class="company-title">RV BLOCOS E ESTRUTURAS</h2>
-                <div class="company-info">CNPJ: 46.889.791/0001-53</div>
-                <div class="company-info">Rua Mineiros, 532 | Jataí - GO | (64) 3636-4861</div>
+            <div class="company-box-orig" style="flex: 1; padding: 10px; border-right: 1px solid #000;">
+                <h2 style="margin: 0; font-size: 18px; font-weight: bold; color: #ea580c;">${company.name}</h2>
+                <p style="margin: 2px 0; font-size: 12px;">CNPJ: ${company.cnpj}</p>
+                <p style="margin: 2px 0; font-size: 12px;">Endereço: ${company.address}</p>
+                <p style="margin: 2px 0; font-size: 12px;">Telefone: ${company.phone}</p>
             </div>
-            <div class="doc-meta">
-                <div class="doc-title">${title}</div>
-                <div class="meta-row"><strong>Nº:</strong> ${sale.id || '--'}</div>
-                <div class="meta-row"><strong>Data:</strong> ${new Date().toLocaleDateString()}</div>
-            </div>
-        </div>
-        <div class="info-grid">
-            <div class="info-col">
-                <div class="col-header">Dados do Cliente</div>
-                <div class="col-content">
-                    <strong>${cli.name}</strong><br>
-                    ${cli.doc || 'CPF/CNPJ não informado'}<br>
-                    ${cli.phone || 'Telefone não informado'}<br>
-                    ${addressToShow}
-                </div>
-            </div>
-            <div class="info-col">
-                <div class="col-header">Pagamento</div>
-                <div class="col-content">
-                    <strong>Forma:</strong> ${sale.paymentMethod || 'A Combinar'}<br>
-                    <strong>Vendedor:</strong> RV Blocos
-                </div>
+            <div class="info-box-orig" style="width: 180px; padding: 10px; background-color: #f9f9f9; text-align: right;">
+                <h3 style="margin: 0; font-size: 14px; font-weight: bold;">ROMANEIO DE ENTREGA</h3>
+                <p style="margin: 5px 0; font-size: 12px;">Emissão: ${new Date().toLocaleDateString()}</p>
+                <p style="margin: 5px 0; font-weight: bold; font-size: 16px;">PEDIDO Nº ${item.id}</p>
             </div>
         </div>
-        <table class="full-table">
-            <thead>
+
+        <div style="background-color: #f8fafc; border: 1px solid #000; border-top: none; padding: 10px; margin-bottom: 15px;">
+            <table style="width: 100%; font-size: 12px; border-collapse: collapse;">
                 <tr>
-                    <th>Descrição</th>
-                    <th align="center">Qtd</th>
-                    <th align="right">Unit.</th>
-                    <th align="right">Total</th>
+                    <td style="font-weight: bold; width: 60px;">CLIENTE:</td>
+                    <td>${cli.name}</td>
+                    <td style="font-weight: bold; width: 40px;">DOC:</td>
+                    <td>${cli.doc || '-'}</td>
+                </tr>
+                <tr>
+                    <td style="font-weight: bold;">END:</td>
+                    <td colspan="3">${addressToShow}</td>
+                </tr>
+                <tr>
+                    <td style="font-weight: bold;">TEL:</td>
+                    <td colspan="3">${cli.phone || '-'}</td>
+                </tr>
+            </table>
+        </div>
+
+        <div class="section-title-orig" style="background-color: #eee; border: 1px solid #000; font-weight: bold; padding: 5px; font-size: 11px; text-transform: uppercase;">ITENS DO PEDIDO</div>
+        <table class="items-table-orig" style="width: 100%; border-collapse: collapse; font-size: 12px; border: 1px solid #000;">
+            <thead>
+                <tr style="background-color: #f1f5f9;">
+                    <th style="border: 1px solid #000; padding: 8px; text-align: left;">Produto</th>
+                    <th style="border: 1px solid #000; padding: 8px; text-align: center;">Qtd. Total</th>
+                    <th style="border: 1px solid #000; padding: 8px; text-align: center;">Já Entregue</th>
+                    <th style="border: 1px solid #000; padding: 8px; text-align: center; background-color: #ffedd5;">Saldo Pendente</th>
                 </tr>
             </thead>
-            <tbody>${itemsHtml}</tbody>
+            <tbody>
+                <tr>
+                    <td style="border: 1px solid #000; padding: 10px; font-weight: bold;">${item.productName}</td>
+                    <td style="border: 1px solid #000; padding: 10px; text-align: center;">${item.quantity}</td>
+                    <td style="border: 1px solid #000; padding: 10px; text-align: center;">${delivered}</td>
+                    <td style="border: 1px solid #000; padding: 10px; text-align: center; font-weight: bold; font-size: 14px; background-color: #fff7ed;">${remain}</td>
+                </tr>
+            </tbody>
         </table>
-        <div class="footer-section">
-            <div class="notes-area">
-                <div class="notes-title">Observações:</div>
-                <div class="notes-text">Válido por 7 dias. Verifique os produtos no ato da entrega.</div>
+
+        <div style="border: 2px dashed #94a3b8; padding: 20px; margin: 20px 0; background-color: #fff;">
+            <p style="margin: 0 0 10px 0; font-weight: bold; font-size: 12px; text-transform: uppercase;">Registro de Saída Atual (Preenchimento Manual)</p><br>
+            <div style="display: flex; align-items: center; gap: 10px; margin-top: 15px;">
+                <span style="font-size: 14px; font-weight: bold;">QUANTIDADE:</span>
+                <div style="flex: 1; border-bottom: 2px solid #000; height: 1px;"></div>
             </div>
-            <div class="totals-area">
-                <div class="total-row">
-                    <span>Subtotal:</span>
-                    <span>${formatMoney(subtotal)}</span>
-                </div>
-                ${discount > 0 ? `
-                <div class="total-row" style="color:red">
-                    <span>Desconto:</span>
-                    <span>- ${formatMoney(discount)}</span>
-                </div>` : ''}
-                <div class="total-row final">
-                    <span>TOTAL A PAGAR:</span>
-                    <span>${formatMoney(finalTotal)}</span>
-                </div>
+        </div>
+
+        <div style="display: flex; justify-content: space-between; margin-top: 60px;">
+            <div style="width: 45%; text-align: center;">
+                <div style="border-top: 1px solid #000; margin-bottom: 5px;"></div>
+                <span style="font-size: 10px; font-weight: bold;">ASSINATURA DO CONFERENTE / DATA</span>
+            </div>
+            <div style="width: 45%; text-align: center;">
+                <div style="border-top: 1px solid #000; margin-bottom: 5px;"></div>
+                <span style="font-size: 10px; font-weight: bold;">ASSINATURA DE RECEBIMENTO (POR EXTENSO)</span>
             </div>
         </div>
     </div>`;
+    
+    setTimeout(() => { window.print(); limparAreaImpressao(); }, 500);
 }
 
-function printOrder(id, encodedProdName) {
+
+
+      
+
+/*function printOrder(id, encodedProdName) {
     const productName = decodeURIComponent(encodedProdName);
     const item = STATE.logs.find(l => String(l.id) === String(id) && l.productName === productName);
     if(!item) return showToast("Pedido não encontrado", true);
@@ -2438,7 +3097,9 @@ function printOrder(id, encodedProdName) {
     </div>`;
     
     setTimeout(() => { window.print(); limparAreaImpressao(); }, 500);
-}
+}*/
+
+      
 
 function printQuote(id) { const q = STATE.quotes.find(x => x.id == id); renderInvoice(q, true); setTimeout(() => { window.print(); limparAreaImpressao(); }, 500); }
 
