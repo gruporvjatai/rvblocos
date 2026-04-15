@@ -2070,41 +2070,158 @@ async function downloadQuotePDF(id) {
   }
   showLoading(true);
 
-  // 1. Renderiza o orçamento no print-area (usando a mesma função de impressão)
-  renderInvoice(quote, true);  // gera o HTML dentro de #print-area
-
-  // 2. Aguarda um pequeno delay para garantir que a imagem seja carregada
-  await new Promise(resolve => setTimeout(resolve, 500));
-
-  // 3. Captura o elemento #print-area (que contém o orçamento renderizado)
-  const element = document.getElementById('print-area');
-  if (!element || element.innerHTML.trim() === '') {
-    showLoading(false);
-    showToast("Erro ao gerar conteúdo do PDF", true);
-    return;
-  }
-
-  // 4. Opções de qualidade e formato
-  const opt = {
-    margin:        [0.5, 0.5, 0.5, 0.5], // margens em polegadas
-    filename:      `orcamento_${quote.id}.pdf`,
-    image:         { type: 'jpeg', quality: 0.98 },
-    html2canvas:   { scale: 2, letterRendering: true, useCORS: true, logging: false },
-    jsPDF:         { unit: 'in', format: 'a4', orientation: 'portrait' }
+  const clientName = quote.clientName || 'Consumidor Final';
+  const cli = STATE.clients.find(c => c.name === clientName) || { 
+    name: clientName, 
+    doc: '', 
+    phone: '', 
+    address: quote.deliveryAddress || '' 
   };
 
-  try {
-    // 5. Gera o PDF e faz o download
-    await html2pdf().set(opt).from(element).save();
-    showToast(`PDF do orçamento #${quote.id} baixado com sucesso!`);
-  } catch (error) {
-    console.error("Erro no html2pdf:", error);
-    showToast("Erro ao gerar PDF. Tente novamente.", true);
-  } finally {
-    // 6. Limpa o print-area para não interferir em próximas impressões
-    document.getElementById('print-area').innerHTML = '';
-    showLoading(false);
-  }
+  let subtotal = 0;
+  const itemsHtml = quote.items.map((item, index) => {
+    const itemTotal = item.qty * item.price;
+    subtotal += itemTotal;
+    const bgColor = index % 2 === 0 ? '#ffffff' : '#f8fafc';
+    return `
+      <tr style="background-color: ${bgColor};">
+        <td style="border-bottom: 1px solid #000; padding: 8px;">${escapeHtml(item.name)}</td>
+        <td align="center" style="border-bottom: 1px solid #000; padding: 8px;">${item.qty}</td>
+        <td align="right" style="border-bottom: 1px solid #000; padding: 8px;">${formatMoney(item.price)}</td>
+        <td align="right" style="border-bottom: 1px solid #000; padding: 8px;">${formatMoney(itemTotal)}</td>
+      </tr>`;
+  }).join('');
+
+  const discount = Number(quote.discount) || 0;
+  const finalTotal = subtotal - discount;
+  const addressToShow = quote.deliveryAddress 
+    ? `<strong>ENTREGA:</strong> ${quote.deliveryAddress}` 
+    : (cli.address || 'Endereço não informado');
+  const obsText = (quote.observacao && quote.observacao !== 'Venda PDV' && quote.observacao !== 'Pronta Entrega PDV') 
+    ? escapeHtml(quote.observacao) 
+    : 'Válido por 7 dias. Verifique os produtos no ato da entrega.';
+
+  // Logo em base64 fixa para evitar problemas de CORS (use a mesma URL, mas vamos tentar com crossorigin)
+  const logoSrc = "https://lh3.googleusercontent.com/d/1SIoZ2JlalfMnGDZTXBk7ZYuPgwxX3odF";
+
+  const htmlString = `
+    <div style="font-family: 'Helvetica', 'Arial', sans-serif; color: #1e293b; background: white; padding: 15px; width: 100%; box-sizing: border-box; border: 1px solid #000; min-height: 27.5cm; position: relative;">
+      
+      <!-- Marca d'água opcional (comente se não quiser) -->
+      <div style="position: absolute; top: 50%; left: 50%; transform: translate(-50%, -50%); width: 450px; height: 450px; opacity: 0.08; z-index: 0; pointer-events: none;">
+        <img src="${logoSrc}" crossorigin="anonymous" style="width: 100%; height: 100%; object-fit: contain;" />
+      </div>
+
+      <!-- Cabeçalho -->
+      <div style="display: flex; justify-content: space-between; align-items: center; border-bottom: 2px solid #000; padding-bottom: 15px; margin-bottom: 20px;">
+        <div style="display: flex; gap: 15px; align-items: center;">
+          <img src="${logoSrc}" crossorigin="anonymous" style="max-height: 70px; border-right: 1px solid #e2e8f0; padding-right: 15px;" />
+          <div>
+            <h2 style="margin: 0; font-size: 18px; font-weight: bold; color: #ea580c;">RV BLOCOS E ESTRUTURAS</h2>
+            <p style="margin: 2px 0; font-size: 11px; color: #475569;">CNPJ: 46.889.791/0001-53</p>
+            <p style="margin: 2px 0; font-size: 11px; color: #475569;">Rua Mineiros, 532 | Jataí - GO | (64) 3636-4861</p>
+          </div>
+        </div>
+        <div style="text-align: right;">
+          <h3 style="margin: 0; font-size: 16px; font-weight: bold; color: #0f172a;">ORÇAMENTO</h3>
+          <p style="margin: 5px 0 2px 0; font-size: 12px;"><strong>Nº:</strong> ${quote.id}</p>
+          <p style="margin: 2px 0; font-size: 11px;"><strong>Data:</strong> ${formatDate(quote.date)}</p>
+        </div>
+      </div>
+
+      <!-- Dados do Cliente e Pagamento -->
+      <div style="display: flex; gap: 20px; margin-bottom: 20px;">
+        <div style="flex: 1; border: 1px solid #000; border-radius: 6px; overflow: hidden;">
+          <div style="background-color: #f1f5f9; padding: 5px 10px; font-size: 10px; font-weight: bold; text-transform: uppercase; color: #64748b; border-bottom: 1px solid #000;">Dados do Cliente</div>
+          <div style="padding: 10px; font-size: 11px; line-height: 1.5;">
+            <strong>${escapeHtml(cli.name)}</strong><br>
+            ${cli.doc || 'CPF/CNPJ não informado'}<br>
+            ${cli.phone || 'Telefone não informado'}<br>
+            ${addressToShow}
+          </div>
+        </div>
+        <div style="flex: 1; border: 1px solid #000; border-radius: 6px; overflow: hidden;">
+          <div style="background-color: #f1f5f9; padding: 5px 10px; font-size: 10px; font-weight: bold; text-transform: uppercase; color: #64748b; border-bottom: 1px solid #000;">Pagamento</div>
+          <div style="padding: 10px; font-size: 11px; line-height: 1.5;">
+            <strong>Forma:</strong> ${quote.paymentMethod || 'A Combinar'}<br>
+            <strong>Vendedor:</strong> RV Blocos
+          </div>
+        </div>
+      </div>
+
+      <!-- Tabela de Itens -->
+      <table style="width: 100%; border-collapse: collapse; margin-bottom: 20px; font-size: 11px;">
+        <thead>
+          <tr>
+            <th style="background-color: #0f172a; color: white; padding: 8px; text-align: left; font-size: 10px; text-transform: uppercase;">Descrição</th>
+            <th style="background-color: #0f172a; color: white; padding: 8px; text-align: center; font-size: 10px; text-transform: uppercase;">Qtd</th>
+            <th style="background-color: #0f172a; color: white; padding: 8px; text-align: right; font-size: 10px; text-transform: uppercase;">Unitário</th>
+            <th style="background-color: #0f172a; color: white; padding: 8px; text-align: right; font-size: 10px; text-transform: uppercase;">Total</th>
+          </tr>
+        </thead>
+        <tbody>${itemsHtml}</tbody>
+      </table>
+
+      <!-- Observações e Totais -->
+      <div style="display: flex; justify-content: space-between; margin-top: 20px;">
+        <div style="flex: 1; border: 1px dashed #cbd5e1; padding: 10px; border-radius: 6px; margin-right: 20px;">
+          <div style="font-size: 10px; font-weight: bold; color: #64748b; margin-bottom: 5px;">Observações:</div>
+          <div style="font-size: 10px; color: #334155;">${obsText}</div>
+        </div>
+        <div style="width: 250px;">
+          <table style="width: 100%; font-size: 11px; border-collapse: collapse;">
+            <tr>
+              <td style="padding: 5px 0; border-bottom: 1px solid #e2e8f0;">Subtotal:</td>
+              <td style="padding: 5px 0; text-align: right; border-bottom: 1px solid #e2e8f0;">${formatMoney(subtotal)}</td>
+            </tr>
+            ${discount > 0 ? `
+            <tr>
+              <td style="padding: 5px 0; border-bottom: 1px solid #e2e8f0; color: red;">Desconto:</td>
+              <td style="padding: 5px 0; text-align: right; border-bottom: 1px solid #e2e8f0; color: red;">- ${formatMoney(discount)}</td>
+            </tr>` : ''}
+            <tr>
+              <td style="padding: 10px 10px 10px 0; font-size: 12px; font-weight: bold; border-top: 2px solid #0f172a; background-color: #f1f5f9;">TOTAL A PAGAR:</td>
+              <td style="padding: 10px; text-align: right; font-size: 14px; font-weight: bold; border-top: 2px solid #0f172a; background-color: #f1f5f9;">${formatMoney(finalTotal)}</td>
+            </tr>
+          </table>
+        </div>
+      </div>
+
+      <!-- Assinaturas -->
+      <div style="display: flex; justify-content: space-between; margin-top: 50px;">
+        <div style="text-align: center; width: 45%;">
+          <div style="border-top: 1px solid #000; margin-bottom: 5px;"></div>
+          <span style="font-size: 10px; font-weight: bold;">ASSINATURA DO CLIENTE</span>
+        </div>
+        <div style="text-align: center; width: 45%;">
+          <div style="border-top: 1px solid #000; margin-bottom: 5px;"></div>
+          <span style="font-size: 10px; font-weight: bold;">RV BLOCOS</span>
+        </div>
+      </div>
+    </div>
+  `;
+
+  // Pequeno delay para garantir que a string esteja pronta
+  setTimeout(() => {
+    const opt = {
+      margin:       10, // margem em mm
+      filename:     `orcamento_${quote.id}.pdf`,
+      image:        { type: 'jpeg', quality: 1 },
+      html2canvas:  { scale: 2, useCORS: true, letterRendering: true },
+      jsPDF:        { unit: 'mm', format: 'a4', orientation: 'portrait' }
+    };
+
+    html2pdf().set(opt).from(htmlString).save()
+      .then(() => {
+        showLoading(false);
+        showToast(`PDF do orçamento #${quote.id} baixado!`);
+      })
+      .catch(err => {
+        console.error("Erro no html2pdf:", err);
+        showLoading(false);
+        showToast("Erro ao gerar PDF", true);
+      });
+  }, 300);
 }
       
       
