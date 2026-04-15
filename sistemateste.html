@@ -2881,113 +2881,122 @@ function renderProductionDash() {
 }
 
 
-function renderInvoice(sale, isQuote) {
-    const el = document.getElementById('print-area');
-    const title = isQuote ? "ORÇAMENTO" : "VENDA / PEDIDO";
-    const clientName = sale.clientName || 'Consumidor Final';
+function printOrder(id, encodedProdName) {
+    const productName = decodeURIComponent(encodedProdName);
+    const item = STATE.logs.find(l => String(l.id) === String(id) && l.productName === productName);
+    if(!item) return showToast("Pedido não encontrado", true);
+
+    const cli = STATE.clients.find(c => c.name === item.clientName) || { name: item.clientName, doc: '-', phone: '-', address: '-' };
+    const delivered = item.deliveredQty || 0;
+    const remain = item.quantity - delivered;
     
-    // Busca cliente no cadastro, se não encontrar usa os dados básicos do log
-    const cliFromState = STATE.clients.find(c => c.name === clientName);
-    const cli = cliFromState || { 
-        name: clientName, 
-        doc: '', 
-        phone: '', 
-        address: '' 
+    const company = {
+        name: "RV BLOCOS E ESTRUTURAS",
+        cnpj: "46.889.791/0001-53",
+        phone: "(64) 3636-4861",
+        address: "Jataí - GO",
+        logoUrl: "https://lh3.googleusercontent.com/d/1SIoZ2JlalfMnGDZTXBk7ZYuPgwxX3odF" 
     };
-
-    let subtotal = 0;
-    const itemsHtml = sale.items.map(i => {
-        const itemTotal = i.qty * i.price;
-        subtotal += itemTotal;
-        return `<tr>
-            <td>${i.name}</td>
-            <td align="center">${i.qty}</td>
-            <td align="right">${formatMoney(i.price)}</td>
-            <td align="right">${formatMoney(itemTotal)}</td>
-        </tr>`;
-    }).join('');
-
-    const discount = Number(sale.discount) || 0;
-    const finalTotal = Math.max(0, subtotal - discount);
     
-    // Endereço prioritário: campo específico da venda, senão endereço do cliente
-    const addressToShow = sale.deliveryAddress 
-        ? `<div style="padding: 4px; background-color: #fef3c7; border-left: 3px solid #f59e0b; margin-top: 5px;">
-            <strong>ENTREGA:</strong><br>${sale.deliveryAddress}
-           </div>` 
-        : (cli.address || 'Endereço não informado');
-
+    const addressToShow = item.deliveryAddress 
+    ? `<span style="background-color: #fffbeb; padding: 2px 5px; font-weight: bold; color: #b45309; border: 1px dashed #f59e0b;">ENTREGA: ${item.deliveryAddress}</span>` 
+    : (cli.address || '-');
+    
+    const el = document.getElementById('print-area');
     el.innerHTML = `
-    <div class="invoice-full">
-        <div class="header-section">
-            <div class="logo-area">
-                <img src="https://lh3.googleusercontent.com/d/1SIoZ2JlalfMnGDZTXBk7ZYuPgwxX3odF" style="max-height: 80px;" />
+    <style>
+        .invoice-box-orig::before {
+            content: none !important;
+            background-image: none !important;
+            opacity: 0 !important;
+            display: none !important;
+        }
+    </style>
+    <div class="invoice-box-orig" style="font-family: 'Helvetica', sans-serif; max-width: 800px; margin: auto; padding: 15px;">
+        <div class="header-orig" style="display: flex; border: 1px solid #000; margin-bottom: 0;">
+            <div class="logo-box-orig" style="width: 100px; padding: 5px; border-right: 1px solid #000; display: flex; align-items: center; justify-content: center;">
+                <img src="${company.logoUrl}" style="max-height: 80px; max-width: 100%;" />
             </div>
-            <div class="company-details">
-                <h2 class="company-title">RV BLOCOS E ESTRUTURAS</h2>
-                <div class="company-info">CNPJ: 46.889.791/0001-53</div>
-                <div class="company-info">Rua Mineiros, 532 | Jataí - GO | (64) 3636-4861</div>
+            <div class="company-box-orig" style="flex: 1; padding: 10px; border-right: 1px solid #000;">
+                <h2 style="margin: 0; font-size: 18px; font-weight: bold; color: #ea580c;">${company.name}</h2>
+                <p style="margin: 2px 0; font-size: 12px;">CNPJ: ${company.cnpj}</p>
+                <p style="margin: 2px 0; font-size: 12px;">Endereço: ${company.address}</p>
+                <p style="margin: 2px 0; font-size: 12px;">Telefone: ${company.phone}</p>
             </div>
-            <div class="doc-meta">
-                <div class="doc-title">${title}</div>
-                <div class="meta-row"><strong>Nº:</strong> ${sale.id || '--'}</div>
-                <div class="meta-row"><strong>Data:</strong> ${new Date().toLocaleDateString()}</div>
-            </div>
-        </div>
-        <div class="info-grid">
-            <div class="info-col">
-                <div class="col-header">Dados do Cliente</div>
-                <div class="col-content">
-                    <strong>${cli.name}</strong><br>
-                    ${cli.doc || 'CPF/CNPJ não informado'}<br>
-                    ${cli.phone || 'Telefone não informado'}<br>
-                    ${addressToShow}
-                </div>
-            </div>
-            <div class="info-col">
-                <div class="col-header">Pagamento</div>
-                <div class="col-content">
-                    <strong>Forma:</strong> ${sale.paymentMethod || 'A Combinar'}<br>
-                    <strong>Vendedor:</strong> RV Blocos
-                </div>
+            <div class="info-box-orig" style="width: 180px; padding: 10px; background-color: #f9f9f9; text-align: right;">
+                <h3 style="margin: 0; font-size: 14px; font-weight: bold;">ROMANEIO DE ENTREGA</h3>
+                <p style="margin: 5px 0; font-size: 12px;">Emissão: ${new Date().toLocaleDateString()}</p>
+                <p style="margin: 5px 0; font-weight: bold; font-size: 16px;">PEDIDO Nº ${item.id}</p>
             </div>
         </div>
-        <table class="full-table">
-            <thead>
+
+        <div style="background-color: #f8fafc; border: 1px solid #000; border-top: none; padding: 10px; margin-bottom: 15px;">
+            <table style="width: 100%; font-size: 12px; border-collapse: collapse;">
                 <tr>
-                    <th>Descrição</th>
-                    <th align="center">Qtd</th>
-                    <th align="right">Unit.</th>
-                    <th align="right">Total</th>
+                    <td style="font-weight: bold; width: 60px;">CLIENTE:</td>
+                    <td>${cli.name}</td>
+                    <td style="font-weight: bold; width: 40px;">DOC:</td>
+                    <td>${cli.doc || '-'}</td>
+                </tr>
+                <tr>
+                    <td style="font-weight: bold;">END:</td>
+                    <td colspan="3">${addressToShow}</td>
+                </tr>
+                <tr>
+                    <td style="font-weight: bold;">TEL:</td>
+                    <td colspan="3">${cli.phone || '-'}</td>
+                </tr>
+            </table>
+        </div>
+
+        <div class="section-title-orig" style="background-color: #eee; border: 1px solid #000; font-weight: bold; padding: 5px; font-size: 11px; text-transform: uppercase;">ITENS DO PEDIDO</div>
+        <table class="items-table-orig" style="width: 100%; border-collapse: collapse; font-size: 12px; border: 1px solid #000;">
+            <thead>
+                <tr style="background-color: #f1f5f9;">
+                    <th style="border: 1px solid #000; padding: 8px; text-align: left;">Produto</th>
+                    <th style="border: 1px solid #000; padding: 8px; text-align: center;">Qtd. Total</th>
+                    <th style="border: 1px solid #000; padding: 8px; text-align: center;">Já Entregue</th>
+                    <th style="border: 1px solid #000; padding: 8px; text-align: center; background-color: #ffedd5;">Saldo Pendente</th>
                 </tr>
             </thead>
-            <tbody>${itemsHtml}</tbody>
+            <tbody>
+                <tr>
+                    <td style="border: 1px solid #000; padding: 10px; font-weight: bold;">${item.productName}</td>
+                    <td style="border: 1px solid #000; padding: 10px; text-align: center;">${item.quantity}</td>
+                    <td style="border: 1px solid #000; padding: 10px; text-align: center;">${delivered}</td>
+                    <td style="border: 1px solid #000; padding: 10px; text-align: center; font-weight: bold; font-size: 14px; background-color: #fff7ed;">${remain}</td>
+                </tr>
+            </tbody>
         </table>
-        <div class="footer-section">
-            <div class="notes-area">
-                <div class="notes-title">Observações:</div>
-                <div class="notes-text">Válido por 7 dias. Verifique os produtos no ato da entrega.</div>
+
+        <div style="border: 2px dashed #94a3b8; padding: 20px; margin: 20px 0; background-color: #fff;">
+            <p style="margin: 0 0 10px 0; font-weight: bold; font-size: 12px; text-transform: uppercase;">Registro de Saída Atual (Preenchimento Manual)</p><br>
+            <div style="display: flex; align-items: center; gap: 10px; margin-top: 15px;">
+                <span style="font-size: 14px; font-weight: bold;">QUANTIDADE:</span>
+                <div style="flex: 1; border-bottom: 2px solid #000; height: 1px;"></div>
             </div>
-            <div class="totals-area">
-                <div class="total-row">
-                    <span>Subtotal:</span>
-                    <span>${formatMoney(subtotal)}</span>
-                </div>
-                ${discount > 0 ? `
-                <div class="total-row" style="color:red">
-                    <span>Desconto:</span>
-                    <span>- ${formatMoney(discount)}</span>
-                </div>` : ''}
-                <div class="total-row final">
-                    <span>TOTAL A PAGAR:</span>
-                    <span>${formatMoney(finalTotal)}</span>
-                </div>
+        </div>
+
+        <div style="display: flex; justify-content: space-between; margin-top: 60px;">
+            <div style="width: 45%; text-align: center;">
+                <div style="border-top: 1px solid #000; margin-bottom: 5px;"></div>
+                <span style="font-size: 10px; font-weight: bold;">ASSINATURA DO CONFERENTE / DATA</span>
+            </div>
+            <div style="width: 45%; text-align: center;">
+                <div style="border-top: 1px solid #000; margin-bottom: 5px;"></div>
+                <span style="font-size: 10px; font-weight: bold;">ASSINATURA DE RECEBIMENTO (POR EXTENSO)</span>
             </div>
         </div>
     </div>`;
+    
+    setTimeout(() => { window.print(); limparAreaImpressao(); }, 500);
 }
 
-function printOrder(id, encodedProdName) {
+
+
+      
+
+/*function printOrder(id, encodedProdName) {
     const productName = decodeURIComponent(encodedProdName);
     const item = STATE.logs.find(l => String(l.id) === String(id) && l.productName === productName);
     if(!item) return showToast("Pedido não encontrado", true);
@@ -3088,7 +3097,9 @@ function printOrder(id, encodedProdName) {
     </div>`;
     
     setTimeout(() => { window.print(); limparAreaImpressao(); }, 500);
-}
+}*/
+
+      
 
 function printQuote(id) { const q = STATE.quotes.find(x => x.id == id); renderInvoice(q, true); setTimeout(() => { window.print(); limparAreaImpressao(); }, 500); }
 
