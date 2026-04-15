@@ -280,8 +280,40 @@
          </div>
       </div>
 
-      <div id="view-quotes" class="hidden-section"><h2 class="text-2xl font-bold text-slate-800 mb-4 flex items-center gap-2"><i data-lucide="folder-open"></i> Orçamentos Salvos</h2><div id="quotes-list" class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4 max-h-[70vh] overflow-y-auto"></div></div>
-
+      <div id="view-quotes" class="hidden-section">
+        <div class="flex justify-between items-center mb-6 flex-wrap gap-4">
+          <h2 class="text-2xl font-bold text-slate-800 flex items-center gap-2">
+            <i data-lucide="folder-open"></i> Orçamentos
+          </h2>
+          <div class="flex gap-2">
+            <input type="text" id="quotes-search" placeholder="Buscar cliente ou ID..." 
+                   class="p-2 border rounded-lg text-sm w-64 focus:ring-2 focus:ring-orange-500 outline-none"
+                   onkeyup="renderQuotesList()">
+            <button onclick="clearQuoteFilters()" class="p-2 bg-slate-200 rounded-lg hover:bg-slate-300">
+              <i data-lucide="x" class="w-4 h-4"></i>
+            </button>
+          </div>
+        </div>
+      
+        <div class="bg-white rounded-xl border shadow-sm overflow-hidden">
+          <div class="overflow-x-auto">
+            <table class="w-full text-sm text-left">
+              <thead class="bg-slate-50 text-slate-700 border-b">
+                <tr>
+                  <th class="p-4">ID</th>
+                  <th class="p-4">Cliente</th>
+                  <th class="p-4">Data</th>
+                  <th class="p-4">Itens</th>
+                  <th class="p-4 text-right">Valor (R$)</th>
+                  <th class="p-4 text-center">Ações</th>
+                </tr>
+              </thead>
+              <tbody id="quotes-list" class="divide-y"></tbody>
+            </table>
+          </div>
+        </div>
+      </div>
+      
       <div id="view-fin" class="hidden-section">
         <div class="flex justify-between items-center mb-6">
             <h2 class="text-2xl font-bold text-slate-800">Financeiro & Caixa</h2>
@@ -1766,25 +1798,175 @@ async function duplicateSaleToQuote(saleId) {
 }
 
 function renderQuotesList() {
-    const list = document.getElementById('quotes-list');
-    if(!list) return;
-    if(!(STATE.quotes||[]).length) { list.innerHTML='<p class="text-slate-400 col-span-3 text-center">Nenhum orçamento salvo.</p>'; return; }
-    list.innerHTML = STATE.quotes.slice().reverse().map(q=> {
-    const valorLiquido = q.total - (q.discount || 0);
-    return `<div class="p-4 border rounded-xl hover:shadow-md transition bg-white flex flex-col justify-between">
-        <div>
-            <div class="flex justify-between font-bold text-slate-800 text-lg"><span>${q.clientName}</span><span>${formatMoney(valorLiquido)}</span></div>
-            <div class="flex justify-between items-center mt-1"><span class="text-xs font-bold text-orange-600 bg-orange-100 px-2 rounded">#${q.id}</span><span class="text-xs text-slate-400"><i data-lucide="calendar" width="12" class="inline"></i> ${formatDate(q.date)}</span></div>
-            <p class="text-xs text-slate-500 mt-2 bg-slate-50 p-2 rounded border border-slate-100 truncate">${q.itemsText || '...'}</p>
-        </div>
-        <div class="grid grid-cols-2 gap-2 mt-4">
-            <button onclick="loadQuoteToCart('${q.id}')" class="py-2 bg-orange-100 text-orange-700 text-xs font-bold rounded flex items-center justify-center gap-1"><i data-lucide="edit" width="14"></i> Editar/Faturar</button>
-            <button onclick="printQuote('${q.id}')" class="py-2 bg-slate-800 text-white text-xs font-bold rounded flex justify-center gap-2 items-center"><i data-lucide="printer" width="14"></i> Imprimir</button>
-            <button onclick='deleteQuote("${q.id}")' class="col-span-2 py-2 text-red-500 text-xs font-bold rounded border border-red-100 flex items-center justify-center gap-1"><i data-lucide="trash-2" width="14"></i> Excluir</button>
-        </div>
-    </div>`;
-    }).join('');
+  const tbody = document.getElementById('quotes-list');
+  if (!tbody) return;
+
+  let quotes = [...(STATE.quotes || [])];
+  
+  // Filtro de busca
+  const searchTerm = document.getElementById('quotes-search')?.value.toLowerCase() || '';
+  if (searchTerm) {
+    quotes = quotes.filter(q => 
+      String(q.id).includes(searchTerm) || 
+      (q.clientName && q.clientName.toLowerCase().includes(searchTerm))
+    );
+  }
+
+  if (quotes.length === 0) {
+    tbody.innerHTML = '<tr><td colspan="6" class="p-8 text-center text-slate-400">Nenhum orçamento encontrado.</td></tr>';
     lucide.createIcons();
+    return;
+  }
+
+  // Ordenar do mais recente para o mais antigo
+  quotes.sort((a, b) => new Date(b.date) - new Date(a.date));
+
+  tbody.innerHTML = quotes.map(q => {
+    const valorLiquido = q.total - (q.discount || 0);
+    const clientPhone = getClientPhoneByName(q.clientName);
+    const whatsappLink = clientPhone ? `https://wa.me/55${clientPhone.replace(/\D/g, '')}?text=Olá! Gostaria de mais informações sobre o orçamento #${q.id}` : '#';
+    
+    return `
+      <tr class="hover:bg-slate-50 transition">
+        <td class="p-4 font-mono text-xs font-bold text-slate-500">#${q.id}</td>
+        <td class="p-4 font-medium text-slate-700">${escapeHtml(q.clientName)}</td>
+        <td class="p-4 text-slate-500">${formatDate(q.date)}</td>
+        <td class="p-4 text-slate-600 max-w-xs truncate" title="${escapeHtml(q.itemsText || '')}">${escapeHtml(q.itemsText || '-')}</td>
+        <td class="p-4 text-right font-bold text-green-600">${formatMoney(valorLiquido)}</td>
+        <td class="p-4 text-center">
+          <div class="flex justify-center gap-2 flex-wrap">
+            <button onclick="sendQuoteWhatsApp('${q.id}')" class="text-green-600 hover:text-green-800 p-1" title="WhatsApp">
+              <i data-lucide="message-circle" width="18"></i>
+            </button>
+            <button onclick="loadQuoteToCart('${q.id}')" class="text-blue-600 hover:text-blue-800 p-1" title="Editar">
+              <i data-lucide="edit-3" width="18"></i>
+            </button>
+            <button onclick="duplicateQuote('${q.id}')" class="text-amber-600 hover:text-amber-800 p-1" title="Duplicar">
+              <i data-lucide="copy" width="18"></i>
+            </button>
+            <button onclick="downloadQuotePDF('${q.id}')" class="text-indigo-600 hover:text-indigo-800 p-1" title="Download PDF">
+              <i data-lucide="file-down" width="18"></i>
+            </button>
+            <button onclick="printQuote('${q.id}')" class="text-slate-600 hover:text-slate-800 p-1" title="Imprimir">
+              <i data-lucide="printer" width="18"></i>
+            </button>
+            <button onclick="deleteQuote('${q.id}')" class="text-red-600 hover:text-red-800 p-1" title="Excluir">
+              <i data-lucide="trash-2" width="18"></i>
+            </button>
+          </div>
+        </td>
+      </tr>
+    `;
+  }).join('');
+  
+  lucide.createIcons();
+}
+
+      // Função para obter telefone do cliente pelo nome
+function getClientPhoneByName(clientName) {
+  if (!clientName || clientName === 'Consumidor Final') return null;
+  const client = STATE.clients.find(c => c.name === clientName);
+  return client?.phone || null;
+}
+
+// Função para enviar orçamento pelo WhatsApp
+async function sendQuoteWhatsApp(id) {
+  const quote = STATE.quotes.find(q => String(q.id) === String(id));
+  if (!quote) {
+    showToast("Orçamento não encontrado", true);
+    return;
+  }
+  
+  const phone = getClientPhoneByName(quote.clientName);
+  if (!phone) {
+    showToast("Cliente não possui telefone cadastrado", true);
+    return;
+  }
+  
+  // Montar mensagem com resumo do orçamento
+  const itemsText = quote.items.map(i => `${i.name} (x${i.qty})`).join(', ');
+  const total = formatMoney(quote.total - (quote.discount || 0));
+  const message = `*ORÇAMENTO RV BLOCOS #${quote.id}*\n\nCliente: ${quote.clientName}\nData: ${formatDate(quote.date)}\nItens: ${itemsText}\nTotal: ${total}\n\n*Para confirmar ou alterar, entre em contato conosco.*`;
+  
+  const encodedMsg = encodeURIComponent(message);
+  const whatsappUrl = `https://wa.me/55${phone.replace(/\D/g, '')}?text=${encodedMsg}`;
+  window.open(whatsappUrl, '_blank');
+}
+
+// Função para duplicar um orçamento existente
+async function duplicateQuote(id) {
+  const original = STATE.quotes.find(q => String(q.id) === String(id));
+  if (!original) {
+    showToast("Orçamento original não encontrado", true);
+    return;
+  }
+  
+  showLoading(true);
+  const newId = getNextId(STATE.logs, STATE.quotes);
+  const date = new Date(new Date().getTime() - (new Date().getTimezoneOffset() * 60000)).toISOString();
+  
+  const newItems = original.items.map(item => ({
+    id: newId,
+    tipo: 'orcamento',
+    produto_nome: item.name,
+    quantidade: item.qty,
+    data: date,
+    observacao: '',
+    valor_total: item.total,
+    cliente_nome: original.clientName,
+    forma_pagamento: original.paymentMethod || 'Dinheiro',
+    status: 'ABERTO',
+    desconto: original.discount || 0,
+    status_financeiro: original.discountType || '$',
+    endereco_entrega: original.deliveryAddress || '',
+    status_entrega: '',
+    qtd_entregue: 0,
+    vencimento: date,
+    valor_pago: 0
+  }));
+  
+  const { error } = await sb.from('logs').insert(newItems);
+  if (error) {
+    showLoading(false);
+    return showToast("Erro ao duplicar: " + error.message, true);
+  }
+  
+  showToast("Orçamento duplicado com sucesso!");
+  await loadData();
+  navigate('quotes');
+}
+
+// Função para baixar o orçamento como PDF (usando window.print)
+function downloadQuotePDF(id) {
+  const quote = STATE.quotes.find(q => String(q.id) === String(id));
+  if (!quote) {
+    showToast("Orçamento não encontrado", true);
+    return;
+  }
+  
+  // Usa a mesma função de impressão, mas o usuário pode escolher "Salvar como PDF"
+  printQuote(id);
+  // Opcional: mostrar um toast informativo
+  setTimeout(() => {
+    showToast("Na janela de impressão, escolha 'Salvar como PDF' para baixar o arquivo.");
+  }, 1000);
+}
+
+// Função para limpar o filtro de busca
+function clearQuoteFilters() {
+  document.getElementById('quotes-search').value = '';
+  renderQuotesList();
+}
+
+// Função para escapar HTML (evitar XSS)
+function escapeHtml(str) {
+  if (!str) return '';
+  return str.replace(/[&<>]/g, function(m) {
+    if (m === '&') return '&amp;';
+    if (m === '<') return '&lt;';
+    if (m === '>') return '&gt;';
+    return m;
+  });
 }
 
 function loadQuoteToCart(id) {
