@@ -1974,6 +1974,7 @@ async function getLogoBase64(url) {
   });
 }
 
+// Função principal de download do PDF (estilo idêntico ao invoice)
 async function downloadQuotePDF(id) {
   const quote = STATE.quotes.find(q => String(q.id) === String(id));
   if (!quote) {
@@ -2006,98 +2007,116 @@ async function downloadQuotePDF(id) {
   const discount = quote.discount || 0;
   const finalTotal = subtotal - discount;
 
-  // Monta a tabela de itens (igual ao HTML do invoice)
+  // Monta as linhas da tabela de itens (igual ao HTML do invoice)
   const tableBody = quote.items.map(item => [
-    { text: item.name, style: 'tableText' },
-    { text: item.qty.toString(), alignment: 'center', style: 'tableText' },
-    { text: formatMoney(item.price), alignment: 'right', style: 'tableText' },
-    { text: formatMoney(item.total), alignment: 'right', style: 'tableText' }
+    { text: item.name, style: 'tableCell' },
+    { text: item.qty.toString(), alignment: 'center', style: 'tableCell' },
+    { text: formatMoney(item.price), alignment: 'right', style: 'tableCell' },
+    { text: formatMoney(item.total), alignment: 'right', style: 'tableCell' }
   ]);
 
   // Linha de desconto (se houver)
   if (discount > 0) {
     tableBody.push([
       { text: '', colSpan: 3, border: [false, false, false, false] }, {},
-      { text: 'Desconto:', alignment: 'right', style: 'tableText', bold: true },
-      { text: `- ${formatMoney(discount)}`, alignment: 'right', style: 'tableText', color: 'red' }
+      { text: 'Desconto:', alignment: 'right', style: 'tableCellBold' },
+      { text: `- ${formatMoney(discount)}`, alignment: 'right', style: 'tableCellRed' }
     ]);
   }
 
-  // Linha do total
+  // Linha do total (igual ao invoice: "TOTAL A PAGAR")
   tableBody.push([
     { text: '', colSpan: 3, border: [false, false, false, false] }, {},
     { text: 'TOTAL A PAGAR:', alignment: 'right', style: 'totalLabel' },
     { text: formatMoney(finalTotal), alignment: 'right', style: 'totalValue' }
   ]);
 
-  // Cabeçalho com logo e dados da empresa (mesmo estilo do invoice)
-  const headerColumns = [
-    {
-      width: 100,
-      stack: logoBase64 ? [{ image: logoBase64, width: 80, alignment: 'left' }] : [],
-      alignment: 'left'
-    },
-    {
-      width: '*',
-      stack: [
-        { text: company.name, style: 'companyName' },
-        { text: `CNPJ: ${company.cnpj}`, style: 'companyInfo' },
-        { text: company.address, style: 'companyInfo' },
-        { text: `Tel: ${company.phone}`, style: 'companyInfo' }
-      ],
-      alignment: 'center'
-    },
-    {
-      width: 130,
-      stack: [
-        { text: 'ORÇAMENTO', style: 'docTitle' },
-        { text: `Nº ${quote.id}`, style: 'docNumber' },
-        { text: formatDate(quote.date), style: 'docDate' }
-      ],
-      alignment: 'right'
-    }
-  ];
-
-  // Endereço de entrega (se houver)
-  const deliveryAddress = quote.deliveryAddress || client.address || 'Endereço não informado';
+  // Endereço de entrega (se houver, com destaque)
   const addressHtml = quote.deliveryAddress 
     ? `ENTREGA: ${quote.deliveryAddress}` 
     : (client.address || 'Endereço não informado');
 
+  // Define o documento PDF
   const docDefinition = {
     pageSize: 'A4',
     pageMargins: [40, 50, 40, 50],
     content: [
-      // Cabeçalho
-      { columns: headerColumns, margin: [0, 0, 0, 10] },
+      // ========== CABEÇALHO (igual ao invoice) ==========
+      {
+        columns: [
+          {
+            width: 100,
+            stack: logoBase64 ? [{ image: logoBase64, width: 80, alignment: 'left' }] : [],
+            alignment: 'left'
+          },
+          {
+            width: '*',
+            stack: [
+              { text: company.name, style: 'companyName' },
+              { text: `CNPJ: ${company.cnpj}`, style: 'companyInfo' },
+              { text: company.address, style: 'companyInfo' },
+              { text: `Tel: ${company.phone}`, style: 'companyInfo' }
+            ],
+            alignment: 'center'
+          },
+          {
+            width: 130,
+            stack: [
+              { text: 'ORÇAMENTO', style: 'docTitle' },
+              { text: `Nº ${quote.id}`, style: 'docNumber' },
+              { text: formatDate(quote.date), style: 'docDate' }
+            ],
+            alignment: 'right'
+          }
+        ],
+        margin: [0, 0, 0, 10]
+      },
       { canvas: [{ type: 'line', x1: 0, y1: 0, x2: 515, y2: 0, lineWidth: 1.5 }], margin: [0, 0, 0, 20] },
-      
-      // Dados do Cliente e Pagamento (igual ao invoice)
+
+      // ========== DADOS DO CLIENTE E PAGAMENTO (caixas com borda) ==========
       {
         columns: [
           {
             width: '*',
             stack: [
-              { text: 'DADOS DO CLIENTE', style: 'sectionTitle' },
-              { text: client.name, style: 'clientInfo', bold: true },
-              { text: client.doc || 'CPF/CNPJ não informado', style: 'clientInfo' },
-              { text: client.phone || 'Telefone não informado', style: 'clientInfo' },
-              { text: addressHtml, style: 'clientInfo', italics: true }
-            ]
+              { text: 'DADOS DO CLIENTE', style: 'boxHeader' },
+              {
+                stack: [
+                  { text: client.name, style: 'clientInfo', bold: true },
+                  { text: client.doc || 'CPF/CNPJ não informado', style: 'clientInfo' },
+                  { text: client.phone || 'Telefone não informado', style: 'clientInfo' },
+                  { text: addressHtml, style: 'clientInfo', italics: true }
+                ],
+                margin: [6, 6, 6, 6]
+              }
+            ],
+            margin: [0, 0, 5, 0],
+            border: [true, true, true, true],
+            borderWidth: 0.5,
+            borderColor: '#000000'
           },
           {
             width: '*',
             stack: [
-              { text: 'PAGAMENTO', style: 'sectionTitle' },
-              { text: `Forma: ${quote.paymentMethod || 'A Combinar'}`, style: 'clientInfo' },
-              { text: `Vendedor: RV Blocos`, style: 'clientInfo' }
-            ]
+              { text: 'PAGAMENTO', style: 'boxHeader' },
+              {
+                stack: [
+                  { text: `Forma: ${quote.paymentMethod || 'A Combinar'}`, style: 'clientInfo' },
+                  { text: `Vendedor: RV Blocos`, style: 'clientInfo' }
+                ],
+                margin: [6, 6, 6, 6]
+              }
+            ],
+            margin: [5, 0, 0, 0],
+            border: [true, true, true, true],
+            borderWidth: 0.5,
+            borderColor: '#000000'
           }
         ],
         margin: [0, 0, 0, 20]
       },
-      
-      // Tabela de produtos (com bordas, igual ao invoice)
+
+      // ========== TABELA DE PRODUTOS (com cabeçalho escuro e bordas) ==========
       {
         table: {
           headerRows: 1,
@@ -2113,7 +2132,7 @@ async function downloadQuotePDF(id) {
           ]
         },
         layout: {
-          hLineWidth: (i, node) => (i === 0 || i === node.table.body.length) ? 0.5 : 0.5,
+          hLineWidth: () => 0.5,
           vLineWidth: () => 0.5,
           hLineColor: () => '#000000',
           vLineColor: () => '#000000',
@@ -2124,8 +2143,8 @@ async function downloadQuotePDF(id) {
         },
         margin: [0, 0, 0, 20]
       },
-      
-      // Observações e totais (lado a lado, como no invoice)
+
+      // ========== RODAPÉ: OBSERVAÇÕES (esquerda) e TOTAIS (direita) ==========
       {
         columns: [
           {
@@ -2146,8 +2165,8 @@ async function downloadQuotePDF(id) {
         ],
         margin: [0, 0, 0, 40]
       },
-      
-      // Assinaturas
+
+      // ========== ASSINATURAS ==========
       {
         columns: [
           {
@@ -2174,15 +2193,19 @@ async function downloadQuotePDF(id) {
       docTitle: { fontSize: 14, bold: true, color: '#0f172a' },
       docNumber: { fontSize: 12, bold: true, margin: [0, 5, 0, 0] },
       docDate: { fontSize: 9, color: '#64748b', margin: [0, 3, 0, 0] },
-      sectionTitle: { fontSize: 10, bold: true, color: '#64748b', margin: [0, 0, 0, 5], decoration: 'underline' },
+      boxHeader: { fontSize: 10, bold: true, fillColor: '#f1f5f9', margin: [4, 4, 4, 4], border: [false, false, false, true], borderWidth: 0.5, borderColor: '#000000' },
       clientInfo: { fontSize: 10, margin: [0, 2, 0, 0] },
       tableHeader: { fontSize: 10, bold: true, fillColor: '#0f172a', color: '#ffffff', alignment: 'left' },
-      tableText: { fontSize: 9 },
+      tableCell: { fontSize: 9 },
+      tableCellBold: { fontSize: 9, bold: true },
+      tableCellRed: { fontSize: 9, color: 'red' },
       totalRow: { fontSize: 10, margin: [0, 2, 0, 2] },
       totalRowRed: { fontSize: 10, color: 'red', margin: [0, 2, 0, 2] },
       totalRowFinal: { fontSize: 12, bold: true, margin: [0, 8, 0, 0], color: '#0f172a' },
       notesTitle: { fontSize: 10, bold: true, margin: [0, 0, 0, 5] },
-      notesText: { fontSize: 9, color: '#334155', italics: true }
+      notesText: { fontSize: 9, color: '#334155', italics: true },
+      totalLabel: { fontSize: 11, bold: true },
+      totalValue: { fontSize: 13, bold: true, color: '#0f172a' }
     },
     defaultStyle: {
       font: 'Roboto'
