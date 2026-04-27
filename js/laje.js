@@ -396,24 +396,54 @@ async function gerarPlanoCorte() {
   const cards = document.getElementById('laje-corte-cards');
 
   let totalSobra = 0;
+  // Tabela
   tbody.innerHTML = barras.map((b, i) => {
     totalSobra += b.sobra;
-    const status = b.sobra < 0.10 ? '🔴 Perda crítica' : (b.sobra < 0.50 ? '🟡 Atenção' : '🟢 Ok');
+    const aproveitamento = ((b.usado / 12) * 100).toFixed(1);
+    let statusHtml = '';
+    if (b.sobra < 0.30) {
+      statusHtml = '<span class="text-green-600 font-bold">🟢 Ótimo</span>';
+    } else if (b.sobra < 0.80) {
+      statusHtml = '<span class="text-amber-600 font-bold">🟡 Atenção</span>';
+    } else {
+      statusHtml = '<span class="text-red-600 font-bold">🔴 Desperdício</span>';
+    }
     return `<tr class="border-b">
       <td class="p-3 font-bold">Barra ${i+1}</td>
       <td class="p-3 font-mono">${b.cortes.map(c => c.toFixed(2)+'m').join(' + ')}</td>
       <td class="p-3">${b.sobra.toFixed(2)} m</td>
-      <td class="p-3">${status}</td>
+      <td class="p-3">${aproveitamento}%</td>
+      <td class="p-3">${statusHtml}</td>
     </tr>`;
   }).join('');
 
+  // Atualizar cabeçalho da tabela para incluir coluna de Aproveitamento
+  document.getElementById('laje-corte-tabela').innerHTML = `
+    <thead class="bg-slate-50 text-slate-600">
+      <tr>
+        <th class="p-3">Barra</th>
+        <th class="p-3">Cortes (sequência)</th>
+        <th class="p-3">Sobra</th>
+        <th class="p-3">Aprov. (%)</th>
+        <th class="p-3">Status</th>
+      </tr>
+    </thead>
+    <tbody id="laje-corte-tbody"></tbody>
+  `;
+  // Reinserir o conteúdo no tbody (já que recriamos a tabela)
+  document.getElementById('laje-corte-tbody').innerHTML = tbody.innerHTML;
+
+  // Cartões
   cards.innerHTML = barras.map((b, i) => {
-    const sobraCor = b.sobra < 0.10 ? 'text-red-600' : (b.sobra < 0.50 ? 'text-amber-600' : 'text-green-600');
+    const sobraCor = b.sobra < 0.30 ? 'text-green-600' : (b.sobra < 0.80 ? 'text-amber-600' : 'text-red-600');
+    const statusTexto = b.sobra < 0.30 ? 'Ótimo aproveitamento' : (b.sobra < 0.80 ? 'Atenção' : 'Desperdício');
+    const statusEmoji = b.sobra < 0.30 ? '🟢' : (b.sobra < 0.80 ? '🟡' : '🔴');
     return `<div class="bg-white border rounded-xl p-5 shadow-sm">
       <h4 class="font-bold text-slate-800 mb-2">Barra ${i+1}</h4>
       <p class="text-sm"><span class="text-slate-500">Cortes:</span> <span class="font-mono font-bold">${b.cortes.map(c => c.toFixed(2)+'m').join(' + ')}</span></p>
       <p class="text-sm mt-1">Sobra: <span class="font-bold ${sobraCor}">${b.sobra.toFixed(2)} m</span></p>
-      <p class="text-xs text-slate-400 mt-1">Usado: ${b.usado.toFixed(2)} m / 12.00 m</p>
+      <p class="text-xs text-slate-400 mt-1">Usado: ${b.usado.toFixed(2)} m / 12,00 m (${((b.usado/12)*100).toFixed(1)}%)</p>
+      <p class="text-xs font-bold mt-2 ${sobraCor}">${statusEmoji} ${statusTexto}</p>
     </div>`;
   }).join('');
 
@@ -428,6 +458,7 @@ async function gerarPlanoCorte() {
   lucide.createIcons();
 }
 
+
 function imprimirPlanoCorte() {
   if (!LAJE.planoCorteCache) return showToast('Gere o plano de corte primeiro.', true);
   const printArea = document.getElementById('print-area');
@@ -436,14 +467,25 @@ function imprimirPlanoCorte() {
   let totalSobra = 0;
   const rows = barras.map((b, i) => {
     totalSobra += b.sobra;
-    return `<tr><td>Barra ${i+1}</td><td>${b.cortes.map(c => c.toFixed(2)+'m').join(' + ')}</td><td>${b.sobra.toFixed(2)} m</td></tr>`;
+    const aproveitamento = ((b.usado / 12) * 100).toFixed(1);
+    const status = b.sobra < 0.30 ? 'ÓTIMO' : (b.sobra < 0.80 ? 'ATENÇÃO' : 'DESPERDÍCIO');
+    return `<tr>
+      <td>Barra ${i+1}</td>
+      <td>${b.cortes.map(c => c.toFixed(2)+'m').join(' + ')}</td>
+      <td>${b.sobra.toFixed(2)} m</td>
+      <td>${aproveitamento}%</td>
+      <td style="color:${b.sobra<0.30?'green':(b.sobra<0.80?'orange':'red')};">${status}</td>
+    </tr>`;
   }).join('');
   printArea.innerHTML = `
     <div style="font-family: Arial; padding:20px;">
       <h2>Plano de Corte - Orçamento #${LAJE.planoCorteCache.idOrc}</h2>
       <table border="1" cellpadding="6" cellspacing="0" style="border-collapse:collapse; width:100%;">
-        <tr><th>Barra</th><th>Cortes</th><th>Sobra</th></tr>${rows}</table>
-      <p style="margin-top:10px;"><strong>Total de barras:</strong> ${barras.length} | <strong>Sobra total:</strong> ${totalSobra.toFixed(2)} m</p>
+        <tr><th>Barra</th><th>Cortes</th><th>Sobra</th><th>Aproveitamento</th><th>Status</th></tr>
+        ${rows}
+      </table>
+      <p style="margin-top:10px;"><strong>Total de barras:</strong> ${barras.length} | <strong>Sobra total:</strong> ${totalSobra.toFixed(2)} m (${((totalSobra/(barras.length*12))*100).toFixed(1)}% de perda)</p>
+      <p style="font-size:0.9em; color:#555;">🔵 Barras de 12 m. Aproveitamento excelente quando sobra < 0,30 m.</p>
     </div>`;
   setTimeout(() => { window.print(); limparAreaImpressao(); }, 300);
 }
