@@ -454,28 +454,74 @@ function imprimirPlanoCorte() {
   if (!LAJE.planoCorteCache) return showToast('Gere o plano de corte primeiro.', true);
   const printArea = document.getElementById('print-area');
   if (!printArea) return;
-  const barras = LAJE.planoCorteCache.barras;
+  const { barras, idOrc } = LAJE.planoCorteCache;
+  const orc = LAJE.orcamentosList.find(o => o.id == idOrc);
+  const cliente = orc ? orc.cliente_nome : 'Não informado';
+
   let totalSobra = 0;
-  const rows = barras.map((b, i) => {
+  let linhas = barras.map((b, i) => {
     totalSobra += b.sobra;
-    const aproveitamento = ((b.usado / 12) * 100).toFixed(1);
+    const cortesLista = b.cortes.map((c, j) => 
+      `<tr>
+        <td style="padding:4px 8px; text-align:center;">${j+1}</td>
+        <td style="padding:4px 8px; font-weight:bold; font-size:14px;">${c.toFixed(2)} m</td>
+        <td style="padding:4px 8px; text-align:center; font-size:14px;">☐</td>
+      </tr>`
+    ).join('');
     const status = b.sobra < 0.30 ? 'ÓTIMO' : (b.sobra < 0.80 ? 'ATENÇÃO' : 'DESPERDÍCIO');
-    return `<tr>
-      <td>Barra ${i+1}</td><td>${b.cortes.map(c => c.toFixed(2)+'m').join(' + ')}</td>
-      <td>${b.sobra.toFixed(2)} m</td><td>${aproveitamento}%</td>
-      <td style="color:${b.sobra<0.30?'green':(b.sobra<0.80?'orange':'red')};">${status}</td>
-    </tr>`;
-  }).join('');
-  printArea.innerHTML = `
-    <div style="font-family: Arial; padding:20px;">
-      <h2>Plano de Corte - Orçamento #${LAJE.planoCorteCache.idOrc}</h2>
-      <table border="1" cellpadding="6" cellspacing="0" style="border-collapse:collapse; width:100%;">
-        <tr><th>Barra</th><th>Cortes</th><th>Sobra</th><th>Aproveitamento</th><th>Status</th></tr>
-        ${rows}
+    const corStatus = b.sobra < 0.30 ? 'green' : (b.sobra < 0.80 ? 'orange' : 'red');
+    const aproveitamento = ((b.usado / 12) * 100).toFixed(1);
+    return `
+    <div style="page-break-inside: avoid; margin-bottom: 30px; border: 2px solid #000; padding: 12px; border-radius: 8px;">
+      <h3 style="margin:0 0 10px 0; font-size:18px; display: flex; justify-content: space-between;">
+        <span>🔹 Barra ${i+1}</span>
+        <span style="font-size:14px; background:#f0f0f0; padding:2px 10px; border-radius:4px;">Sobra: ${b.sobra.toFixed(2)} m</span>
+        <span style="color:${corStatus}; font-weight:bold;">${status} (${aproveitamento}%)</span>
+      </h3>
+      <table style="width:100%; border-collapse:collapse; margin-top:8px;">
+        <thead>
+          <tr style="background:#e5e7eb;">
+            <th style="padding:6px; border:1px solid #000;">Ordem</th>
+            <th style="padding:6px; border:1px solid #000;">Comprimento do corte</th>
+            <th style="padding:6px; border:1px solid #000; width:40px;">✔️</th>
+          </tr>
+        </thead>
+        <tbody>
+          ${cortesLista}
+        </tbody>
       </table>
-      <p style="margin-top:10px;"><strong>Total de barras:</strong> ${barras.length} | <strong>Sobra total:</strong> ${totalSobra.toFixed(2)} m (${((totalSobra/(barras.length*12))*100).toFixed(1)}% de perda)</p>
-      <p style="font-size:0.9em; color:#555;">🔵 Barras de 12 m. Aproveitamento excelente quando sobra < 0,30 m.</p>
+      <p style="margin-top:8px; font-size:12px;">📏 Comprimento total usado: ${b.usado.toFixed(2)} m | Barra original: 12,00 m</p>
     </div>`;
+  }).join('');
+
+  printArea.innerHTML = `
+    <div style="font-family: 'Segoe UI', Arial, sans-serif; padding:20px; max-width:900px; margin:0 auto; background:#fff;">
+      <div style="display:flex; align-items:center; border-bottom:2px solid #ea580c; padding-bottom:15px; margin-bottom:20px;">
+        <img src="https://lh3.googleusercontent.com/d/1SIoZ2JlalfMnGDZTXBk7ZYuPgwxX3odF" style="height:60px; margin-right:20px;" />
+        <div>
+          <h1 style="margin:0; font-size:20px; color:#ea580c;">RV BLOCOS E ESTRUTURAS</h1>
+          <p style="margin:2px 0; font-size:12px;">Plano de Corte de Treliças</p>
+        </div>
+        <div style="margin-left:auto; text-align:right;">
+          <p style="margin:0; font-weight:bold;">Orçamento #${idOrc}</p>
+          <p style="margin:0;">Cliente: ${cliente}</p>
+          <p style="margin:0;">Data: ${new Date().toLocaleDateString('pt-BR')}</p>
+        </div>
+      </div>
+      <p style="font-size:14px; margin-bottom:20px;">Instruções: Corte as barras na ordem indicada. Marque ☑ ao concluir cada corte.</p>
+      ${linhas}
+      <div style="margin-top:30px; border-top:2px solid #ea580c; padding-top:15px; display:flex; justify-content:space-between;">
+        <div style="font-size:16px;">
+          <strong>Total de barras: ${barras.length}</strong><br>
+          <span style="color:#555;">Sobra total acumulada: ${totalSobra.toFixed(2)} m (${((totalSobra/(barras.length*12))*100).toFixed(1)}%)</span>
+        </div>
+        <div style="text-align:right;">
+          <p style="margin:0;">Conferido por: ________________________</p>
+          <p style="margin:10px 0 0 0;">Data: _____ / _____ / __________</p>
+        </div>
+      </div>
+    </div>
+  `;
   setTimeout(() => { window.print(); limparAreaImpressao(); }, 300);
 }
 
