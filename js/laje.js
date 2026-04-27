@@ -3,7 +3,8 @@ const LAJE = {
   comodosTemp: [],          // { nome, vaoMenor, vaoMaior, tipo, altura, qtdVigotas, tamVigota, epsLinear, area, valorEst }
   orcamentosList: [],       // cache dos orçamentos
   editandoId: null,         // se estiver editando, ID do orçamento
-  tabAtiva: 'orcamento',    // 'orcamento' | 'corte' | 'detalhamento'
+  tabAtiva: 'orcamento',
+  algoritmoCorte: 'FFD',// 'orcamento' | 'corte' | 'detalhamento'
   planoCorteCache: null     // cache do último plano de corte gerado { barras, resumo }
 };
 
@@ -388,7 +389,10 @@ async function gerarPlanoCorte() {
     }
   }
 
-  const barras = binPackingFFD(tamanhos, obterConfig('comprimento_barra_trelica', 12.0));
+  const algoritmo = LAJE.algoritmoCorte || 'FFD';
+  const barras = algoritmo === 'BFD'
+  ? binPackingBFD(tamanhos, obterConfig('comprimento_barra_trelica', 12.0))
+  : binPackingFFD(tamanhos, obterConfig('comprimento_barra_trelica', 12.0));
   LAJE.planoCorteCache = { barras, idOrc };
 
   document.getElementById('laje-corte-resultado').classList.remove('hidden');
@@ -580,3 +584,46 @@ if (viewId === 'lajes') {
 // STATE.configLaje = {};
 // const { data: configs } = await sb.from('configuracoes').select('*');
 // configs.forEach(c => STATE.configLaje[c.chave] = c.valor);
+
+
+
+/**
+ * Best Fit Decreasing (BFD)
+ * Ordena decrescente e, para cada peça, escolhe a barra onde a sobra após o encaixe
+ * seja a menor possível (ou seja, o "melhor encaixe").
+ * Se nenhuma barra couber, cria uma nova.
+ */
+function binPackingBFD(tamanhos, comprimentoBarra = 12.0) {
+  const sorted = [...tamanhos].sort((a, b) => b - a);
+  const barras = [];
+  for (const tam of sorted) {
+    let bestIdx = -1;
+    let bestSobra = Infinity;
+    // Procura a barra que, após inserir, deixe a menor sobra (ainda >= 0)
+    for (let i = 0; i < barras.length; i++) {
+      const usado = barras[i].cortes.reduce((s, c) => s + c, 0);
+      const sobraAtual = comprimentoBarra - usado;
+      if (sobraAtual >= tam) {
+        const novaSobra = sobraAtual - tam;
+        if (novaSobra < bestSobra) {
+          bestSobra = novaSobra;
+          bestIdx = i;
+        }
+      }
+    }
+    if (bestIdx !== -1) {
+      barras[bestIdx].cortes.push(tam);
+    } else {
+      barras.push({ cortes: [tam] });
+    }
+  }
+  // Calcula métricas
+  for (const barra of barras) {
+    const usado = barra.cortes.reduce((s, c) => s + c, 0);
+    barra.sobra = parseFloat((comprimentoBarra - usado).toFixed(3));
+    barra.usado = usado;
+  }
+  // Ordena por sobra crescente
+  barras.sort((a, b) => a.sobra - b.sobra);
+  return barras;
+}
