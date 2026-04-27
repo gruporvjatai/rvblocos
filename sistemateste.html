@@ -600,6 +600,13 @@
             <input type="number" id="laje-vao-maior" placeholder="Vão Maior (m)" step="0.01" min="0"
               class="w-full p-3 border rounded-lg text-sm" oninput="calcularLajePreview()">
           </div>
+          <div>
+            <label class="block text-xs font-bold text-slate-500 mb-1">Tipo de Enchimento</label>
+            <select id="laje-tipo-enchimento" class="w-full p-3 border rounded-lg bg-white text-sm" onchange="calcularLajePreview()">
+              <option value="EPS">Isopor (EPS)</option>
+              <option value="LAJOTA_CERAMICA">Lajota Cerâmica</option>
+            </select>
+          </div>
           <button onclick="adicionarComodoLaje()" class="w-full bg-slate-800 text-white py-3 rounded-lg font-bold hover:bg-slate-700">
             <i data-lucide="plus"></i> Adicionar ao Orçamento
           </button>
@@ -643,6 +650,7 @@
                 <th class="p-3">Vão Maior</th>
                 <th class="p-3">Vigotas</th>
                 <th class="p-3">Tam. Vigota</th>
+                <th class="p-3">Enchimento</th>
                 <th class="p-3">EPS (m)</th>
                 <th class="p-3"></th>
               </tr>
