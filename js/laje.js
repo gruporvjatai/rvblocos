@@ -44,6 +44,7 @@ function limparFormLaje() {
   document.getElementById('laje-vao-maior').value = '';
   document.getElementById('laje-tipo-enchimento').value = 'EPS';
   document.getElementById('laje-altura').value = '8';
+  document.getElementById('laje-largura-viga').value = '14';
   document.getElementById('laje-preview').classList.add('hidden');
 }
 
@@ -55,12 +56,14 @@ function obterConfig(nome, padrao = 0) {
   return global !== undefined ? Number(global) : padrao;
 }
 
-function calcularLaje(vaoMenor, vaoMaior, tipoEnchimento, altura) {
+function calcularLaje(vaoMenor, vaoMaior, tipoEnchimento, altura, larguraViga = 14) {
   const vm = parseFloat(vaoMenor) || 0;
   const vM = parseFloat(vaoMaior) || 0;
+  const lv = parseFloat(larguraViga) || 14; // cm
   if (vm <= 0 || vM <= 0) return null;
 
-  const tamVigota = vm + 0.20;
+  const acrescimo = lv / 100;               // agora usa largura da viga
+  const tamVigota = vm + acrescimo;         // ex: 4.00 + 0.14 = 4.14 m
   const interEixo = tipoEnchimento === 'EPS' ? obterConfig('inter_eixo_eps', 0.50) : obterConfig('inter_eixo_lajota_ceramica', 0.43);
   const qtdVigotas = Math.ceil(vM / interEixo);
   const epsLinear = tipoEnchimento === 'EPS' ? (qtdVigotas - 1) * vm : 0;
@@ -72,6 +75,7 @@ function calcularLaje(vaoMenor, vaoMaior, tipoEnchimento, altura) {
 
   return {
     vaoMenor: vm, vaoMaior: vM, tipo: tipoEnchimento, altura: parseInt(altura),
+    larguraViga: parseInt(lv),
     qtdVigotas, tamVigota: parseFloat(tamVigota.toFixed(3)),
     epsLinear: parseFloat(epsLinear.toFixed(3)),
     area: parseFloat(area.toFixed(3)),
@@ -85,13 +89,11 @@ function calcularLajePreview() {
   const vM = document.getElementById('laje-vao-maior').value;
   const tipo = document.getElementById('laje-tipo-enchimento').value;
   const altura = document.getElementById('laje-altura').value;
-  const res = calcularLaje(vm, vM, tipo, altura);
+  const larguraViga = document.getElementById('laje-largura-viga').value;
+  const res = calcularLaje(vm, vM, tipo, altura, larguraViga);
   const previewDiv = document.getElementById('laje-preview');
 
-  if (!res) {
-    previewDiv.classList.add('hidden');
-    return;
-  }
+  if (!res) { previewDiv.classList.add('hidden'); return; }
   previewDiv.classList.remove('hidden');
   document.getElementById('laje-prev-vigotas').innerText = res.qtdVigotas + ' unidades';
   document.getElementById('laje-prev-tamanho').innerText = res.tamVigota.toFixed(2) + ' m';
@@ -107,7 +109,8 @@ function adicionarComodoLaje() {
   const vM = document.getElementById('laje-vao-maior').value;
   const tipo = document.getElementById('laje-tipo-enchimento').value;
   const altura = document.getElementById('laje-altura').value;
-  const res = calcularLaje(vm, vM, tipo, altura);
+  const larguraViga = document.getElementById('laje-largura-viga').value;
+  const res = calcularLaje(vm, vM, tipo, altura, larguraViga);
 
   if (!nome) return showToast('Informe o nome do cômodo.', true);
   if (!res) return showToast('Informe vão menor e vão maior válidos.', true);
@@ -116,6 +119,7 @@ function adicionarComodoLaje() {
   renderComodosTemp();
   fecharModalComodo();
 }
+
 
 function removerComodoLaje(index) {
   LAJE.comodosTemp.splice(index, 1);
@@ -214,7 +218,8 @@ async function salvarOrcamentoLaje() {
       tamanho_vigota: c.tamVigota,
       metragem_eps: c.epsLinear,
       area: c.area,
-      valor_estimado: c.valorEstimado
+      valor_estimado: c.valorEstimado,
+      largura_viga: c.larguraViga
     }));
 
     const { error: errItens } = await sb.from('laje_itens_orcamento').insert(itens);
@@ -294,7 +299,8 @@ async function editarOrcamentoLaje(id) {
     tamVigota: Number(i.tamanho_vigota),
     epsLinear: Number(i.metragem_eps),
     area: Number(i.area || (i.vao_menor * i.vao_maior)),
-    valorEstimado: Number(i.valor_estimado || 0)
+    valorEstimado: Number(i.valor_estimado || 0),
+    larguraViga: Number(i.largura_viga) || 14
   }));
   renderComodosTemp();
   switchLajeTab('orcamento');
