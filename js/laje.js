@@ -1,11 +1,11 @@
 // ==================== ESTADO DO MÓDULO LAJES ====================
 const LAJE = {
-  comodosTemp: [],          // { nome, vaoMenor, vaoMaior, tipo, altura, qtdVigotas, tamVigota, epsLinear, area, valorEst }
-  orcamentosList: [],       // cache dos orçamentos
-  editandoId: null,         // se estiver editando, ID do orçamento
+  comodosTemp: [],
+  orcamentosList: [],
+  editandoId: null,
   tabAtiva: 'orcamento',
-  algoritmoCorte: 'FFD',// 'orcamento' | 'corte' | 'detalhamento'
-  planoCorteCache: null     // cache do último plano de corte gerado { barras, resumo }
+  algoritmoCorte: 'FFD',
+  planoCorteCache: null
 };
 
 // ==================== NAVEGAÇÃO DE ABAS ====================
@@ -17,11 +17,9 @@ function switchLajeTab(tab) {
 
   ['orcamento','corte','detalhamento'].forEach(t => {
     const btn = document.getElementById(`tab-${t}-btn`);
-    if (t === tab) {
-      btn.className = 'px-4 py-2 rounded-t-lg font-bold text-sm bg-orange-600 text-white shadow';
-    } else {
-      btn.className = 'px-4 py-2 rounded-t-lg font-bold text-sm bg-slate-100 text-slate-600 hover:bg-slate-200';
-    }
+    btn.className = tab === t
+      ? 'px-4 py-2 rounded-t-lg font-bold text-sm bg-orange-600 text-white shadow'
+      : 'px-4 py-2 rounded-t-lg font-bold text-sm bg-slate-100 text-slate-600 hover:bg-slate-200';
   });
 
   if (tab === 'corte') carregarSelectOrcamentosAprovados();
@@ -53,7 +51,6 @@ function limparFormLaje() {
 function obterConfig(nome, padrao = 0) {
   const entry = STATE.configLaje?.[nome];
   if (entry !== undefined) return Number(entry);
-  // fallback to STATE.configuracoes
   const global = STATE.configuracoes?.[nome];
   return global !== undefined ? Number(global) : padrao;
 }
@@ -98,16 +95,12 @@ function calcularLajePreview() {
   previewDiv.classList.remove('hidden');
   document.getElementById('laje-prev-vigotas').innerText = res.qtdVigotas + ' unidades';
   document.getElementById('laje-prev-tamanho').innerText = res.tamVigota.toFixed(2) + ' m';
-  if (res.tipo === 'EPS') {
-    document.getElementById('laje-prev-eps').innerText = res.epsLinear.toFixed(2) + ' m';
-  } else {
-    document.getElementById('laje-prev-eps').innerText = 'Não se aplica (Lajota)';
-  }
+  document.getElementById('laje-prev-eps').innerText = res.tipo === 'EPS' ? res.epsLinear.toFixed(2) + ' m' : 'Não se aplica (Lajota)';
   document.getElementById('laje-prev-area').innerText = res.area.toFixed(2) + ' m²';
   document.getElementById('laje-prev-valor').innerText = formatMoney(res.valorEstimado);
 }
 
-// ==================== MANIPULAÇÃO DOS CÔMODOS (TEMP) ====================
+// ==================== MANIPULAÇÃO DOS CÔMODOS TEMPORÁRIOS ====================
 function adicionarComodoLaje() {
   const nome = document.getElementById('laje-comodo-nome').value.trim();
   const vm = document.getElementById('laje-vao-menor').value;
@@ -169,7 +162,6 @@ function renderComodosTemp() {
     </tr>`;
   }).join('');
 
-  // Rodapé com totais
   tbody.insertAdjacentHTML('beforeend', `
     <tr class="bg-slate-50 font-bold">
       <td colspan="8" class="p-3 text-right">Área Total / Valor Estimado:</td>
@@ -180,7 +172,7 @@ function renderComodosTemp() {
   lucide.createIcons();
 }
 
-// ==================== SALVAR ORÇAMENTO ====================
+// ==================== SALVAR / EDITAR / EXCLUIR ORÇAMENTO ====================
 async function salvarOrcamentoLaje() {
   const cliente = document.getElementById('laje-cliente-nome').value.trim();
   if (!cliente) return showToast('Informe o nome do cliente.', true);
@@ -191,18 +183,16 @@ async function salvarOrcamentoLaje() {
   const valorTotal = LAJE.comodosTemp.reduce((s, c) => s + c.valorEstimado, 0);
 
   try {
+    let idOrc;
     if (LAJE.editandoId) {
-      // Atualiza cabeçalho
       await sb.from('laje_orcamentos').update({
         cliente_nome: cliente,
         valor_total_estimado: valorTotal,
         area_total: areaTotal
       }).eq('id', LAJE.editandoId);
-      // Remove itens antigos
       await sb.from('laje_itens_orcamento').delete().eq('id_orcamento', LAJE.editandoId);
-      var idOrc = LAJE.editandoId;
+      idOrc = LAJE.editandoId;
     } else {
-      // Insere novo
       const { data: cab, error: errCab } = await sb.from('laje_orcamentos').insert({
         cliente_nome: cliente,
         status: 'ABERTO',
@@ -210,10 +200,9 @@ async function salvarOrcamentoLaje() {
         area_total: areaTotal
       }).select('id').single();
       if (errCab) throw new Error(errCab.message);
-      var idOrc = cab.id;
+      idOrc = cab.id;
     }
 
-    // Insere itens
     const itens = LAJE.comodosTemp.map(c => ({
       id_orcamento: idOrc,
       comodo: c.nome,
@@ -231,7 +220,6 @@ async function salvarOrcamentoLaje() {
     const { error: errItens } = await sb.from('laje_itens_orcamento').insert(itens);
     if (errItens) throw new Error(errItens.message);
 
-    // Limpa estado
     LAJE.comodosTemp = [];
     LAJE.editandoId = null;
     document.getElementById('laje-cliente-nome').value = '';
@@ -244,7 +232,6 @@ async function salvarOrcamentoLaje() {
   showLoading(false);
 }
 
-// ==================== CARREGAR HISTÓRICO DE ORÇAMENTOS ====================
 async function carregarOrcamentosLaje() {
   const tbody = document.getElementById('laje-orcamentos-tbody');
   if (!tbody) return;
@@ -268,11 +255,7 @@ async function carregarOrcamentosLaje() {
       .select('comodo, area, valor_estimado').eq('id_orcamento', orc.id);
     const comodosNomes = (itens || []).map(i => i.comodo).join(', ');
     const areaTotal = (itens || []).reduce((s, i) => s + Number(i.area||0), 0);
-    let statusBadge = '';
-    if (orc.status === 'ABERTO') statusBadge = '<span class="bg-yellow-100 text-yellow-700 px-2 py-0.5 rounded text-xs font-bold">ABERTO</span>';
-    else if (orc.status === 'APROVADO') statusBadge = '<span class="bg-green-100 text-green-700 px-2 py-0.5 rounded text-xs font-bold">APROVADO</span>';
-    else statusBadge = '<span class="bg-red-100 text-red-700 px-2 py-0.5 rounded text-xs font-bold">CANCELADO</span>';
-
+    const badge = orc.status === 'ABERTO' ? 'bg-yellow-100 text-yellow-700' : (orc.status === 'APROVADO' ? 'bg-green-100 text-green-700' : 'bg-red-100 text-red-700');
     return `<tr class="border-b hover:bg-slate-50">
       <td class="p-3 font-mono">#${orc.id}</td>
       <td class="p-3 font-medium">${orc.cliente_nome}</td>
@@ -280,7 +263,7 @@ async function carregarOrcamentosLaje() {
       <td class="p-3 text-xs max-w-[120px] truncate" title="${comodosNomes}">${comodosNomes || '-'}</td>
       <td class="p-3">${areaTotal.toFixed(2)} m²</td>
       <td class="p-3 font-bold text-green-700">${formatMoney(orc.valor_total_estimado)}</td>
-      <td class="p-3">${statusBadge}</td>
+      <td class="p-3"><span class="px-2 py-0.5 rounded text-xs font-bold ${badge}">${orc.status}</span></td>
       <td class="p-3 flex gap-2 justify-center">
         <button onclick="editarOrcamentoLaje(${orc.id})" class="text-blue-600 hover:text-blue-800" title="Editar"><i data-lucide="edit-3" width="16"></i></button>
         <button onclick="alterarStatusLaje(${orc.id},'APROVADO')" class="text-green-600 hover:text-green-800" title="Aprovar"><i data-lucide="check" width="16"></i></button>
@@ -294,7 +277,6 @@ async function carregarOrcamentosLaje() {
   lucide.createIcons();
 }
 
-// ==================== EDITAR ORÇAMENTO ====================
 async function editarOrcamentoLaje(id) {
   const orc = LAJE.orcamentosList.find(o => o.id == id);
   if (!orc) return;
@@ -315,12 +297,10 @@ async function editarOrcamentoLaje(id) {
     valorEstimado: Number(i.valor_estimado || 0)
   }));
   renderComodosTemp();
-  document.getElementById('laje-comodos-count').innerText = LAJE.comodosTemp.length;
   switchLajeTab('orcamento');
   showToast(`Editando orçamento #${id}`);
 }
 
-// ==================== ALTERAR STATUS / EXCLUIR ====================
 async function alterarStatusLaje(id, novoStatus) {
   const { error } = await sb.from('laje_orcamentos').update({ status: novoStatus }).eq('id', id);
   if (error) return showToast('Erro: ' + error.message, true);
@@ -367,7 +347,38 @@ function binPackingFFD(tamanhos, comprimentoBarra = 12.0) {
     barra.sobra = parseFloat((comprimentoBarra - usado).toFixed(3));
     barra.usado = usado;
   }
-  barras.sort((a, b) => a.sobra - b.sobra); // ordena por sobra crescente
+  barras.sort((a, b) => a.sobra - b.sobra);
+  return barras;
+}
+
+function binPackingBFD(tamanhos, comprimentoBarra = 12.0) {
+  const sorted = [...tamanhos].sort((a, b) => b - a);
+  const barras = [];
+  for (const tam of sorted) {
+    let bestIdx = -1, bestSobra = Infinity;
+    for (let i = 0; i < barras.length; i++) {
+      const usado = barras[i].cortes.reduce((s, c) => s + c, 0);
+      const sobraAtual = comprimentoBarra - usado;
+      if (sobraAtual >= tam) {
+        const novaSobra = sobraAtual - tam;
+        if (novaSobra < bestSobra) {
+          bestSobra = novaSobra;
+          bestIdx = i;
+        }
+      }
+    }
+    if (bestIdx !== -1) {
+      barras[bestIdx].cortes.push(tam);
+    } else {
+      barras.push({ cortes: [tam] });
+    }
+  }
+  for (const barra of barras) {
+    const usado = barra.cortes.reduce((s, c) => s + c, 0);
+    barra.sobra = parseFloat((comprimentoBarra - usado).toFixed(3));
+    barra.usado = usado;
+  }
+  barras.sort((a, b) => a.sobra - b.sobra);
   return barras;
 }
 
@@ -377,10 +388,11 @@ async function gerarPlanoCorte() {
   showLoading(true);
 
   const { data: itens, error } = await sb.from('laje_itens_orcamento')
-    .select('tamanho_vigota, qtd_vigotas, comodo').eq('id_orcamento', idOrc);
-
-  if (error) { showLoading(false); return showToast('Erro ao buscar itens.', true); }
-  if (!itens || itens.length === 0) { showLoading(false); return showToast('Nenhuma vigota encontrada.', true); }
+    .select('tamanho_vigota, qtd_vigotas').eq('id_orcamento', idOrc);
+  if (error || !itens?.length) {
+    showLoading(false);
+    return showToast('Nenhuma vigota encontrada.', true);
+  }
 
   const tamanhos = [];
   for (const item of itens) {
@@ -389,29 +401,22 @@ async function gerarPlanoCorte() {
     }
   }
 
-  const algoritmo = LAJE.algoritmoCorte || 'FFD';
-  const barras = algoritmo === 'BFD'
-  ? binPackingBFD(tamanhos, obterConfig('comprimento_barra_trelica', 12.0))
-  : binPackingFFD(tamanhos, obterConfig('comprimento_barra_trelica', 12.0));
+  const barra12m = obterConfig('comprimento_barra_trelica', 12.0);
+  const barras = LAJE.algoritmoCorte === 'BFD' ? binPackingBFD(tamanhos, barra12m) : binPackingFFD(tamanhos, barra12m);
   LAJE.planoCorteCache = { barras, idOrc };
 
   document.getElementById('laje-corte-resultado').classList.remove('hidden');
   const tbody = document.getElementById('laje-corte-tbody');
   const cards = document.getElementById('laje-corte-cards');
-
   let totalSobra = 0;
-  // Tabela
+
   tbody.innerHTML = barras.map((b, i) => {
     totalSobra += b.sobra;
-    const aproveitamento = ((b.usado / 12) * 100).toFixed(1);
+    const aproveitamento = ((b.usado / barra12m) * 100).toFixed(1);
     let statusHtml = '';
-    if (b.sobra < 0.30) {
-      statusHtml = '<span class="text-green-600 font-bold">🟢 Ótimo</span>';
-    } else if (b.sobra < 0.80) {
-      statusHtml = '<span class="text-amber-600 font-bold">🟡 Atenção</span>';
-    } else {
-      statusHtml = '<span class="text-red-600 font-bold">🔴 Desperdício</span>';
-    }
+    if (b.sobra < 0.30) statusHtml = '<span class="text-green-600 font-bold">🟢 Ótimo</span>';
+    else if (b.sobra < 0.80) statusHtml = '<span class="text-amber-600 font-bold">🟡 Atenção</span>';
+    else statusHtml = '<span class="text-red-600 font-bold">🔴 Desperdício</span>';
     return `<tr class="border-b">
       <td class="p-3 font-bold">Barra ${i+1}</td>
       <td class="p-3 font-mono">${b.cortes.map(c => c.toFixed(2)+'m').join(' + ')}</td>
@@ -421,23 +426,6 @@ async function gerarPlanoCorte() {
     </tr>`;
   }).join('');
 
-  // Atualizar cabeçalho da tabela para incluir coluna de Aproveitamento
-  document.getElementById('laje-corte-tabela').innerHTML = `
-    <thead class="bg-slate-50 text-slate-600">
-      <tr>
-        <th class="p-3">Barra</th>
-        <th class="p-3">Cortes (sequência)</th>
-        <th class="p-3">Sobra</th>
-        <th class="p-3">Aprov. (%)</th>
-        <th class="p-3">Status</th>
-      </tr>
-    </thead>
-    <tbody id="laje-corte-tbody"></tbody>
-  `;
-  // Reinserir o conteúdo no tbody (já que recriamos a tabela)
-  document.getElementById('laje-corte-tbody').innerHTML = tbody.innerHTML;
-
-  // Cartões
   cards.innerHTML = barras.map((b, i) => {
     const sobraCor = b.sobra < 0.30 ? 'text-green-600' : (b.sobra < 0.80 ? 'text-amber-600' : 'text-red-600');
     const statusTexto = b.sobra < 0.30 ? 'Ótimo aproveitamento' : (b.sobra < 0.80 ? 'Atenção' : 'Desperdício');
@@ -446,7 +434,7 @@ async function gerarPlanoCorte() {
       <h4 class="font-bold text-slate-800 mb-2">Barra ${i+1}</h4>
       <p class="text-sm"><span class="text-slate-500">Cortes:</span> <span class="font-mono font-bold">${b.cortes.map(c => c.toFixed(2)+'m').join(' + ')}</span></p>
       <p class="text-sm mt-1">Sobra: <span class="font-bold ${sobraCor}">${b.sobra.toFixed(2)} m</span></p>
-      <p class="text-xs text-slate-400 mt-1">Usado: ${b.usado.toFixed(2)} m / 12,00 m (${((b.usado/12)*100).toFixed(1)}%)</p>
+      <p class="text-xs text-slate-400 mt-1">Usado: ${b.usado.toFixed(2)} m / 12,00 m (${((b.usado/barra12m)*100).toFixed(1)}%)</p>
       <p class="text-xs font-bold mt-2 ${sobraCor}">${statusEmoji} ${statusTexto}</p>
     </div>`;
   }).join('');
@@ -462,7 +450,6 @@ async function gerarPlanoCorte() {
   lucide.createIcons();
 }
 
-
 function imprimirPlanoCorte() {
   if (!LAJE.planoCorteCache) return showToast('Gere o plano de corte primeiro.', true);
   const printArea = document.getElementById('print-area');
@@ -474,10 +461,8 @@ function imprimirPlanoCorte() {
     const aproveitamento = ((b.usado / 12) * 100).toFixed(1);
     const status = b.sobra < 0.30 ? 'ÓTIMO' : (b.sobra < 0.80 ? 'ATENÇÃO' : 'DESPERDÍCIO');
     return `<tr>
-      <td>Barra ${i+1}</td>
-      <td>${b.cortes.map(c => c.toFixed(2)+'m').join(' + ')}</td>
-      <td>${b.sobra.toFixed(2)} m</td>
-      <td>${aproveitamento}%</td>
+      <td>Barra ${i+1}</td><td>${b.cortes.map(c => c.toFixed(2)+'m').join(' + ')}</td>
+      <td>${b.sobra.toFixed(2)} m</td><td>${aproveitamento}%</td>
       <td style="color:${b.sobra<0.30?'green':(b.sobra<0.80?'orange':'red')};">${status}</td>
     </tr>`;
   }).join('');
@@ -507,11 +492,10 @@ async function gerarDetalhamento() {
   if (!idOrc) return showToast('Selecione um orçamento.', true);
   showLoading(true);
 
-  const { data: itens } = await sb.from('laje_itens_orcamento')
+  const { data: itens, error } = await sb.from('laje_itens_orcamento')
     .select('*').eq('id_orcamento', idOrc);
-  if (!itens || itens.length === 0) { showLoading(false); return showToast('Nenhum item.', true); }
+  if (error || !itens?.length) { showLoading(false); return showToast('Nenhum item.', true); }
 
-  // Agrupa dados
   let totalVigotas = 0, totalArea = 0, totalEpsLinear = 0;
   const tamanhosVigota = [];
   const tiposEnchimento = new Set();
@@ -525,36 +509,27 @@ async function gerarDetalhamento() {
     alturas.add(i.altura);
   });
 
-  // Plano de corte para saber número de barras
   const barras = binPackingFFD(tamanhosVigota, obterConfig('comprimento_barra_trelica', 12.0));
   const numBarras = barras.length;
 
-  // Determina tipo de treliça predominante (usando a altura mais frequente)
   const alturaModa = [...alturas].sort((a,b)=>b-a)[0] || 8;
   const trelicaTipo = obterConfig(`trelica_tipo_h${alturaModa}`, 'TG8');
 
-  // Enchimento: EPS linear ou lajotas (peças)
-  let enchimentoDesc = '', enchimentoQtd = '';
+  let enchimentoQtd = '';
   if ([...tiposEnchimento].includes('EPS')) {
-    enchimentoDesc = 'EPS (Isopor)';
-    enchimentoQtd = `${totalEpsLinear.toFixed(2)} m lineares`;
+    enchimentoQtd += `${totalEpsLinear.toFixed(2)} m lineares de EPS`;
   }
   if ([...tiposEnchimento].includes('LAJOTA_CERAMICA')) {
-    const lajotaPorM2 = 12; // 12 peças por m²
-    const totalLajotas = Math.ceil(totalArea * lajotaPorM2);
-    enchimentoDesc += (enchimentoDesc ? ' + ' : '') + 'Lajota Cerâmica';
-    enchimentoQtd += (enchimentoQtd ? ' / ' : '') + `${totalLajotas} peças`;
+    const totalLajotas = Math.ceil(totalArea * 12);
+    enchimentoQtd += (enchimentoQtd ? ' / ' : '') + `${totalLajotas} peças de lajota cerâmica`;
   }
 
-  // Concreto (capeamento 4cm)
-  const alturaCapeamento = obterConfig('altura_capeamento_concreto', 0.04);
-  const volumeConcreto = totalArea * alturaCapeamento;
+  const volumeConcreto = totalArea * obterConfig('altura_capeamento_concreto', 0.04);
 
-  // Aço adicional (reforço) – aqui você pode deixar um placeholder ou calcular automático depois
   const detalhamento = [
     { material: `Treliça ${trelicaTipo} (barras 12m)`, quantidade: `${numBarras} barras` },
     { material: 'Comprimento total de treliça', quantidade: `${tamanhosVigota.reduce((a,b)=>a+b,0).toFixed(2)} m` },
-    { material: 'Enchimento', quantidade: enchimentoQtd },
+    { material: 'Enchimento', quantidade: enchimentoQtd || 'Nenhum' },
     { material: 'Área total da laje', quantidade: `${totalArea.toFixed(2)} m²` },
     { material: 'Volume de concreto (capeamento 4cm)', quantidade: `${volumeConcreto.toFixed(3)} m³` },
     { material: 'Total de vigotas', quantidade: `${totalVigotas} unidades` }
@@ -567,63 +542,4 @@ async function gerarDetalhamento() {
 
   showLoading(false);
   lucide.createIcons();
-}
-
-// ==================== INICIALIZAÇÃO ====================
-// Esta função deve ser chamada dentro do navigate() quando viewId === 'lajes'
-// e também ao carregar dados (onDataLoaded) opcionalmente.
-// Adicione no seu script principal:
-/*
-if (viewId === 'lajes') {
-  if (!document.getElementById('laje-orcamentos-tbody')) return; // segurança
-  switchLajeTab(LAJE.tabAtiva || 'orcamento');
-  carregarOrcamentosLaje();
-}
-*/
-// E no carregamento inicial, se necessário:
-// STATE.configLaje = {};
-// const { data: configs } = await sb.from('configuracoes').select('*');
-// configs.forEach(c => STATE.configLaje[c.chave] = c.valor);
-
-
-
-/**
- * Best Fit Decreasing (BFD)
- * Ordena decrescente e, para cada peça, escolhe a barra onde a sobra após o encaixe
- * seja a menor possível (ou seja, o "melhor encaixe").
- * Se nenhuma barra couber, cria uma nova.
- */
-function binPackingBFD(tamanhos, comprimentoBarra = 12.0) {
-  const sorted = [...tamanhos].sort((a, b) => b - a);
-  const barras = [];
-  for (const tam of sorted) {
-    let bestIdx = -1;
-    let bestSobra = Infinity;
-    // Procura a barra que, após inserir, deixe a menor sobra (ainda >= 0)
-    for (let i = 0; i < barras.length; i++) {
-      const usado = barras[i].cortes.reduce((s, c) => s + c, 0);
-      const sobraAtual = comprimentoBarra - usado;
-      if (sobraAtual >= tam) {
-        const novaSobra = sobraAtual - tam;
-        if (novaSobra < bestSobra) {
-          bestSobra = novaSobra;
-          bestIdx = i;
-        }
-      }
-    }
-    if (bestIdx !== -1) {
-      barras[bestIdx].cortes.push(tam);
-    } else {
-      barras.push({ cortes: [tam] });
-    }
-  }
-  // Calcula métricas
-  for (const barra of barras) {
-    const usado = barra.cortes.reduce((s, c) => s + c, 0);
-    barra.sobra = parseFloat((comprimentoBarra - usado).toFixed(3));
-    barra.usado = usado;
-  }
-  // Ordena por sobra crescente
-  barras.sort((a, b) => a.sobra - b.sobra);
-  return barras;
 }
