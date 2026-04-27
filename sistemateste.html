@@ -1091,9 +1091,8 @@ function navigate(viewId) {
     if(viewId === 'users') renderUsers();
     if(viewId === 'prod') renderProducts();
     if(viewId === 'production') renderProductionSelect();
-    if (viewId === 'lajes') {switchLajeTab('orcamento');
-    carregarOrcamentosLaje();
-  }
+    if (viewId === 'lajes') {switchLajeTab(LAJE.tabAtiva || 'orcamento');carregarOrcamentosLaje();}
+  
     lucide.createIcons();
 }
 
@@ -1196,6 +1195,13 @@ async function loadData() {
         STATE.custoMaterialB10 = resConf.data ? Number(resConf.data.valor) : 0;
 
         onDataLoaded();
+
+      // Após carregar outras configurações:
+    const { data: configs } = await sb.from('configuracoes').select('*');
+    if (configs) {
+      STATE.configLaje = {};
+      configs.forEach(c => { STATE.configLaje[c.chave] = c.valor; });
+    }
     } catch (err) {
         showLoading(false);
         showToast("Erro ao conectar no banco: " + err.message, true);
