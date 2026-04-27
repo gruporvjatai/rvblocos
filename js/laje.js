@@ -5,7 +5,8 @@ const LAJE = {
   editandoId: null,
   tabAtiva: 'orcamento',
   algoritmoCorte: 'FFD',
-  planoCorteCache: null
+  planoCorteCache: null,
+  editandoComodoIndex: null      // índice do cômodo sendo editado (pelo modal)
 };
 
 // ==================== NAVEGAÇÃO DE ABAS ====================
@@ -29,13 +30,30 @@ function switchLajeTab(tab) {
 
 // ==================== MODAL CÔMODO ====================
 function abrirModalComodo() {
-  document.getElementById('modal-comodo-laje').classList.remove('hidden');
+  LAJE.editandoComodoIndex = null; // novo cômodo
   limparFormLaje();
+  document.getElementById('modal-comodo-laje').classList.remove('hidden');
+  lucide.createIcons();
+}
+
+function abrirModalEditarComodo(index) {
+  const c = LAJE.comodosTemp[index];
+  if (!c) return;
+  LAJE.editandoComodoIndex = index;
+  document.getElementById('laje-comodo-nome').value = c.nome;
+  document.getElementById('laje-vao-menor').value = c.vaoMenor;
+  document.getElementById('laje-vao-maior').value = c.vaoMaior;
+  document.getElementById('laje-tipo-enchimento').value = c.tipo;
+  document.getElementById('laje-altura').value = c.altura;
+  document.getElementById('laje-largura-viga').value = c.larguraViga;
+  calcularLajePreview();
+  document.getElementById('modal-comodo-laje').classList.remove('hidden');
   lucide.createIcons();
 }
 
 function fecharModalComodo() {
   document.getElementById('modal-comodo-laje').classList.add('hidden');
+  LAJE.editandoComodoIndex = null;
 }
 
 function limparFormLaje() {
@@ -56,14 +74,14 @@ function obterConfig(nome, padrao = 0) {
   return global !== undefined ? Number(global) : padrao;
 }
 
-function calcularLaje(vaoMenor, vaoMaior, tipoEnchimento, altura, larguraViga = 0) {
+function calcularLaje(vaoMenor, vaoMaior, tipoEnchimento, altura, larguraViga = 14) {
   const vm = parseFloat(vaoMenor) || 0;
   const vM = parseFloat(vaoMaior) || 0;
-  const lv = parseFloat(larguraViga) || 0; // cm
+  const lv = parseFloat(larguraViga) || 14; // cm
   if (vm <= 0 || vM <= 0) return null;
 
-  const acrescimo = lv / 100;               // agora usa largura da viga
-  const tamVigota = vm + acrescimo;         // ex: 4.00 + 0.14 = 4.14 m
+  const acrescimo = lv / 100;
+  const tamVigota = vm + acrescimo;
   const interEixo = tipoEnchimento === 'EPS' ? obterConfig('inter_eixo_eps', 0.50) : obterConfig('inter_eixo_lajota_ceramica', 0.43);
   const qtdVigotas = Math.ceil(vM / interEixo);
   const epsLinear = tipoEnchimento === 'EPS' ? (qtdVigotas - 1) * vm : 0;
@@ -115,11 +133,16 @@ function adicionarComodoLaje() {
   if (!nome) return showToast('Informe o nome do cômodo.', true);
   if (!res) return showToast('Informe vão menor e vão maior válidos.', true);
 
-  LAJE.comodosTemp.push({ nome, ...res });
+  if (LAJE.editandoComodoIndex !== null) {
+    // Editando cômodo existente
+    LAJE.comodosTemp[LAJE.editandoComodoIndex] = { nome, ...res };
+  } else {
+    LAJE.comodosTemp.push({ nome, ...res });
+  }
+
   renderComodosTemp();
   fecharModalComodo();
 }
-
 
 function removerComodoLaje(index) {
   LAJE.comodosTemp.splice(index, 1);
@@ -140,7 +163,7 @@ function renderComodosTemp() {
   document.getElementById('laje-comodos-count').innerText = count;
 
   if (count === 0) {
-    tbody.innerHTML = '<tr><td colspan="10" class="p-6 text-center text-slate-400">Nenhum cômodo adicionado.</td></tr>';
+    tbody.innerHTML = '<tr><td colspan="11" class="p-6 text-center text-slate-400">Nenhum cômodo adicionado.</td></tr>';
     return;
   }
 
@@ -156,19 +179,19 @@ function renderComodosTemp() {
       <td class="p-3">${c.altura} cm</td>
       <td class="p-3 font-bold">${c.qtdVigotas}</td>
       <td class="p-3">${c.tamVigota.toFixed(2)} m</td>
+      <td class="p-3">${c.larguraViga} cm</td>
       <td class="p-3">${c.tipo === 'EPS' ? c.epsLinear.toFixed(2) + ' m' : '-'}</td>
       <td class="p-3">${c.area.toFixed(2)} m²</td>
       <td class="p-3 text-center">
-        <button onclick="removerComodoLaje(${i})" class="text-red-500 hover:text-red-700">
-          <i data-lucide="trash-2" width="16"></i>
-        </button>
+        <button onclick="abrirModalEditarComodo(${i})" class="text-blue-500 hover:text-blue-700 mr-2" title="Editar cômodo"><i data-lucide="edit-3" width="16"></i></button>
+        <button onclick="removerComodoLaje(${i})" class="text-red-500 hover:text-red-700"><i data-lucide="trash-2" width="16"></i></button>
       </td>
     </tr>`;
   }).join('');
 
   tbody.insertAdjacentHTML('beforeend', `
     <tr class="bg-slate-50 font-bold">
-      <td colspan="8" class="p-3 text-right">Área Total / Valor Estimado:</td>
+      <td colspan="9" class="p-3 text-right">Área Total / Valor Estimado:</td>
       <td class="p-3">${areaTotal.toFixed(2)} m²</td>
       <td class="p-3 text-green-700">${formatMoney(valorTotal)}</td>
     </tr>
@@ -304,7 +327,7 @@ async function editarOrcamentoLaje(id) {
   }));
   renderComodosTemp();
   switchLajeTab('orcamento');
-  showToast(`Editando orçamento #${id}`);
+  showToast(`Editando orçamento #${id}. Clique no lápis ao lado do cômodo para alterar.`);
 }
 
 async function alterarStatusLaje(id, novoStatus) {
