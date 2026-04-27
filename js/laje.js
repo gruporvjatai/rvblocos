@@ -25,23 +25,29 @@ function switchLajeTab(tab) {
 }
 
 // ========== CÁLCULO DO CÔMODO (REGRAS DE NEGÓCIO) ==========
-function calcularLaje(vaoMenor, vaoMaior) {
+function calcularLaje(vaoMenor, vaoMaior, tipoEnchimento) {
   const vm = parseFloat(vaoMenor) || 0;
   const vM = parseFloat(vaoMaior) || 0;
   if (vm <= 0 || vM <= 0) return null;
 
-  const tamVigota = vm + 0.20;                        // +0.10m de apoio em cada ponta
-  const qtdVigotas = Math.ceil(vM / 0.43);            // arredonda SEMPRE pra cima
-  const epsLinear = (qtdVigotas - 1) * vm;            // metragem total de EPS
+  const tamVigota = vm + 0.20;  // apoio 0.10m em cada extremidade
 
-  return { vaoMenor: vm, vaoMaior: vM, qtdVigotas, tamVigota, epsLinear };
+  // Inter-eixo de acordo com o tipo selecionado
+  const interEixo = tipoEnchimento === 'EPS' ? 0.50 : 0.43;  // EPS = 0.50, Lajota = 0.43
+  const qtdVigotas = Math.ceil(vM / interEixo);
+
+  // EPS linear só é relevante se for EPS (para lajota cerâmica pode ser 0)
+  const epsLinear = tipoEnchimento === 'EPS' ? (qtdVigotas - 1) * vm : 0;
+
+  return { vaoMenor: vm, vaoMaior: vM, qtdVigotas, tamVigota, epsLinear, tipo: tipoEnchimento };
 }
 
 // Preview em tempo real conforme digita
 function calcularLajePreview() {
   const vm = document.getElementById('laje-vao-menor').value;
   const vM = document.getElementById('laje-vao-maior').value;
-  const res = calcularLaje(vm, vM);
+  const tipo = document.getElementById('laje-tipo-enchimento').value;
+  const res = calcularLaje(vm, vM, tipo);
   const previewDiv = document.getElementById('laje-preview');
 
   if (!res) {
@@ -51,7 +57,13 @@ function calcularLajePreview() {
   previewDiv.classList.remove('hidden');
   document.getElementById('laje-prev-vigotas').innerText = res.qtdVigotas + ' unidades';
   document.getElementById('laje-prev-tamanho').innerText = res.tamVigota.toFixed(2) + ' m';
-  document.getElementById('laje-prev-eps').innerText = res.epsLinear.toFixed(2) + ' m';
+  
+  // Se for EPS, exibe metragem linear; senão, informa que EPS não se aplica
+  if (tipo === 'EPS') {
+    document.getElementById('laje-prev-eps').innerText = res.epsLinear.toFixed(2) + ' m';
+  } else {
+    document.getElementById('laje-prev-eps').innerText = 'Não se aplica (Lajota Cerâmica)';
+  }
 }
 
 // ========== MANIPULAÇÃO DA LISTA DE CÔMODOS (TEMP) ==========
@@ -59,7 +71,8 @@ function adicionarComodoLaje() {
   const nome = document.getElementById('laje-comodo-nome').value.trim();
   const vm = document.getElementById('laje-vao-menor').value;
   const vM = document.getElementById('laje-vao-maior').value;
-  const res = calcularLaje(vm, vM);
+  const tipo = document.getElementById('laje-tipo-enchimento').value;
+  const res = calcularLaje(vm, vM, tipo);
 
   if (!nome) return showToast('Informe o nome do cômodo.', true);
   if (!res) return showToast('Informe vão menor e vão maior válidos.', true);
@@ -74,6 +87,7 @@ function limparFormLaje() {
   document.getElementById('laje-comodo-nome').value = '';
   document.getElementById('laje-vao-menor').value = '';
   document.getElementById('laje-vao-maior').value = '';
+  document.getElementById('laje-tipo-enchimento').value = 'EPS';  // valor padrão
   document.getElementById('laje-preview').classList.add('hidden');
 }
 
@@ -92,7 +106,7 @@ function renderComodosTemp() {
   document.getElementById('laje-comodos-count').innerText = LAJE.comodosTemp.length;
 
   if (LAJE.comodosTemp.length === 0) {
-    tbody.innerHTML = '<tr><td colspan="7" class="p-6 text-center text-slate-400">Nenhum cômodo adicionado.</td></tr>';
+    tbody.innerHTML = '<tr><td colspan="8" class="p-6 text-center text-slate-400">Nenhum cômodo adicionado.</td></tr>';
     return;
   }
 
@@ -103,7 +117,8 @@ function renderComodosTemp() {
       <td class="p-3">${c.vaoMaior.toFixed(2)} m</td>
       <td class="p-3 font-bold">${c.qtdVigotas}</td>
       <td class="p-3">${c.tamVigota.toFixed(2)} m</td>
-      <td class="p-3">${c.epsLinear.toFixed(2)} m</td>
+      <td class="p-3 text-xs capitalize">${c.tipo === 'EPS' ? 'Isopor (EPS)' : 'Lajota Cerâmica'}</td>
+      <td class="p-3">${c.tipo === 'EPS' ? c.epsLinear.toFixed(2) + ' m' : '-'}</td>
       <td class="p-3 text-center">
         <button onclick="removerComodoLaje(${i})" class="text-red-500 hover:text-red-700">
           <i data-lucide="trash-2" width="16"></i>
@@ -113,7 +128,6 @@ function renderComodosTemp() {
   `).join('');
   lucide.createIcons();
 }
-
 // ========== SALVAR ORÇAMENTO NO SUPABASE ==========
 async function salvarOrcamentoLaje() {
   const cliente = document.getElementById('laje-cliente-nome').value.trim();
@@ -135,15 +149,17 @@ async function salvarOrcamentoLaje() {
   }
 
   // 2. Inserir itens
-  const itens = LAJE.comodosTemp.map(c => ({
-    id_orcamento: cab.id,
-    comodo: c.nome,
-    vao_menor: c.vaoMenor,
-    vao_maior: c.vaoMaior,
-    qtd_vigotas: c.qtdVigotas,
-    tamanho_vigota: c.tamVigota,
-    metragem_eps: c.epsLinear
-  }));
+ // Dentro de salvarOrcamentoLaje, ao criar 'itens':
+const itens = LAJE.comodosTemp.map(c => ({
+  id_orcamento: cab.id,
+  comodo: c.nome,
+  vao_menor: c.vaoMenor,
+  vao_maior: c.vaoMaior,
+  qtd_vigotas: c.qtdVigotas,
+  tamanho_vigota: c.tamVigota,
+  metragem_eps: c.epsLinear,
+  tipo_enchimento: c.tipo   // <-- ADICIONE ESSA LINHA
+}));
 
   const { error: errItens } = await sb.from('laje_itens_orcamento').insert(itens);
   if (errItens) {
