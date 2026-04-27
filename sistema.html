@@ -5,22 +5,19 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <script src="https://cdn.tailwindcss.com"></script>
     <script src="https://unpkg.com/lucide@latest"></script>
-    <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
-      <!--<script src="https://cdnjs.cloudflare.com/ajax/libs/html2pdf.js/0.10.1/html2pdf.bundle.min.js" 
-      integrity="sha512-GsLlZN/3F2ErC5ifS5QtgpiJtWd43JWSuIgh7mbzZ8zBps+dvLusV+eNQATqgA/HdeKFVgA5v3S/cIrLF7QnIg==" 
-      crossorigin="anonymous" referrerpolicy="no-referrer">
-      </script> -->
-    <script src="https://cdnjs.cloudflare.com/ajax/libs/html2pdf.js/0.10.1/html2pdf.bundle.min.js"></script>
-         <script>
-              if (!localStorage.getItem('rv_user')) {
-                  window.location.replace("index.html");
-              }
-         </script>
+
+
+    <meta http-equiv="Cache-Control" content="no-cache, no-store, must-revalidate">
+    <meta http-equiv="Pragma" content="no-cache">
+    <meta http-equiv="Expires" content="0">
+
     
-         <script>          
-        if (/Android|webOS|iPhone|iPad|iPod|BlackBerry|IEMobile|Opera Mini/i.test(navigator.userAgent) || window.innerWidth <= 800) {
-            window.location.replace("mobile.html");
-        }</script>
+    <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+    <script src="js/laje.js"></script> 
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/html2pdf.js/0.10.1/html2pdf.bundle.min.js"></script>
+    <script>if (!localStorage.getItem('rv_user')){window.location.replace("index.html");}</script>
+    <script>if (/Android|webOS|iPhone|iPad|iPod|BlackBerry|IEMobile|Opera Mini/i.test(navigator.userAgent) || window.innerWidth <= 800) {window.location.replace("mobile.html");}</script>
+    
   <link rel="icon" type="image/png" href="logo.png">
   <link rel="shortcut icon" type="image/png" href="logo.png">
   <link rel="apple-touch-icon" href="logo.png">
@@ -161,6 +158,7 @@
         <button onclick="navigate('clients')" id="nav-clients" class="nav-btn w-full flex items-center space-x-3 px-4 py-3 rounded-lg text-slate-400 hover:bg-slate-800 hover:text-white transition-all"><i data-lucide="users"></i> <span class="font-medium text-sm">Clientes</span></button>
         <button onclick="navigate('prod')" id="nav-prod" class="nav-btn w-full flex items-center space-x-3 px-4 py-3 rounded-lg text-slate-400 hover:bg-slate-800 hover:text-white transition-all"><i data-lucide="package"></i> <span class="font-medium text-sm">Produtos</span></button>
         <button onclick="navigate('production')" id="nav-production" class="nav-btn w-full flex items-center space-x-3 px-4 py-3 rounded-lg text-slate-400 hover:bg-slate-800 hover:text-white transition-all"><i data-lucide="hammer"></i> <span class="font-medium text-sm">Produção</span></button>
+        <button onclick="navigate('lajes')" id="nav-lajes" class="nav-btn w-full flex items-center space-x-3 px-4 py-3 rounded-lg text-slate-400 hover:bg-slate-800 hover:text-white transition-all"><i data-lucide="layers"></i> <span class="font-medium text-sm">Lajes</span></button>
         <button onclick="navigate('users')" id="nav-users" class="nav-btn w-full flex items-center space-x-3 px-4 py-3 rounded-lg text-slate-400 hover:bg-slate-800 hover:text-white transition-all"><i data-lucide="user-cog"></i> <span class="font-medium text-sm">Usuários</span></button>
 
       </nav>
@@ -565,7 +563,245 @@
         </div>
     </div>
 </div>
+<!-- ================================================================= LAJE ==================================================================================== -->
+<div id="view-lajes" class="hidden-section p-4 md:p-6">
+  <h2 class="text-2xl font-bold text-slate-800 mb-4 flex items-center gap-2">
+    <i data-lucide="layers"></i> Módulo Lajes
+  </h2>
 
+  <!-- Abas -->
+  <div class="flex gap-2 mb-6 border-b border-slate-200">
+    <button onclick="switchLajeTab('orcamento')" id="tab-orcamento-btn"
+      class="px-4 py-2 rounded-t-lg font-bold text-sm bg-orange-600 text-white shadow">
+      Vendas / Orçamento
+    </button>
+    <button onclick="switchLajeTab('corte')" id="tab-corte-btn"
+      class="px-4 py-2 rounded-t-lg font-bold text-sm bg-slate-100 text-slate-600 hover:bg-slate-200">
+      Fábrica / Plano de Corte
+    </button>
+    <button onclick="switchLajeTab('detalhamento')" id="tab-detalhamento-btn"
+      class="px-4 py-2 rounded-t-lg font-bold text-sm bg-slate-100 text-slate-600 hover:bg-slate-200">
+      Detalhamento
+    </button>
+  </div>
+
+  <!-- Aba 1: Vendas / Orçamento -->
+  <div id="laje-tab-orcamento">
+    <div class="flex justify-between items-center mb-4 flex-wrap gap-3">
+      <h3 class="font-bold text-slate-700 flex items-center gap-2 text-lg">
+        <i data-lucide="file-text"></i> Novo Orçamento
+      </h3>
+      <div class="flex gap-2">
+        <input type="text" id="laje-cliente-nome" placeholder="Nome do cliente *" class="p-2 border rounded-lg text-sm w-48 md:w-64">
+        <button onclick="abrirModalComodo()" class="bg-slate-800 text-white px-4 py-2 rounded-lg font-bold hover:bg-slate-700 flex items-center gap-2">
+          <i data-lucide="plus"></i> Adicionar Cômodo
+        </button>
+      </div>
+    </div>
+
+    <!-- Lista de cômodos do orçamento atual -->
+    <div class="bg-white rounded-xl border shadow-sm p-6 mb-6">
+      <div class="flex justify-between items-center mb-4">
+        <h4 class="font-bold text-slate-700 flex gap-2 items-center">
+          <i data-lucide="list"></i> Cômodos (<span id="laje-comodos-count">0</span>)
+        </h4>
+        <button onclick="limparComodosLaje()" class="text-red-500 text-sm font-bold hover:underline">
+          Limpar tudo
+        </button>
+      </div>
+      <div class="overflow-x-auto">
+        <table class="w-full text-sm text-left">
+          <thead class="bg-slate-50 text-slate-600">
+            <tr>
+              <th class="p-3">Cômodo</th>
+              <th class="p-3">Vão Menor</th>
+              <th class="p-3">Vão Maior</th>
+              <th class="p-3">Enchimento</th>
+              <th class="p-3">Altura</th>
+              <th class="p-3">Vigotas</th>
+              <th class="p-3">Tam. Vigota</th>
+              <th class="p-3">EPS (m)</th>
+              <th class="p-3">Área (m²)</th>
+              <th class="p-3"></th>
+            </tr>
+          </thead>
+          <tbody id="laje-comodos-tbody">
+            <tr><td colspan="10" class="p-6 text-center text-slate-400">Nenhum cômodo adicionado.</td></tr>
+          </tbody>
+        </table>
+      </div>
+      <div class="mt-4 flex justify-end gap-2">
+        <button onclick="salvarOrcamentoLaje()" class="bg-green-600 text-white px-6 py-2 rounded-lg font-bold hover:bg-green-700">
+          <i data-lucide="save"></i> Salvar Orçamento
+        </button>
+      </div>
+    </div>
+
+    <!-- Histórico de orçamentos -->
+    <div class="bg-white rounded-xl border shadow-sm p-6">
+      <h3 class="font-bold text-slate-700 mb-4 flex gap-2 items-center">
+        <i data-lucide="history"></i> Orçamentos Salvos
+      </h3>
+      <div class="overflow-x-auto">
+        <table class="w-full text-sm text-left">
+          <thead class="bg-slate-50 text-slate-600">
+            <tr>
+              <th class="p-3">ID</th>
+              <th class="p-3">Cliente</th>
+              <th class="p-3">Data</th>
+              <th class="p-3">Cômodos</th>
+              <th class="p-3">Área Total</th>
+              <th class="p-3">Valor Est.</th>
+              <th class="p-3">Status</th>
+              <th class="p-3">Ações</th>
+            </tr>
+          </thead>
+          <tbody id="laje-orcamentos-tbody">
+            <tr><td colspan="8" class="p-6 text-center text-slate-400">Carregando...</td></tr>
+          </tbody>
+        </table>
+      </div>
+    </div>
+  </div>
+
+  <!-- Aba 2: Plano de Corte -->
+  <div id="laje-tab-corte" class="hidden">
+    <div class="bg-white rounded-xl border shadow-sm p-6 mb-6">
+      <label class="block text-sm font-bold text-slate-700 mb-2">Selecione o orçamento aprovado:</label>
+      <div class="flex flex-wrap gap-2 items-end">
+        <select id="laje-corte-select" class="flex-1 min-w-[200px] p-3 border rounded-lg bg-white text-sm">
+          <option value="">-- Selecione --</option>
+        </select>
+        <button onclick="gerarPlanoCorte()" class="bg-slate-800 text-white px-6 py-3 rounded-lg font-bold hover:bg-slate-700">
+          <i data-lucide="scissors"></i> Gerar Corte
+        </button>
+        <button onclick="imprimirPlanoCorte()" class="bg-white border border-slate-300 text-slate-700 px-4 py-3 rounded-lg font-bold hover:bg-slate-100">
+          <i data-lucide="printer"></i>
+        </button>
+      </div>
+      <div class="flex items-center gap-4 mt-4">
+        <span class="text-sm font-bold text-slate-600">Algoritmo de Otimização:</span>
+        <label class="flex items-center gap-1 cursor-pointer">
+          <input type="radio" name="algoritmo-corte" value="FFD" checked onchange="LAJE.algoritmoCorte = this.value" class="accent-orange-600">
+          <span class="text-sm">FFD (First Fit)</span>
+        </label>
+        <label class="flex items-center gap-1 cursor-pointer">
+          <input type="radio" name="algoritmo-corte" value="BFD" onchange="LAJE.algoritmoCorte = this.value" class="accent-orange-600">
+          <span class="text-sm">BFD (Best Fit)</span>
+        </label>
+      </div>
+    </div>
+
+    <div id="laje-corte-resultado" class="hidden space-y-4">
+      <div class="bg-slate-800 text-white p-4 rounded-xl flex justify-between items-center">
+        <span class="font-bold text-lg">Plano de Corte Otimizado</span>
+        <span class="text-sm">Barras de 12,00 m</span>
+      </div>
+      <div class="overflow-x-auto bg-white rounded-xl border shadow-sm">
+        <table class="w-full text-sm text-left" id="laje-corte-tabela">
+          <thead class="bg-slate-50 text-slate-600">
+            <tr>
+              <th class="p-3">Barra</th>
+              <th class="p-3">Cortes (sequência)</th>
+              <th class="p-3">Sobra</th>
+              <th class="p-3">Aproveitamento</th>
+              <th class="p-3">Status</th>
+            </tr>
+          </thead>
+          <tbody id="laje-corte-tbody"></tbody>
+        </table>
+      </div>
+      <div id="laje-corte-cards" class="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-4"></div>
+    </div>
+  </div>
+
+  <!-- Aba 3: Detalhamento -->
+  <div id="laje-tab-detalhamento" class="hidden">
+    <div class="bg-white rounded-xl border shadow-sm p-6 mb-6">
+      <label class="block text-sm font-bold text-slate-700 mb-2">Selecione o orçamento:</label>
+      <div class="flex gap-2">
+        <select id="laje-detalhamento-select" class="flex-1 p-3 border rounded-lg bg-white text-sm">
+          <option value="">-- Selecione --</option>
+        </select>
+        <button onclick="gerarDetalhamento()" class="bg-indigo-700 text-white px-6 py-3 rounded-lg font-bold hover:bg-indigo-800">
+          <i data-lucide="file-text"></i> Gerar Detalhamento
+        </button>
+      </div>
+    </div>
+    <div id="laje-detalhamento-resultado" class="hidden space-y-4">
+      <div class="bg-white rounded-xl border shadow-sm p-6">
+        <h3 class="font-bold text-slate-800 mb-4">Materiais e Quantidades</h3>
+        <div class="overflow-x-auto">
+          <table class="w-full text-sm" id="laje-detalhamento-tabela">
+            <thead class="bg-slate-50"><tr><th class="p-3">Material</th><th class="p-3">Quantidade</th></tr></thead>
+            <tbody id="laje-detalhamento-tbody"></tbody>
+          </table>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Modal: Adicionar Cômodo -->
+  <div id="modal-comodo-laje" class="hidden fixed inset-0 bg-black/40 z-50 flex items-center justify-center p-4">
+    <div class="bg-white rounded-2xl w-full max-w-lg shadow-2xl max-h-[90vh] overflow-y-auto">
+      <div class="p-5 border-b flex justify-between items-center bg-slate-50 rounded-t-2xl">
+        <h3 class="font-bold text-slate-800 flex items-center gap-2"><i data-lucide="plus-circle" class="text-orange-500"></i> Novo Cômodo</h3>
+        <button onclick="fecharModalComodo()" class="text-slate-400 hover:text-red-500"><i data-lucide="x"></i></button>
+      </div>
+      <div class="p-6 space-y-4">
+        <input type="text" id="laje-comodo-nome" placeholder="Nome do cômodo (ex: Laje Sala)" class="w-full p-3 border rounded-lg text-sm">
+        <div class="grid grid-cols-2 gap-3">
+          <div>
+            <label class="text-xs font-bold text-slate-500">Vão Menor (m)*</label>
+            <input type="number" id="laje-vao-menor" placeholder="Sentido da vigota" step="0.01" min="0"
+              class="w-full p-3 border rounded-lg text-sm" oninput="calcularLajePreview()">
+          </div>
+          <div>
+            <label class="text-xs font-bold text-slate-500">Vão Maior (m)*</label>
+            <input type="number" id="laje-vao-maior" placeholder="Ex: 4.63" step="0.01" min="0"
+              class="w-full p-3 border rounded-lg text-sm" oninput="calcularLajePreview()">
+          </div>
+        </div>
+        <div class="grid grid-cols-2 gap-3">
+          <div>
+            <label class="block text-xs font-bold text-slate-500 mb-1">Tipo de Enchimento</label>
+            <select id="laje-tipo-enchimento" class="w-full p-3 border rounded-lg bg-white text-sm" onchange="calcularLajePreview()">
+              <option value="EPS">Isopor (EPS)</option>
+              <option value="LAJOTA_CERAMICA">Lajota Cerâmica</option>
+            </select>
+          </div>
+          <div>
+            <label class="block text-xs font-bold text-slate-500 mb-1">Altura (cm)</label>
+            <select id="laje-altura" class="w-full p-3 border rounded-lg bg-white text-sm" onchange="calcularLajePreview()">
+              <option value="8">8 cm</option>
+              <option value="12">12 cm</option>
+              <option value="16">16 cm</option>
+              <option value="20">20 cm</option>
+            </select>
+          </div>
+        </div>
+        <div>
+          <label class="block text-xs font-bold text-slate-500 mb-1">Largura da Viga (cm)</label>
+          <input type="number" id="laje-largura-viga" value="14" min="6" max="30" class="w-full p-3 border rounded-lg text-sm">
+        </div>
+        <!-- Preview -->
+        <div id="laje-preview" class="bg-amber-50 border border-amber-200 rounded-lg p-4 text-sm hidden">
+          <p class="font-bold text-amber-800 text-lg mb-2">Pré-visualização</p>
+          <div class="grid grid-cols-2 gap-2">
+            <div><span class="text-slate-500">Vigotas:</span> <strong id="laje-prev-vigotas">-</strong></div>
+            <div><span class="text-slate-500">Tamanho vigota:</span> <strong id="laje-prev-tamanho">-</strong></div>
+            <div><span class="text-slate-500">EPS linear:</span> <strong id="laje-prev-eps">-</strong></div>
+            <div><span class="text-slate-500">Área:</span> <strong id="laje-prev-area">-</strong></div>
+            <div class="col-span-2"><span class="text-slate-500">Valor estimado:</span> <strong class="text-green-700" id="laje-prev-valor">-</strong></div>
+          </div>
+        </div>
+        <button onclick="adicionarComodoLaje()" class="w-full bg-slate-800 text-white py-3 rounded-lg font-bold hover:bg-slate-700">
+          <i data-lucide="plus"></i> Adicionar ao Orçamento
+        </button>
+      </div>
+    </div>
+  </div>
+</div>
     </main>
 
     <div id="print-area" class="print-only"></div>
@@ -869,6 +1105,8 @@ function navigate(viewId) {
     if(viewId === 'users') renderUsers();
     if(viewId === 'prod') renderProducts();
     if(viewId === 'production') renderProductionSelect();
+    if (viewId === 'lajes') {switchLajeTab(LAJE.tabAtiva || 'orcamento');carregarOrcamentosLaje();}
+  
     lucide.createIcons();
 }
 
@@ -971,6 +1209,13 @@ async function loadData() {
         STATE.custoMaterialB10 = resConf.data ? Number(resConf.data.valor) : 0;
 
         onDataLoaded();
+
+      // Após carregar outras configurações:
+    const { data: configs } = await sb.from('configuracoes').select('*');
+    if (configs) {
+      STATE.configLaje = {};
+      configs.forEach(c => { STATE.configLaje[c.chave] = c.valor; });
+    }
     } catch (err) {
         showLoading(false);
         showToast("Erro ao conectar no banco: " + err.message, true);
