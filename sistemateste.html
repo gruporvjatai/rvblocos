@@ -667,11 +667,10 @@
     </div>
   
     <!-- Aba 2: Plano de Corte -->
-    <div id="laje-tab-corte" class="hidden">
-      <div class="bg-white rounded-xl border shadow-sm p-6 mb-6">
+    <div class="bg-white rounded-xl border shadow-sm p-6 mb-6">
         <label class="block text-sm font-bold text-slate-700 mb-2">Selecione o orçamento aprovado:</label>
-        <div class="flex gap-2">
-          <select id="laje-corte-select" class="flex-1 p-3 border rounded-lg bg-white text-sm">
+        <div class="flex flex-wrap gap-2 items-end">
+          <select id="laje-corte-select" class="flex-1 min-w-[200px] p-3 border rounded-lg bg-white text-sm">
             <option value="">-- Selecione --</option>
           </select>
           <button onclick="gerarPlanoCorte()" class="bg-slate-800 text-white px-6 py-3 rounded-lg font-bold hover:bg-slate-700">
@@ -680,6 +679,17 @@
           <button onclick="imprimirPlanoCorte()" class="bg-white border border-slate-300 text-slate-700 px-4 py-3 rounded-lg font-bold hover:bg-slate-100">
             <i data-lucide="printer"></i>
           </button>
+        </div>
+        <div class="flex items-center gap-4 mt-4">
+          <span class="text-sm font-bold text-slate-600">Algoritmo de Otimização:</span>
+          <label class="flex items-center gap-1 cursor-pointer">
+            <input type="radio" name="algoritmo-corte" value="FFD" checked onchange="LAJE.algoritmoCorte = this.value" class="accent-orange-600">
+            <span class="text-sm">FFD (First Fit)</span>
+          </label>
+          <label class="flex items-center gap-1 cursor-pointer">
+            <input type="radio" name="algoritmo-corte" value="BFD" onchange="LAJE.algoritmoCorte = this.value" class="accent-orange-600">
+            <span class="text-sm">BFD (Best Fit)</span>
+          </label>
         </div>
       </div>
   
