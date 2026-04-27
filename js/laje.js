@@ -56,10 +56,10 @@ function obterConfig(nome, padrao = 0) {
   return global !== undefined ? Number(global) : padrao;
 }
 
-function calcularLaje(vaoMenor, vaoMaior, tipoEnchimento, altura, larguraViga = 14) {
+function calcularLaje(vaoMenor, vaoMaior, tipoEnchimento, altura, larguraViga = 0) {
   const vm = parseFloat(vaoMenor) || 0;
   const vM = parseFloat(vaoMaior) || 0;
-  const lv = parseFloat(larguraViga) || 14; // cm
+  const lv = parseFloat(larguraViga) || 0; // cm
   if (vm <= 0 || vM <= 0) return null;
 
   const acrescimo = lv / 100;               // agora usa largura da viga
