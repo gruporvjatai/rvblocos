@@ -62,7 +62,7 @@ function limparFormLaje() {
   document.getElementById('laje-vao-maior').value = '';
   document.getElementById('laje-tipo-enchimento').value = 'EPS';
   document.getElementById('laje-altura').value = '8';
-  document.getElementById('laje-largura-viga').value = '14';
+  document.getElementById('laje-largura-viga').value = '0';
   document.getElementById('laje-preview').classList.add('hidden');
 }
 
@@ -74,10 +74,10 @@ function obterConfig(nome, padrao = 0) {
   return global !== undefined ? Number(global) : padrao;
 }
 
-function calcularLaje(vaoMenor, vaoMaior, tipoEnchimento, altura, larguraViga = 14) {
+function calcularLaje(vaoMenor, vaoMaior, tipoEnchimento, altura, larguraViga = 0) {
   const vm = parseFloat(vaoMenor) || 0;
   const vM = parseFloat(vaoMaior) || 0;
-  const lv = parseFloat(larguraViga) || 14; // cm
+  const lv = parseFloat(larguraViga) || 0; // cm
   if (vm <= 0 || vM <= 0) return null;
 
   const acrescimo = lv / 100;
@@ -323,7 +323,7 @@ async function editarOrcamentoLaje(id) {
     epsLinear: Number(i.metragem_eps),
     area: Number(i.area || (i.vao_menor * i.vao_maior)),
     valorEstimado: Number(i.valor_estimado || 0),
-    larguraViga: Number(i.largura_viga) || 14
+    larguraViga: Number(i.largura_viga) || 0
   }));
   renderComodosTemp();
   switchLajeTab('orcamento');
