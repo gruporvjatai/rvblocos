@@ -488,36 +488,28 @@ function imprimirPlanoCorte() {
   const cliente = orc ? orc.cliente_nome : 'Não informado';
 
   let totalSobra = 0;
-  let todosCortesHtml = '';
-  let contadorCorte = 1;
-
-  barras.forEach((b, i) => {
+  const maxCortes = Math.max(...barras.map(b => b.cortes.length));
+  let linhas = barras.map((b, i) => {
     totalSobra += b.sobra;
-    const cortes = b.cortes.map(c => {
-      const item = `
-        <tr>
-          <td style="padding:2px 4px; text-align:center; font-size:11px;">${contadorCorte}</td>
-          <td style="padding:2px 4px; font-size:11px;">Barra ${i+1}</td>
-          <td style="padding:2px 4px; font-size:11px; font-weight:bold;">${c.toFixed(2)} m</td>
-          <td style="padding:2px 4px; text-align:center; font-size:14px;">☐</td>
-        </tr>`;
-      contadorCorte++;
-      return item;
-    }).join('');
-    todosCortesHtml += cortes;
-  });
+    const cortesTd = b.cortes.map(c => 
+      `<span style="display:inline-block; margin-right:8px; font-weight:bold; font-size:13px;">${c.toFixed(2)} m</span><span style="font-size:14px;">☐</span>`
+    ).join('<span style="margin:0 4px; color:#999;">|</span>');
+    return `<tr>
+      <td style="padding:5px; border:1px solid #000; width:60px; text-align:center; font-weight:bold;">Barra ${i+1}</td>
+      <td style="padding:5px; border:1px solid #000;">${cortesTd}</td>
+    </tr>`;
+  }).join('');
 
-  const linhasCorte = contadorCorte - 1; // total de cortes
   const perdaPerc = ((totalSobra / (barras.length * 12)) * 100).toFixed(1);
 
   printArea.innerHTML = `
-    <div style="font-family: 'Segoe UI', Arial, sans-serif; padding:10mm; width:190mm; margin:0 auto; background:#fff; font-size:11px;">
-      <!-- Cabeçalho compacto -->
-      <table width="100%" style="border-bottom:1px solid #ea580c; padding-bottom:5px; margin-bottom:8px;">
+    <div style="font-family: 'Segoe UI', Arial, sans-serif; padding:10mm; max-width:190mm; margin:0 auto; background:#fff; font-size:12px;">
+      <!-- Cabeçalho -->
+      <table width="100%" style="border-bottom:1px solid #ea580c; padding-bottom:5px; margin-bottom:10px;">
         <tr>
-          <td width="50"><img src="https://lh3.googleusercontent.com/d/1SIoZ2JlalfMnGDZTXBk7ZYuPgwxX3odF" style="height:30px;"></td>
-          <td><strong style="color:#ea580c; font-size:14px;">RV BLOCOS</strong><br><span style="font-size:9px;">Plano de Corte</span></td>
-          <td align="right" style="font-size:9px;">
+          <td width="45"><img src="https://lh3.googleusercontent.com/d/1SIoZ2JlalfMnGDZTXBk7ZYuPgwxX3odF" style="height:28px;"></td>
+          <td><strong style="color:#ea580c; font-size:15px;">RV BLOCOS</strong><br><span style="font-size:10px;">Plano de Corte de Treliças</span></td>
+          <td align="right" style="font-size:10px;">
             <strong>Orçamento #${idOrc}</strong><br>
             Cliente: ${cliente}<br>
             Data: ${new Date().toLocaleDateString('pt-BR')}
@@ -525,17 +517,21 @@ function imprimirPlanoCorte() {
         </tr>
       </table>
       <!-- Resumo -->
-      <div style="margin-bottom:8px; font-size:10px;">
+      <div style="margin-bottom:10px; font-size:11px;">
         <strong>Total de barras:</strong> ${barras.length} | 
         <strong>Sobra total:</strong> ${totalSobra.toFixed(2)} m (${perdaPerc}%) |
-        <strong>Cortes:</strong> ${linhasCorte} unidades
+        <strong>Cortes:</strong> ${barras.reduce((s,b) => s + b.cortes.length, 0)} unidades
       </div>
-      <!-- Lista de cortes numerada, em colunas -->
-      <div style="column-count:${linhasCorte > 40 ? 3 : 2}; column-gap:15px; margin-bottom:15px;">
-        <table style="width:100%; border-collapse:collapse; font-size:10px;">
-          ${todosCortesHtml}
-        </table>
-      </div>
+      <!-- Tabela principal -->
+      <table width="100%" style="border-collapse:collapse; margin-bottom:15px;">
+        <thead>
+          <tr style="background:#e5e7eb;">
+            <th style="padding:6px; border:1px solid #000; width:60px;">Barra</th>
+            <th style="padding:6px; border:1px solid #000;">Cortes (☐ após cada = concluído)</th>
+          </tr>
+        </thead>
+        <tbody>${linhas}</tbody>
+      </table>
       <!-- Assinatura -->
       <div style="border-top:1px solid #ea580c; padding-top:8px; display:flex; justify-content:space-between; font-size:10px;">
         <div>Conferido por: ________________________</div>
