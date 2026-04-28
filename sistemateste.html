@@ -159,6 +159,7 @@
         <button onclick="navigate('prod')" id="nav-prod" class="nav-btn w-full flex items-center space-x-3 px-4 py-3 rounded-lg text-slate-400 hover:bg-slate-800 hover:text-white transition-all"><i data-lucide="package"></i> <span class="font-medium text-sm">Produtos</span></button>
         <button onclick="navigate('production')" id="nav-production" class="nav-btn w-full flex items-center space-x-3 px-4 py-3 rounded-lg text-slate-400 hover:bg-slate-800 hover:text-white transition-all"><i data-lucide="hammer"></i> <span class="font-medium text-sm">Produção</span></button>
         <button onclick="navigate('lajes')" id="nav-lajes" class="nav-btn w-full flex items-center space-x-3 px-4 py-3 rounded-lg text-slate-400 hover:bg-slate-800 hover:text-white transition-all"><i data-lucide="layers"></i> <span class="font-medium text-sm">Lajes</span></button>
+        <div class="border-t border-slate-700 my-2 pt-2"></div>
         <button onclick="navigate('users')" id="nav-users" class="nav-btn w-full flex items-center space-x-3 px-4 py-3 rounded-lg text-slate-400 hover:bg-slate-800 hover:text-white transition-all"><i data-lucide="user-cog"></i> <span class="font-medium text-sm">Usuários</span></button>
 
       </nav>
@@ -3377,7 +3378,61 @@ function printOrder(id, encodedProdName) {
 
       
 
-function printQuote(id) { const q = STATE.quotes.find(x => x.id == id); renderInvoice(q, true); setTimeout(() => { window.print(); limparAreaImpressao(); }, 500); }
+function printQuote(id) {
+  const q = STATE.quotes.find(x => x.id == id);
+  if (!q) {
+    showToast("Orçamento não encontrado", true);
+    return;
+  }
+  const el = document.getElementById('print-area');
+  el.innerHTML = getQuoteHTMLForPDF(q);   // função já existente para orçamentos
+  setTimeout(() => { window.print(); limparAreaImpressao(); }, 500);
+}
+
+// FUNÇÃO CORRIGIDA: reimprime venda (botão na listagem de vendas)
+function reprintSale(id) {
+  const items = STATE.logs.filter(l => String(l.id) === String(id) && l.type === 'venda' && l.status !== 'CANCELADO');
+  if (!items.length) {
+    showToast("Venda não encontrada", true);
+    return;
+  }
+
+  const totalDiscount = Number(items[0].discount) || 0;
+  const netTotal = items.reduce((acc, i) => acc + (Number(i.totalValue) || 0), 0);
+  const grossTotal = netTotal + totalDiscount;
+  const fator = netTotal > 0 ? (grossTotal / netTotal) : 1;
+
+  const saleObj = {
+    id: id,
+    date: items[0].date,
+    clientName: items[0].clientName || 'Consumidor Final',
+    paymentMethod: items[0].paymentMethod || 'Não informado',
+    discount: totalDiscount,
+    deliveryAddress: items[0].deliveryAddress || '',
+    items: items.map(i => {
+      const grossItemTotal = (Number(i.totalValue) || 0) * fator;
+      const qty = Number(i.quantity) || 1;
+      return {
+        name: i.productName,
+        qty: qty,
+        price: grossItemTotal / qty,
+        total: grossItemTotal
+      };
+    })
+  };
+
+  const el = document.getElementById('print-area');
+  el.innerHTML = getSaleHTML(saleObj);
+
+  const modal = document.getElementById('pos-history-modal');
+  if (modal) modal.style.display = 'none';
+
+  setTimeout(() => {
+    window.print();
+    setTimeout(limparAreaImpressao, 500);
+  }, 200);
+}
+
 
 function printExpeditionHistory() {
     let histLogs = (STATE.logs || []).filter(l => l.type === 'entrega' && l.status !== 'CANCELADO');
