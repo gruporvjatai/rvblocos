@@ -852,3 +852,79 @@ function binPackingRBF(tamanhos, comprimentoBarra = 12.0, iteracoes = 100) {
   melhorBarras.sort((a, b) => a.sobra - b.sobra);
   return melhorBarras;
 }
+
+
+// ==================== CONFIGURAÇÃO DE CUSTOS ====================
+const CUSTOS_EDITAVEIS = [
+  { chave: 'custo_trelica_eps_h8', label: 'Treliça EPS H8 (barra 12m)' },
+  { chave: 'custo_trelica_eps_h12', label: 'Treliça EPS H12 (barra 12m)' },
+  { chave: 'custo_trelica_eps_h16', label: 'Treliça EPS H16 (barra 12m)' },
+  { chave: 'custo_trelica_eps_h20', label: 'Treliça EPS H20 (barra 12m)' },
+  { chave: 'custo_trelica_lajota_h8', label: 'Treliça Lajota H8 (barra 12m)' },
+  { chave: 'custo_trelica_lajota_h12', label: 'Treliça Lajota H12 (barra 12m)' },
+  { chave: 'custo_eps_h8_metro', label: 'EPS H8 (metro linear)' },
+  { chave: 'custo_eps_h12_metro', label: 'EPS H12 (metro linear)' },
+  { chave: 'custo_eps_h16_metro', label: 'EPS H16 (metro linear)' },
+  { chave: 'custo_eps_h20_metro', label: 'EPS H20 (metro linear)' },
+  { chave: 'custo_lajota_peca', label: 'Lajota Cerâmica (peça)' },
+  { chave: 'custo_concreto_m3', label: 'Concreto (m³)' },
+  { chave: 'custo_ajudante_m2', label: 'Diária Ajudante (por m²)' },
+  { chave: 'custo_viagem', label: 'Viagem de Entrega' },
+  { chave: 'custo_art', label: 'ART' },
+  { chave: 'custo_plotagem', label: 'Plotagem de Projeto' },
+  { chave: 'custo_comissao_m2', label: 'Comissão (por m²)' },
+  { chave: 'custo_disco_corte', label: 'Disco de Corte' },
+  { chave: 'custo_frete_lajota', label: 'Frete Lajota' },
+  { chave: 'custo_frete_isopor', label: 'Frete Isopor' },
+  { chave: 'custo_laudo', label: 'Laudo Técnico' },
+  { chave: 'margem_lucro_laje', label: 'Margem de Lucro (%)' }
+];
+
+function abrirModalCustosMateriais() {
+  const container = document.getElementById('custos-form-container');
+  container.innerHTML = CUSTOS_EDITAVEIS.map(item => {
+    const valorAtual = obterConfig(item.chave, 0);
+    return `<div>
+      <label class="block text-xs font-bold text-slate-500 mb-1">${item.label}</label>
+      <input type="number" id="cfg-${item.chave}" value="${valorAtual}" step="0.01" class="w-full p-3 border rounded-lg text-sm">
+    </div>`;
+  }).join('');
+
+  document.getElementById('modal-custos-materiais').classList.remove('hidden');
+  lucide.createIcons();
+}
+
+function fecharModalCustosMateriais() {
+  document.getElementById('modal-custos-materiais').classList.add('hidden');
+}
+
+async function salvarCustosMateriais() {
+  showLoading(true);
+  try {
+    const updates = CUSTOS_EDITAVEIS.map(item => {
+      const input = document.getElementById(`cfg-${item.chave}`);
+      return { chave: item.chave, valor: input.value };
+    });
+
+    // Atualizar cada configuração no Supabase
+    for (const { chave, valor } of updates) {
+      await sb.from('configuracoes').upsert({ chave, valor });
+    }
+
+    // Recarregar configurações no STATE
+    STATE.configLaje = {};
+    const { data: configs } = await sb.from('configuracoes').select('*');
+    if (configs) {
+      configs.forEach(c => { STATE.configLaje[c.chave] = c.valor; });
+    }
+
+    fecharModalCustosMateriais();
+    showToast('Custos atualizados com sucesso!');
+    // Recarregar o detalhamento atual se houver um orçamento selecionado
+    const idOrc = document.getElementById('laje-detalhamento-select')?.value;
+    if (idOrc) gerarDetalhamento();
+  } catch (e) {
+    showToast('Erro ao salvar: ' + e.message, true);
+  }
+  showLoading(false);
+}
