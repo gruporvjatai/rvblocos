@@ -464,7 +464,7 @@ if (LAJE.algoritmoCorte === 'BFD') {
     </tr>`;
   }).join('');
 
-  /*cards.innerHTML = barras.map((b, i) => {
+  cards.innerHTML = barras.map((b, i) => {
     const sobraCor = b.sobra < 0.30 ? 'text-green-600' : (b.sobra < 0.80 ? 'text-amber-600' : 'text-red-600');
     const statusTexto = b.sobra < 0.30 ? 'Ótimo aproveitamento' : (b.sobra < 0.80 ? 'Atenção' : 'Desperdício');
     const statusEmoji = b.sobra < 0.30 ? '🟢' : (b.sobra < 0.80 ? '🟡' : '🔴');
@@ -475,7 +475,7 @@ if (LAJE.algoritmoCorte === 'BFD') {
       <p class="text-xs text-slate-400 mt-1">Usado: ${b.usado.toFixed(2)} m / 12,00 m (${((b.usado/barra12m)*100).toFixed(1)}%)</p>
       <p class="text-xs font-bold mt-2 ${sobraCor}">${statusEmoji} ${statusTexto}</p>
     </div>`;
-  }).join('');*/
+  }).join('');
 
   cards.insertAdjacentHTML('beforeend', `
     <div class="col-span-full bg-slate-50 border border-dashed border-slate-300 rounded-xl p-5 text-center">
