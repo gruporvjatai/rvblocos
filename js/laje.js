@@ -411,7 +411,7 @@ function binPackingBFD(tamanhos, comprimentoBarra = 12.0) {
   return barras;
 }
 
-async function gerarPlanoCorte() {
+/*async function gerarPlanoCorte() {
   const idOrc = document.getElementById('laje-corte-select').value;
   if (!idOrc) return showToast('Selecione um orçamento aprovado.', true);
   showLoading(true);
@@ -486,7 +486,71 @@ if (LAJE.algoritmoCorte === 'BFD') {
 
   showLoading(false);
   lucide.createIcons();
+}*/
+
+async function gerarPlanoCorte() {
+  const idOrc = document.getElementById('laje-corte-select').value;
+  if (!idOrc) return showToast('Selecione um orçamento aprovado.', true);
+  showLoading(true);
+
+  const { data: itens, error } = await sb.from('laje_itens_orcamento')
+    .select('tamanho_vigota, qtd_vigotas').eq('id_orcamento', idOrc);
+  if (error || !itens?.length) {
+    showLoading(false);
+    return showToast('Nenhuma vigota encontrada.', true);
+  }
+
+  const tamanhos = [];
+  for (const item of itens) {
+    for (let i = 0; i < Number(item.qtd_vigotas); i++) {
+      tamanhos.push(Number(item.tamanho_vigota));
+    }
+  }
+
+  const barra12m = obterConfig('comprimento_barra_trelica', 12.0);
+  let barras;
+  if (LAJE.algoritmoCorte === 'BFD') {
+    barras = binPackingBFD(tamanhos, barra12m);
+  } else if (LAJE.algoritmoCorte === 'RBF') {
+    barras = binPackingRBF(tamanhos, barra12m, 100);
+  } else {
+    barras = binPackingFFD(tamanhos, barra12m);
+  }
+  LAJE.planoCorteCache = { barras, idOrc };
+
+  document.getElementById('laje-corte-resultado').classList.remove('hidden');
+  const tbody = document.getElementById('laje-corte-tbody');
+  let totalSobra = 0;
+
+  tbody.innerHTML = barras.map((b, i) => {
+    totalSobra += b.sobra;
+    const aproveitamento = ((b.usado / barra12m) * 100).toFixed(1);
+    let statusHtml = '';
+    if (b.sobra < 0.30) statusHtml = '<span class="text-green-600 font-bold">🟢 Ótimo</span>';
+    else if (b.sobra < 0.80) statusHtml = '<span class="text-amber-600 font-bold">🟡 Atenção</span>';
+    else statusHtml = '<span class="text-red-600 font-bold">🔴 Desperdício</span>';
+    return `<tr class="border-b">
+      <td class="p-3 font-bold">Barra ${i+1}</td>
+      <td class="p-3 font-mono">${b.cortes.map(c => c.toFixed(2)+'m').join(' + ')}</td>
+      <td class="p-3">${b.sobra.toFixed(2)} m</td>
+      <td class="p-3">${aproveitamento}%</td>
+      <td class="p-3">${statusHtml}</td>
+    </tr>`;
+  }).join('');
+
+  tbody.insertAdjacentHTML('beforeend', `
+    <tr class="bg-slate-50 font-bold">
+      <td colspan="5" class="p-3 text-center">
+        Total: ${barras.length} barra(s) de 12,00 m | Sobra acumulada: ${totalSobra.toFixed(2)} m (${((totalSobra/(barras.length*12))*100).toFixed(1)}% de perda)
+      </td>
+    </tr>
+  `);
+
+  showLoading(false);
+  lucide.createIcons();
 }
+
+/* ======================================================================================================================== */
 
 function imprimirPlanoCorte() {
   if (!LAJE.planoCorteCache) return showToast('Gere o plano de corte primeiro.', true);
