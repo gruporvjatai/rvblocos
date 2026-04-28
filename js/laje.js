@@ -431,7 +431,16 @@ async function gerarPlanoCorte() {
   }
 
   const barra12m = obterConfig('comprimento_barra_trelica', 12.0);
-  const barras = LAJE.algoritmoCorte === 'BFD' ? binPackingBFD(tamanhos, barra12m) : binPackingFFD(tamanhos, barra12m);
+  //const barras = LAJE.algoritmoCorte === 'BFD' ? binPackingBFD(tamanhos, barra12m) : binPackingFFD(tamanhos, barra12m);
+  let barras;
+if (LAJE.algoritmoCorte === 'BFD') {
+  barras = binPackingBFD(tamanhos, barra12m);
+} else if (LAJE.algoritmoCorte === 'RBF') {
+  barras = binPackingRBF(tamanhos, barra12m, 100); // 100 tentativas
+} else {
+  barras = binPackingFFD(tamanhos, barra12m);
+}
+  
   LAJE.planoCorteCache = { barras, idOrc };
 
   document.getElementById('laje-corte-resultado').classList.remove('hidden');
@@ -607,4 +616,38 @@ async function gerarDetalhamento() {
 
   showLoading(false);
   lucide.createIcons();
+}
+
+
+function binPackingRBF(tamanhos, comprimentoBarra = 12.0, iteracoes = 100) {
+  if (tamanhos.length === 0) return [];
+  
+  let melhorBarras = null;
+  let melhorSobraTotal = Infinity;
+  let melhorNumBarras = Infinity;
+
+  for (let iter = 0; iter < iteracoes; iter++) {
+    // Embaralha aleatoriamente (Fisher-Yates)
+    const copia = [...tamanhos];
+    for (let i = copia.length - 1; i > 0; i--) {
+      const j = Math.floor(Math.random() * (i + 1));
+      [copia[i], copia[j]] = [copia[j], copia[i]];
+    }
+    
+    // Aplica BFD na ordem embaralhada
+    const barras = binPackingBFD(copia, comprimentoBarra);
+    const sobraTotal = barras.reduce((s, b) => s + b.sobra, 0);
+    const numBarras = barras.length;
+
+    // Critério de seleção: prioriza menor número de barras, depois menor sobra total
+    if (numBarras < melhorNumBarras || (numBarras === melhorNumBarras && sobraTotal < melhorSobraTotal)) {
+      melhorBarras = barras;
+      melhorSobraTotal = sobraTotal;
+      melhorNumBarras = numBarras;
+    }
+  }
+
+  // Ordena as barras do melhor resultado por sobra crescente para exibição
+  melhorBarras.sort((a, b) => a.sobra - b.sobra);
+  return melhorBarras;
 }
