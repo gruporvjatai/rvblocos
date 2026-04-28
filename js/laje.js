@@ -634,6 +634,7 @@ async function gerarDetalhamento() {
     .select('*').eq('id_orcamento', idOrc);
   if (error || !itens?.length) { showLoading(false); return showToast('Nenhum item.', true); }
 
+  // Agrupar quantidades
   let totalVigotas = 0, totalArea = 0, totalEpsLinear = 0;
   const tamanhosVigota = [];
   const tiposEnchimento = new Set();
@@ -647,41 +648,177 @@ async function gerarDetalhamento() {
     alturas.add(i.altura);
   });
 
+  // Barras necessárias
   const barras = binPackingFFD(tamanhosVigota, obterConfig('comprimento_barra_trelica', 12.0));
   const numBarras = barras.length;
 
+  // Altura predominante
   const alturaModa = [...alturas].sort((a,b)=>b-a)[0] || 8;
-  const trelicaTipo = obterConfig(`trelica_tipo_h${alturaModa}`, 'TG8');
+  const tipoPredominante = [...tiposEnchimento][0] || 'EPS';
 
-  let enchimentoQtd = '';
-  if ([...tiposEnchimento].includes('EPS')) {
-    enchimentoQtd += `${totalEpsLinear.toFixed(2)} m lineares de EPS`;
+  // Função de busca de custo
+  const custo = (chave, padrao = 0) => obterConfig(chave, padrao);
+
+  // ---- CÁLCULO DOS CUSTOS ----
+  const linhasCusto = [];
+  let custoTotal = 0;
+
+  // 1. Treliças
+  const trelicaChave = `custo_trelica_${tipoPredominante.toLowerCase()}_h${alturaModa}`;
+  const custoTrelicaBarra = custo(trelicaChave, 68);
+  const custoTrelicaTotal = numBarras * custoTrelicaBarra;
+  linhasCusto.push({
+    descricao: `Treliça (barras 12m)`,
+    quantidade: `${numBarras} un`,
+    unitario: formatMoney(custoTrelicaBarra),
+    total: formatMoney(custoTrelicaTotal)
+  });
+  custoTotal += custoTrelicaTotal;
+
+  // 2. Enchimento
+  if (tiposEnchimento.has('EPS')) {
+    const chaveEps = `custo_eps_h${alturaModa}_metro`;
+    const custoEpsMetro = custo(chaveEps, 6.9);
+    const custoEpsTotal = totalEpsLinear * custoEpsMetro;
+    linhasCusto.push({
+      descricao: `EPS (isopor)`,
+      quantidade: `${totalEpsLinear.toFixed(2)} m`,
+      unitario: formatMoney(custoEpsMetro),
+      total: formatMoney(custoEpsTotal)
+    });
+    custoTotal += custoEpsTotal;
+    // Frete do isopor
+    const custoFreteIsopor = custo('custo_frete_isopor', 0);
+    if (custoFreteIsopor > 0) {
+      linhasCusto.push({
+        descricao: 'Frete do isopor',
+        quantidade: '1',
+        unitario: formatMoney(custoFreteIsopor),
+        total: formatMoney(custoFreteIsopor)
+      });
+      custoTotal += custoFreteIsopor;
+    }
   }
-  if ([...tiposEnchimento].includes('LAJOTA_CERAMICA')) {
+  if (tiposEnchimento.has('LAJOTA_CERAMICA')) {
     const totalLajotas = Math.ceil(totalArea * 12);
-    enchimentoQtd += (enchimentoQtd ? ' / ' : '') + `${totalLajotas} peças de lajota cerâmica`;
+    const custoLajotaPeca = custo('custo_lajota_peca', 1.7);
+    const custoLajotaTotal = totalLajotas * custoLajotaPeca;
+    linhasCusto.push({
+      descricao: 'Lajotas cerâmicas',
+      quantidade: `${totalLajotas} peças`,
+      unitario: formatMoney(custoLajotaPeca),
+      total: formatMoney(custoLajotaTotal)
+    });
+    custoTotal += custoLajotaTotal;
+    // Frete da lajota
+    const custoFreteLajota = custo('custo_frete_lajota', 50);
+    linhasCusto.push({
+      descricao: 'Frete da lajota',
+      quantidade: '1',
+      unitario: formatMoney(custoFreteLajota),
+      total: formatMoney(custoFreteLajota)
+    });
+    custoTotal += custoFreteLajota;
   }
 
-  const volumeConcreto = totalArea * obterConfig('altura_capeamento_concreto', 0.04);
+  // 3. Concreto
+  const volumeConcreto = totalArea * custo('altura_capeamento_concreto', 0.04);
+  const custoConcretoM3 = custo('custo_concreto_m3', 350);
+  const custoConcretoTotal = volumeConcreto * custoConcretoM3;
+  linhasCusto.push({
+    descricao: 'Concreto (capeamento)',
+    quantidade: `${volumeConcreto.toFixed(2)} m³`,
+    unitario: formatMoney(custoConcretoM3),
+    total: formatMoney(custoConcretoTotal)
+  });
+  custoTotal += custoConcretoTotal;
 
-  const detalhamento = [
-    { material: `Treliça ${trelicaTipo} (barras 12m)`, quantidade: `${numBarras} barras` },
-    { material: 'Comprimento total de treliça', quantidade: `${tamanhosVigota.reduce((a,b)=>a+b,0).toFixed(2)} m` },
-    { material: 'Enchimento', quantidade: enchimentoQtd || 'Nenhum' },
-    { material: 'Área total da laje', quantidade: `${totalArea.toFixed(2)} m²` },
-    { material: 'Volume de concreto (capeamento 4cm)', quantidade: `${volumeConcreto.toFixed(3)} m³` },
-    { material: 'Total de vigotas', quantidade: `${totalVigotas} unidades` }
+  // 4. Serviços comuns
+  const servicos = [
+    ['Disco de corte', '1', custo('custo_disco_corte', 10)],
+    ['ART', '1', custo('custo_art', 28)],
+    ['Plotagem de projeto', '1', custo('custo_plotagem', 10)],
+    ['Viagens de entrega', '1', custo('custo_viagem', 50)],
+    ['Diária de ajudante', `${totalArea.toFixed(2)} m²`, custo('custo_ajudante_m2', 4.5) * totalArea],
+    ['Comissão', `${totalArea.toFixed(2)} m²`, custo('custo_comissao_m2', 1) * totalArea],
   ];
+  servicos.forEach(([desc, qtd, valor]) => {
+    linhasCusto.push({
+      descricao: desc,
+      quantidade: qtd,
+      unitario: formatMoney(valor / (parseFloat(qtd) || 1)),
+      total: formatMoney(valor)
+    });
+    custoTotal += valor;
+  });
 
+  // 5. Laudo (apenas para EPS na planilha, mas deixamos configurável)
+  const custoLaudo = custo('custo_laudo', 300);
+  if (custoLaudo > 0 && tiposEnchimento.has('EPS')) {
+    linhasCusto.push({
+      descricao: 'Laudo técnico',
+      quantidade: '1',
+      unitario: formatMoney(custoLaudo),
+      total: formatMoney(custoLaudo)
+    });
+    custoTotal += custoLaudo;
+  }
+
+  // Margem de lucro e preço de venda
+  const margem = custo('margem_lucro_laje', 20);
+  const precoVenda = custoTotal * (1 + margem / 100);
+  const precoM2 = totalArea > 0 ? precoVenda / totalArea : 0;
+
+  // Montar HTML do resultado
+  const html = `
+    <div class="bg-white rounded-xl border shadow-sm p-6">
+      <h3 class="font-bold text-slate-800 mb-4">Detalhamento de Custos</h3>
+      <div class="overflow-x-auto">
+        <table class="w-full text-sm" id="laje-detalhamento-tabela">
+          <thead class="bg-slate-50">
+            <tr>
+              <th class="p-3 text-left">Descrição</th>
+              <th class="p-3 text-center">Quantidade</th>
+              <th class="p-3 text-right">Valor Unitário</th>
+              <th class="p-3 text-right">Total</th>
+            </tr>
+          </thead>
+          <tbody>
+            ${linhasCusto.map(l => `
+              <tr class="border-b">
+                <td class="p-3 font-medium">${l.descricao}</td>
+                <td class="p-3 text-center">${l.quantidade}</td>
+                <td class="p-3 text-right">${l.unitario}</td>
+                <td class="p-3 text-right">${l.total}</td>
+              </tr>
+            `).join('')}
+          </tbody>
+        </table>
+      </div>
+      <div class="mt-6 grid grid-cols-1 md:grid-cols-3 gap-4">
+        <div class="bg-slate-50 p-4 rounded-lg text-center">
+          <p class="text-slate-500 text-sm">Custo Total</p>
+          <p class="text-2xl font-bold text-slate-800">${formatMoney(custoTotal)}</p>
+        </div>
+        <div class="bg-slate-50 p-4 rounded-lg text-center">
+          <p class="text-slate-500 text-sm">Margem de Lucro</p>
+          <p class="text-2xl font-bold text-green-600">${margem}%</p>
+        </div>
+        <div class="bg-orange-50 p-4 rounded-lg text-center">
+          <p class="text-slate-500 text-sm">Preço de Venda</p>
+          <p class="text-2xl font-bold text-orange-600">${formatMoney(precoVenda)}</p>
+          <p class="text-xs text-slate-500">${formatMoney(precoM2)} / m²</p>
+        </div>
+      </div>
+    </div>
+  `;
+
+  document.getElementById('laje-detalhamento-resultado').innerHTML = html;
   document.getElementById('laje-detalhamento-resultado').classList.remove('hidden');
-  document.getElementById('laje-detalhamento-tbody').innerHTML = detalhamento.map(d =>
-    `<tr class="border-b"><td class="p-3 font-medium">${d.material}</td><td class="p-3 font-bold">${d.quantidade}</td></tr>`
-  ).join('');
 
   showLoading(false);
   lucide.createIcons();
 }
-
 
 function binPackingRBF(tamanhos, comprimentoBarra = 12.0, iteracoes = 100) {
   if (tamanhos.length === 0) return [];
