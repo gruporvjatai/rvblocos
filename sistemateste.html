@@ -3378,6 +3378,7 @@ function printOrder(id, encodedProdName) {
 
       
 
+// FUNÇÃO CORRIGIDA: imprime orçamento
 function printQuote(id) {
   const q = STATE.quotes.find(x => x.id == id);
   if (!q) {
@@ -3435,6 +3436,7 @@ function reprintSale(id) {
 
 
       // NOVA FUNÇÃO: gera HTML completo para impressão de uma venda
+// NOVA FUNÇÃO: gera HTML completo para impressão de uma venda
 function getSaleHTML(saleObj) {
   const clientName = saleObj.clientName || 'Consumidor Final';
   const cli = STATE.clients.find(c => c.name === clientName) || { 
@@ -3649,52 +3651,7 @@ function printExpeditionHistory() {
     setTimeout(() => { window.print(); limparAreaImpressao(); }, 500);
 }
 
-function reprintSale(id) {
-    const items = STATE.logs.filter(l => String(l.id) === String(id) && l.type === 'venda');
-    if (!items.length) {
-        showToast("Venda não encontrada", true);
-        return;
-    }
 
-    const totalDiscount = Number(items[0].discount) || 0;
-    const netTotal = items.reduce((acc, i) => acc + (Number(i.totalValue) || 0), 0);
-    const grossTotal = netTotal + totalDiscount;
-    const fator = netTotal > 0 ? (grossTotal / netTotal) : 1;
-
-    const saleObj = {
-        id: id,
-        date: items[0].date,
-        clientName: items[0].clientName || 'Consumidor Final',
-        paymentMethod: items[0].paymentMethod || 'Não informado',
-        discount: totalDiscount,
-        deliveryAddress: items[0].deliveryAddress || '',
-        items: items.map(i => {
-            const grossItemTotal = (Number(i.totalValue) || 0) * fator;
-            const qty = Number(i.quantity) || 1;
-            return {
-                name: i.productName,
-                qty: qty,
-                price: grossItemTotal / qty,
-                total: grossItemTotal
-            };
-        })
-    };
-
-    const printArea = document.getElementById('print-area');
-    printArea.innerHTML = '';
-    renderInvoice(saleObj, false);
-
-    // Apenas esconde o modal para que ele não apareça na impressão
-    const modal = document.getElementById('pos-history-modal');
-    if (modal) modal.style.display = 'none';
-
-    // Aguarda a renderização completa antes de imprimir
-    setTimeout(() => {
-        window.print();
-        // Restaura o modal após a janela de impressão ser fechada
-        setTimeout(limparAreaImpressao, 500);
-    }, 200);
-}
 
 function limparAreaImpressao() {
     const printArea = document.getElementById('print-area');
