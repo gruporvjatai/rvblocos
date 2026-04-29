@@ -1447,24 +1447,31 @@ async function finalizeSale(isProntaEntrega = false) {
     let logsToInsert = [];
 
     for(let item of CART) {
-        const prod = STATE.products.find(p => p.id == item.prodId);
-        if(prod) {
-            let physical = Number(prod.stock) || 0;
-            let committed = Number(prod.committed) || 0;
-            let updatePayload = {};
+        // Busca o estado REAL do produto no banco para evitar saldo desatualizado
+        const { data: freshProd, error: fetchErr } = await sb.from('produtos')
+            .select('estoque_fisico, estoque_comprometido')
+            .eq('id', item.prodId)
+            .single();
+            
+        if (fetchErr) {
+            showLoading(false);
+            return showToast("Erro ao ler estoque atual: " + fetchErr.message, true);
+        }
 
-            if (isProntaEntrega) {
-                updatePayload = { estoque_fisico: Math.max(0, physical - Number(item.qty)) };
-            } else {
-                updatePayload = { estoque_comprometido: committed + Number(item.qty) };
-            }
+        let physical = Number(freshProd.estoque_fisico) || 0;
+        let committed = Number(freshProd.estoque_comprometido) || 0;
+        let updatePayload = {};
 
-            const { error: errProd } = await sb.from('produtos').update(updatePayload).eq('id', prod.id);
-            if (errProd) {
-                console.error("Erro BD Estoque:", errProd);
-                showLoading(false);
-                return showToast("Erro ao baixar o estoque do produto: " + prod.name, true);
-            }
+        if (isProntaEntrega) {
+            updatePayload = { estoque_fisico: Math.max(0, physical - Number(item.qty)) };
+        } else {
+            updatePayload = { estoque_comprometido: committed + Number(item.qty) };
+        }
+
+        const { error: errProd } = await sb.from('produtos').update(updatePayload).eq('id', item.prodId);
+        if (errProd) {
+            showLoading(false);
+            return showToast("Erro ao baixar o estoque do produto: " + item.name, true);
         }
 
         const statusEntrega = isProntaEntrega ? 'ENTREGUE' : 'PENDENTE';
@@ -1585,14 +1592,9 @@ async function confirmDelivery() {
     const currentDelivered = Number(origLog.deliveredQty) || 0;
 
     let newDelivered = currentDelivered + Number(qty);
-    let newStatus = '';
-    
-    if (newDelivered >= totalQty) {
-        newStatus = 'ENTREGUE';
-    } else {
-        newStatus = 'PARCIAL';
-    }
+    let newStatus = newDelivered >= totalQty ? 'ENTREGUE' : 'PARCIAL';
 
+    // Atualiza o log da venda
     const { error: errUpdateLog } = await sb.from('logs')
         .update({ qtd_entregue: newDelivered, status_entrega: newStatus })
         .eq('uid', origLog.uid); 
@@ -1602,33 +1604,44 @@ async function confirmDelivery() {
         return showToast("Erro ao atualizar venda: " + errUpdateLog.message, true);
     }
 
-    let prodFound = null;
-    for (let p = 0; p < STATE.products.length; p++) {
-        if (String(STATE.products[p].name).trim() === String(prodName).trim()) {
-            prodFound = STATE.products[p];
-            break;
-        }
+    // Busca o produto correspondente (pelo nome, como no código original)
+    let prodFound = STATE.products.find(p => p.name.trim() === prodName.trim());
+    if (!prodFound) {
+        showLoading(false);
+        return showToast("Produto não encontrado no cadastro.", true);
     }
 
-    if (prodFound) {
-        let physical = Number(prodFound.stock) || 0;
-        let committed = Number(prodFound.committed) || 0;
+    // Obtém saldo real do banco
+    const { data: freshProd, error: fetchErr } = await sb.from('produtos')
+        .select('estoque_fisico, estoque_comprometido')
+        .eq('id', prodFound.id)
+        .single();
         
-        await sb.from('produtos')
-            .update({ 
-                estoque_fisico: Math.max(0, physical - qty),
-                estoque_comprometido: Math.max(0, committed - qty)
-            })
-            .eq('id', prodFound.id);
+    if (fetchErr) {
+        showLoading(false);
+        return showToast("Erro ao ler estoque: " + fetchErr.message, true);
     }
 
-    let maxId = 999;
-    for (let i = 0; i < STATE.logs.length; i++) {
-        const val = parseInt(STATE.logs[i].id);
-        if (!isNaN(val) && val > maxId) {
-            maxId = val;
-        }
+    let physical = Number(freshProd.estoque_fisico) || 0;
+    let committed = Number(freshProd.estoque_comprometido) || 0;
+
+    // Baixa do estoque físico e libera o comprometido
+    const { error: errStock } = await sb.from('produtos').update({
+        estoque_fisico: Math.max(0, physical - qty),
+        estoque_comprometido: Math.max(0, committed - qty)
+    }).eq('id', prodFound.id);
+
+    if (errStock) {
+        showLoading(false);
+        return showToast("Erro ao atualizar estoque: " + errStock.message, true);
     }
+
+    // Cria log de entrega
+    let maxId = 999;
+    STATE.logs.forEach(l => {
+        const val = parseInt(l.id);
+        if (!isNaN(val) && val > maxId) maxId = val;
+    });
     const newId = (maxId + 1).toString();
     const timestamp = new Date().toISOString();
 
@@ -1653,7 +1666,6 @@ async function confirmDelivery() {
     };
 
     const { error: errInsert } = await sb.from('logs').insert([newLogEntry]);
-    
     if (errInsert) {
         showLoading(false);
         return showToast("Erro ao registrar entrega: " + errInsert.message, true);
@@ -1741,10 +1753,29 @@ async function saveProduction(e) {
     if(!pId || isNaN(qty) || qty <= 0) return showToast("Selecione produto e quantidade!", true);
     showLoading(true);
     
-    const prod = STATE.products.find(x => String(x.id) === String(pId));
+    // Obtém o saldo real do banco
+    const { data: freshProd, error: fetchErr } = await sb.from('produtos')
+        .select('estoque_fisico')
+        .eq('id', pId)
+        .single();
     
-    await sb.from('produtos').update({ estoque_fisico: prod.stock + qty }).eq('id', prod.id);
+    if (fetchErr) {
+        showLoading(false);
+        return showToast("Erro ao ler estoque: " + fetchErr.message, true);
+    }
+    
+    const physicalAtual = Number(freshProd.estoque_fisico) || 0;
+    
+    const { error: updateErr } = await sb.from('produtos').update({
+        estoque_fisico: physicalAtual + qty
+    }).eq('id', pId);
+    
+    if (updateErr) {
+        showLoading(false);
+        return showToast("Erro ao atualizar estoque: " + updateErr.message, true);
+    }
 
+    const prod = STATE.products.find(x => String(x.id) === String(pId));
     await sb.from('logs').insert([{
         id: getNextId(STATE.logs), tipo: 'fabricacao', produto_nome: prod.name,
         quantidade: qty, data: new Date().toISOString(), observacao: document.getElementById('prod-note-production').value,
@@ -1767,25 +1798,33 @@ async function estornarVenda(saleId) {
     try {
         for(let item of saleItems) {
             const prod = STATE.products.find(p => p.name === item.productName);
-            if(prod) {
-                let physical = Number(prod.stock) || 0;
-                let committed = Number(prod.committed) || 0;
-                let delivered = Number(item.deliveredQty) || 0;
-                let pending = Number(item.quantity) - delivered;
+            if(!prod) continue;
 
-                const {error} = await sb.from('produtos').update({
-                    estoque_fisico: physical + delivered,
-                    estoque_comprometido: Math.max(0, committed - pending)
-                }).eq('id', prod.id);
-                if(error) throw error;
-            }
+            // Saldo real do banco
+            const { data: fresh, error: fetchErr } = await sb.from('produtos')
+                .select('estoque_fisico, estoque_comprometido')
+                .eq('id', prod.id)
+                .single();
+            if (fetchErr) throw fetchErr;
+
+            let physical = Number(fresh.estoque_fisico) || 0;
+            let committed = Number(fresh.estoque_comprometido) || 0;
+            let delivered = Number(item.deliveredQty) || 0;
+            let pending = Number(item.quantity) - delivered;
+            if (pending < 0) pending = 0;  // segurança
+
+            const { error } = await sb.from('produtos').update({
+                estoque_fisico: physical + delivered,
+                estoque_comprometido: Math.max(0, committed - pending)
+            }).eq('id', prod.id);
+            if(error) throw error;
         }
 
         await sb.from('logs').delete().like('observacao', `%Ref Venda #${saleId}%`).eq('tipo', 'entrega');
         await sb.from('logs').delete().like('observacao', `%Ref Venda #${saleId}%`).eq('tipo', 'recebimento');
 
         for(let item of saleItems) {
-            const {error} = await sb.from('logs').update({
+            const { error } = await sb.from('logs').update({
                 tipo: 'orcamento',
                 status: 'ABERTO',
                 status_entrega: '',
@@ -1851,29 +1890,40 @@ async function estornarEntregaLog(uid) {
         let orderId = orderIdMatch[1];
 
         const vendaItem = STATE.logs.find(l => String(l.id) === String(orderId) && l.type === 'venda' && l.productName === entregaLog.productName);
+        if(!vendaItem) throw new Error("Venda correspondente não encontrada");
 
-        if(vendaItem) {
-            let currentDelivered = Number(vendaItem.deliveredQty) || 0;
-            let newDelivered = Math.max(0, currentDelivered - entregaLog.quantity);
-            let totalQty = Number(vendaItem.quantity) || 0;
-            let newStatus = newDelivered === 0 ? 'PENDENTE' : (newDelivered < totalQty ? 'PARCIAL' : 'ENTREGUE');
+        // Produto
+        const prod = STATE.products.find(p => p.name === entregaLog.productName);
+        if(!prod) throw new Error("Produto não encontrado no cadastro");
 
-            await sb.from('logs').update({
-                qtd_entregue: newDelivered,
-                status_entrega: newStatus
-            }).eq('uid', vendaItem.uid);
+        // Saldo real
+        const { data: fresh, error: fetchErr } = await sb.from('produtos')
+            .select('estoque_fisico, estoque_comprometido')
+            .eq('id', prod.id)
+            .single();
+        if (fetchErr) throw fetchErr;
 
-            const prod = STATE.products.find(p => p.name === entregaLog.productName);
-            if(prod) {
-                let physical = Number(prod.stock) || 0;
-                let committed = Number(prod.committed) || 0;
-                await sb.from('produtos').update({
-                    estoque_fisico: physical + entregaLog.quantity,
-                    estoque_comprometido: committed + entregaLog.quantity
-                }).eq('id', prod.id);
-            }
-        }
+        let physical = Number(fresh.estoque_fisico) || 0;
+        let committed = Number(fresh.estoque_comprometido) || 0;
 
+        // Devolve ao estoque físico e restaura o comprometido
+        await sb.from('produtos').update({
+            estoque_fisico: physical + entregaLog.quantity,
+            estoque_comprometido: committed + entregaLog.quantity
+        }).eq('id', prod.id);
+
+        // Atualiza a venda
+        let currentDelivered = Number(vendaItem.deliveredQty) || 0;
+        let newDelivered = Math.max(0, currentDelivered - entregaLog.quantity);
+        let totalQty = Number(vendaItem.quantity) || 0;
+        let newStatus = newDelivered === 0 ? 'PENDENTE' : (newDelivered < totalQty ? 'PARCIAL' : 'ENTREGUE');
+
+        await sb.from('logs').update({
+            qtd_entregue: newDelivered,
+            status_entrega: newStatus
+        }).eq('uid', vendaItem.uid);
+
+        // Remove o log de entrega
         await sb.from('logs').delete().eq('uid', uid);
 
         showToast("Entrega estornada!");
@@ -1883,7 +1933,6 @@ async function estornarEntregaLog(uid) {
         showToast("Erro ao estornar entrega: " + e.message, true);
     }
 }
-
 // =========================================================
 // --- FUNÇÕES DA INTERFACE E RENDERIZAÇÃO (TELA) ---
 // =========================================================
