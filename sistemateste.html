@@ -1894,7 +1894,8 @@ async function estornarEntregaLog(uid) {
     if(!confirm("Estornar esta entrega? Os itens devolvidos voltarão como saldo pendente no pedido e o estoque físico será devolvido.")) return;
     showLoading(true);
     try {
-        const entregaLog = STATE.logs.find(l => l.uid === uid && l.type === 'entrega');
+        // CORREÇÃO: comparar como string
+        const entregaLog = STATE.logs.find(l => String(l.uid) === String(uid) && l.type === 'entrega');
         if(!entregaLog) throw new Error("Log de entrega não encontrado");
 
         let orderIdMatch = entregaLog.note.match(/#(\d+)/);
@@ -1902,40 +1903,29 @@ async function estornarEntregaLog(uid) {
         let orderId = orderIdMatch[1];
 
         const vendaItem = STATE.logs.find(l => String(l.id) === String(orderId) && l.type === 'venda' && l.productName === entregaLog.productName);
-        if(!vendaItem) throw new Error("Venda correspondente não encontrada");
 
-        // Produto
-        const prod = STATE.products.find(p => p.name === entregaLog.productName);
-        if(!prod) throw new Error("Produto não encontrado no cadastro");
+        if(vendaItem) {
+            let currentDelivered = Number(vendaItem.deliveredQty) || 0;
+            let newDelivered = Math.max(0, currentDelivered - entregaLog.quantity);
+            let totalQty = Number(vendaItem.quantity) || 0;
+            let newStatus = newDelivered === 0 ? 'PENDENTE' : (newDelivered < totalQty ? 'PARCIAL' : 'ENTREGUE');
 
-        // Saldo real
-        const { data: fresh, error: fetchErr } = await sb.from('produtos')
-            .select('estoque_fisico, estoque_comprometido')
-            .eq('id', prod.id)
-            .single();
-        if (fetchErr) throw fetchErr;
+            await sb.from('logs').update({
+                qtd_entregue: newDelivered,
+                status_entrega: newStatus
+            }).eq('uid', vendaItem.uid);
 
-        let physical = Number(fresh.estoque_fisico) || 0;
-        let committed = Number(fresh.estoque_comprometido) || 0;
+            const prod = STATE.products.find(p => p.name === entregaLog.productName);
+            if(prod) {
+                let physical = Number(prod.stock) || 0;
+                let committed = Number(prod.committed) || 0;
+                await sb.from('produtos').update({
+                    estoque_fisico: physical + entregaLog.quantity,
+                    estoque_comprometido: committed + entregaLog.quantity
+                }).eq('id', prod.id);
+            }
+        }
 
-        // Devolve ao estoque físico e restaura o comprometido
-        await sb.from('produtos').update({
-            estoque_fisico: physical + entregaLog.quantity,
-            estoque_comprometido: committed + entregaLog.quantity
-        }).eq('id', prod.id);
-
-        // Atualiza a venda
-        let currentDelivered = Number(vendaItem.deliveredQty) || 0;
-        let newDelivered = Math.max(0, currentDelivered - entregaLog.quantity);
-        let totalQty = Number(vendaItem.quantity) || 0;
-        let newStatus = newDelivered === 0 ? 'PENDENTE' : (newDelivered < totalQty ? 'PARCIAL' : 'ENTREGUE');
-
-        await sb.from('logs').update({
-            qtd_entregue: newDelivered,
-            status_entrega: newStatus
-        }).eq('uid', vendaItem.uid);
-
-        // Remove o log de entrega
         await sb.from('logs').delete().eq('uid', uid);
 
         showToast("Entrega estornada!");
