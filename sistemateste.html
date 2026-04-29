@@ -1423,6 +1423,16 @@ async function saveProduct(e) {
 
 async function finalizeSale(isProntaEntrega = false) {
     if(!CART.length) return showToast("Vazio!", true);
+    
+    // Remove itens inválidos do carrinho antes de prosseguir
+    const invalidItems = CART.filter(i => !i.prodId || i.prodId === undefined);
+    if (invalidItems.length > 0) {
+        showToast("Existem itens inválidos no carrinho. Eles foram removidos. Verifique os produtos.", true);
+        CART = CART.filter(i => i.prodId && i.prodId !== undefined);
+        renderCart();
+        if (!CART.length) return;
+    }
+
     showLoading(true);
 
     const totals = calculateTotal();
@@ -1447,7 +1457,9 @@ async function finalizeSale(isProntaEntrega = false) {
     let logsToInsert = [];
 
     for(let item of CART) {
-        // Busca o estado REAL do produto no banco para evitar saldo desatualizado
+        // Já garantimos que prodId é válido, mas por segurança:
+        if (!item.prodId) continue;
+
         const { data: freshProd, error: fetchErr } = await sb.from('produtos')
             .select('estoque_fisico, estoque_comprometido')
             .eq('id', item.prodId)
@@ -1455,7 +1467,7 @@ async function finalizeSale(isProntaEntrega = false) {
             
         if (fetchErr) {
             showLoading(false);
-            return showToast("Erro ao ler estoque atual: " + fetchErr.message, true);
+            return showToast("Erro ao ler estoque atual do produto " + item.name + ": " + fetchErr.message, true);
         }
 
         let physical = Number(freshProd.estoque_fisico) || 0;
@@ -1983,13 +1995,27 @@ function renderPOSProducts() {
 }
 
 function addToCart(id) {
-    const p = STATE.products.find(x=>x.id==id);
-    const existing = CART.find(x=>x.prodId==id);
-    if(existing) { existing.qty++; existing.total = existing.qty * existing.price; }
-    else { CART.push({prodId:p.id, name:p.name, price:p.price, qty:1, total:p.price}); }
+    const p = STATE.products.find(x => String(x.id) === String(id));
+    if (!p || !p.id) {
+        showToast("Produto não encontrado ou inválido.", true);
+        return;
+    }
+    const existing = CART.find(x => String(x.prodId) === String(p.id));
+    if (existing) {
+        existing.qty++;
+        existing.total = existing.qty * existing.price;
+    } else {
+        CART.push({
+            prodId: p.id,
+            name: p.name,
+            price: p.price,
+            qty: 1,
+            total: p.price
+        });
+    }
     renderCart();
 }
-
+      
 function updateCartItem(idx, field, value) {
     const item = CART[idx];
     if(field === 'qty') item.qty = parseFloat(value);
