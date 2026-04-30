@@ -1146,3 +1146,57 @@ function binPackingDP(tamanhos, comprimentoBarra = 12.0, precisao = 100) {
   barras.sort((a, b) => a.sobra - b.sobra);
   return barras;
 }
+
+
+async function enviarParaOrcamento() {
+  // Recupera os valores atuais da tela
+  const idOrc = document.getElementById('laje-detalhamento-select').value;
+  if (!idOrc) return showToast('Selecione um orçamento.', true);
+
+  const orc = LAJE.orcamentosList.find(o => o.id == idOrc);
+  if (!orc) return showToast('Orçamento não encontrado.', true);
+
+  // Pega o preço por m² exibido na tela
+  const pmElem = document.getElementById('detalhe-preco-m2');
+  if (!pmElem) return showToast('Gere o detalhamento primeiro.', true);
+  const precoM2 = parseFloat(pmElem.innerText.replace(/[^0-9,]/g, '').replace(',', '.')) || 0;
+  if (precoM2 <= 0) return showToast('Preço por m² inválido.', true);
+
+  const areaTotal = LAJE.areaTotalDetalhamento || 0;
+  if (areaTotal <= 0) return showToast('Área total inválida.', true);
+
+  // Busca o produto fixo de ID 1138
+  const { data: prod, error: prodErr } = await sb.from('produtos').select('*').eq('id', 1138).single();
+  if (prodErr || !prod) return showToast('Produto base (ID 1138) não encontrado. Cadastre-o primeiro.', true);
+
+  // Monta o log de orçamento
+  const newId = getNextId(STATE.logs, STATE.quotes); // usa a função existente
+  const valorTotal = areaTotal * precoM2;
+  const date = new Date().toISOString();
+
+  const logEntry = {
+    id: newId,
+    tipo: 'orcamento',
+    produto_nome: prod.nome,
+    quantidade: parseFloat(areaTotal.toFixed(2)),
+    data: date,
+    observacao: `Orçamento gerado a partir da laje #${idOrc}`,
+    valor_total: parseFloat(valorTotal.toFixed(2)),
+    cliente_nome: orc.cliente_nome,
+    forma_pagamento: 'A Combinar',
+    status: 'ABERTO',
+    desconto: 0,
+    status_financeiro: '$',
+    endereco_entrega: '',
+    status_entrega: '',
+    qtd_entregue: 0,
+    vencimento: date,
+    valor_pago: 0
+  };
+
+  const { error } = await sb.from('logs').insert(logEntry);
+  if (error) return showToast('Erro ao criar orçamento: ' + error.message, true);
+
+  showToast('Orçamento criado com sucesso!');
+  navigate('quotes');
+}
