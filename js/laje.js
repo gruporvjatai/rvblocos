@@ -2,11 +2,12 @@
 const LAJE = {
   comodosTemp: [],
   orcamentosList: [],
+  produtosList: [],          // cache da tabela laje_produtos
   editandoId: null,
   tabAtiva: 'orcamento',
   algoritmoCorte: 'FFD',
   planoCorteCache: null,
-  editandoComodoIndex: null      // índice do cômodo sendo editado (pelo modal)
+  editandoComodoIndex: null
 };
 
 // ==================== NAVEGAÇÃO DE ABAS ====================
@@ -15,9 +16,11 @@ function switchLajeTab(tab) {
   document.getElementById('laje-tab-orcamento').classList.toggle('hidden', tab !== 'orcamento');
   document.getElementById('laje-tab-corte').classList.toggle('hidden', tab !== 'corte');
   document.getElementById('laje-tab-detalhamento').classList.toggle('hidden', tab !== 'detalhamento');
+  document.getElementById('laje-tab-itens').classList.toggle('hidden', tab !== 'itens');
 
-  ['orcamento','corte','detalhamento'].forEach(t => {
+  ['orcamento','corte','detalhamento','itens'].forEach(t => {
     const btn = document.getElementById(`tab-${t}-btn`);
+    if (!btn) return;
     btn.className = tab === t
       ? 'px-4 py-2 rounded-t-lg font-bold text-sm bg-orange-600 text-white shadow'
       : 'px-4 py-2 rounded-t-lg font-bold text-sm bg-slate-100 text-slate-600 hover:bg-slate-200';
@@ -25,7 +28,100 @@ function switchLajeTab(tab) {
 
   if (tab === 'corte') carregarSelectOrcamentosAprovados();
   if (tab === 'detalhamento') carregarSelectTodosOrcamentos();
+  if (tab === 'itens') carregarProdutosLaje();
   lucide.createIcons();
+}
+
+
+// ==================== CRUD PRODUTOS (Itens Fabricação) ====================
+async function carregarProdutosLaje() {
+  const { data, error } = await sb.from('laje_produtos').select('*').order('descricao');
+  if (error) return showToast('Erro ao carregar produtos.', true);
+  LAJE.produtosList = data || [];
+  renderProdutosLaje();
+}
+
+function renderProdutosLaje() {
+  const tbody = document.getElementById('laje-produtos-tbody');
+  if (!tbody) return;
+  if (LAJE.produtosList.length === 0) {
+    tbody.innerHTML = '<tr><td colspan="5" class="p-6 text-center text-slate-400">Nenhum produto cadastrado.</td></tr>';
+    return;
+  }
+  tbody.innerHTML = LAJE.produtosList.map(p => `
+    <tr class="border-b hover:bg-slate-50">
+      <td class="p-3 font-medium">${p.descricao}</td>
+      <td class="p-3">${p.unidade}</td>
+      <td class="p-3 text-right">${formatMoney(p.custo_unitario)}</td>
+      <td class="p-3 text-xs capitalize">${p.tipo}</td>
+      <td class="p-3 text-center flex gap-2 justify-center">
+        <button onclick="editarProdutoLaje(${p.id})" class="text-blue-600 hover:text-blue-800"><i data-lucide="edit-3" width="16"></i></button>
+        <button onclick="excluirProdutoLaje(${p.id})" class="text-red-500 hover:text-red-700"><i data-lucide="trash-2" width="16"></i></button>
+      </td>
+    </tr>
+  `).join('');
+  lucide.createIcons();
+}
+
+function abrirModalProduto(id) {
+  document.getElementById('modal-produto-laje').classList.remove('hidden');
+  document.getElementById('modal-produto-titulo').innerText = id ? 'Editar Produto' : 'Novo Produto';
+  if (id) {
+    const p = LAJE.produtosList.find(x => x.id == id);
+    if (p) {
+      document.getElementById('laje-produto-id').value = p.id;
+      document.getElementById('laje-produto-descricao').value = p.descricao;
+      document.getElementById('laje-produto-unidade').value = p.unidade;
+      document.getElementById('laje-produto-custo').value = p.custo_unitario;
+      document.getElementById('laje-produto-tipo').value = p.tipo;
+    }
+  } else {
+    document.getElementById('laje-produto-id').value = '';
+    document.getElementById('laje-produto-descricao').value = '';
+    document.getElementById('laje-produto-unidade').value = '';
+    document.getElementById('laje-produto-custo').value = '';
+    document.getElementById('laje-produto-tipo').value = 'material';
+  }
+}
+
+function fecharModalProduto() {
+  document.getElementById('modal-produto-laje').classList.add('hidden');
+}
+
+async function salvarProdutoLaje() {
+  const id = document.getElementById('laje-produto-id').value;
+  const descricao = document.getElementById('laje-produto-descricao').value.trim();
+  const unidade = document.getElementById('laje-produto-unidade').value.trim();
+  const custo = parseFloat(document.getElementById('laje-produto-custo').value) || 0;
+  const tipo = document.getElementById('laje-produto-tipo').value;
+
+  if (!descricao || !unidade) return showToast('Preencha descrição e unidade.', true);
+
+  const payload = { descricao, unidade, custo_unitario: custo, tipo };
+
+  let error;
+  if (id) {
+    ({ error } = await sb.from('laje_produtos').update(payload).eq('id', id));
+  } else {
+    ({ error } = await sb.from('laje_produtos').insert(payload));
+  }
+  if (error) return showToast('Erro ao salvar: ' + error.message, true);
+
+  fecharModalProduto();
+  carregarProdutosLaje();
+  showToast('Produto salvo!');
+}
+
+async function excluirProdutoLaje(id) {
+  if (!confirm('Excluir este produto?')) return;
+  const { error } = await sb.from('laje_produtos').delete().eq('id', id);
+  if (error) return showToast('Erro ao excluir: ' + error.message, true);
+  carregarProdutosLaje();
+  showToast('Produto excluído.');
+}
+
+async function editarProdutoLaje(id) {
+  abrirModalProduto(id);
 }
 
 // ==================== MODAL CÔMODO ====================
@@ -574,11 +670,14 @@ async function gerarDetalhamento() {
   if (!idOrc) return showToast('Selecione um orçamento.', true);
   showLoading(true);
 
-  const { data: itens, error } = await sb.from('laje_itens_orcamento')
-    .select('*').eq('id_orcamento', idOrc);
+  // 1. Buscar itens do orçamento
+  const { data: itens, error } = await sb.from('laje_itens_orcamento').select('*').eq('id_orcamento', idOrc);
   if (error || !itens?.length) { showLoading(false); return showToast('Nenhum item.', true); }
 
-  // Agrupar quantidades
+  // 2. Buscar produtos cadastrados
+  await carregarProdutosLajeSilencioso();  // garante que LAJE.produtosList esteja atualizado
+
+  // Totais do orçamento
   let totalVigotas = 0, totalArea = 0, totalEpsLinear = 0;
   const tamanhosVigota = [];
   const tiposEnchimento = new Set();
@@ -592,133 +691,101 @@ async function gerarDetalhamento() {
     alturas.add(i.altura);
   });
 
-  // Barras necessárias
-  const barras = binPackingFFD(tamanhosVigota, obterConfig('comprimento_barra_trelica', 12.0));
+  // 3. Número de barras de treliça
+  const barras = binPackingFFD(tamanhosVigota, 12.0);
   const numBarras = barras.length;
-
-  // Altura predominante
   const alturaModa = [...alturas].sort((a,b)=>b-a)[0] || 8;
   const tipoPredominante = [...tiposEnchimento][0] || 'EPS';
 
-  // Função de busca de custo
-  const custo = (chave, padrao = 0) => obterConfig(chave, padrao);
+  // 4. Capeamento: espessura conforme altura
+  const espessuraCapeamento = (alturaModa <= 12) ? 0.02 : 0.04; // 2cm ou 4cm
+  const volumeConcreto = totalArea * espessuraCapeamento;
 
-  // ---- CÁLCULO DOS CUSTOS ----
-  const linhasCusto = [];
+  // 5. Traço: volume por betonada (calculado com base nos materiais)
+  // 1,5 saco cimento (50kg) + 5 latas brita (18L) + 6,5 latas areia (18L) = ~0,117+0,09+0,0238 = 0,231 m³
+  const volumePorTraco = 0.231;
+  const numTracos = Math.ceil(volumeConcreto / volumePorTraco);
+
+  // 6. Insumos do traço
+  const sacosCimento = Math.ceil(numTracos * 1.5);
+  const areiaM3 = numTracos * 0.117;
+  const britaM3 = numTracos * 0.09;
+
+  // 7. Função para buscar custo do produto cadastrado pelo nome
+  function custoProduto(nomePadrao, padrao = 0) {
+    const p = LAJE.produtosList.find(x => x.descricao === nomePadrao);
+    return p ? Number(p.custo_unitario) : padrao;
+  }
+
+  // Linhas da tabela de detalhamento
+  const linhas = [];
   let custoTotal = 0;
 
-  // 1. Treliças
-  const trelicaChave = `custo_trelica_${tipoPredominante.toLowerCase()}_h${alturaModa}`;
-  const custoTrelicaBarra = custo(trelicaChave, 68);
-  const custoTrelicaTotal = numBarras * custoTrelicaBarra;
-  linhasCusto.push({
-    descricao: `Treliça (barras 12m)`,
-    quantidade: `${numBarras} un`,
-    unitario: formatMoney(custoTrelicaBarra),
-    total: formatMoney(custoTrelicaTotal)
-  });
-  custoTotal += custoTrelicaTotal;
+  function addLinha(desc, qtd, unidade, vlrUnit, vlrTotal) {
+    linhas.push({ desc, qtd: `${qtd} ${unidade}`, unitario: formatMoney(vlrUnit), total: formatMoney(vlrTotal) });
+    custoTotal += vlrTotal;
+  }
 
-  // 2. Enchimento
+  // Treliça
+  const trelicaNome = `Treliça TG${alturaModa} 12m`;
+  const custoTrelica = custoProduto(trelicaNome, alturaModa <= 8 ? 68 : (alturaModa <= 12 ? 92 : 105));
+  addLinha('Treliça', numBarras, 'barras', custoTrelica, numBarras * custoTrelica);
+
+  // Enchimento
   if (tiposEnchimento.has('EPS')) {
-    const chaveEps = `custo_eps_h${alturaModa}_metro`;
-    const custoEpsMetro = custo(chaveEps, 6.9);
-    const custoEpsTotal = totalEpsLinear * custoEpsMetro;
-    linhasCusto.push({
-      descricao: `EPS (isopor)`,
-      quantidade: `${totalEpsLinear.toFixed(2)} m`,
-      unitario: formatMoney(custoEpsMetro),
-      total: formatMoney(custoEpsTotal)
-    });
-    custoTotal += custoEpsTotal;
-    // Frete do isopor
-    const custoFreteIsopor = custo('custo_frete_isopor', 0);
-    if (custoFreteIsopor > 0) {
-      linhasCusto.push({
-        descricao: 'Frete do isopor',
-        quantidade: '1',
-        unitario: formatMoney(custoFreteIsopor),
-        total: formatMoney(custoFreteIsopor)
-      });
-      custoTotal += custoFreteIsopor;
-    }
+    const epsNome = `EPS H${alturaModa} 1m`;
+    const custoEps = custoProduto(epsNome, 6.9);
+    const totalEps = totalEpsLinear * custoEps;
+    addLinha('EPS (isopor)', totalEpsLinear.toFixed(2), 'm', custoEps, totalEps);
+    const freteIsopor = custoProduto('Frete Isopor', 0);
+    if (freteIsopor > 0) addLinha('Frete do isopor', 1, 'un', freteIsopor, freteIsopor);
   }
   if (tiposEnchimento.has('LAJOTA_CERAMICA')) {
     const totalLajotas = Math.ceil(totalArea * 12);
-    const custoLajotaPeca = custo('custo_lajota_peca', 1.7);
-    const custoLajotaTotal = totalLajotas * custoLajotaPeca;
-    linhasCusto.push({
-      descricao: 'Lajotas cerâmicas',
-      quantidade: `${totalLajotas} peças`,
-      unitario: formatMoney(custoLajotaPeca),
-      total: formatMoney(custoLajotaTotal)
-    });
-    custoTotal += custoLajotaTotal;
-    // Frete da lajota
-    const custoFreteLajota = custo('custo_frete_lajota', 50);
-    linhasCusto.push({
-      descricao: 'Frete da lajota',
-      quantidade: '1',
-      unitario: formatMoney(custoFreteLajota),
-      total: formatMoney(custoFreteLajota)
-    });
-    custoTotal += custoFreteLajota;
+    const custoLajota = custoProduto('Lajota Cerâmica', 1.7);
+    addLinha('Lajota', totalLajotas, 'peças', custoLajota, totalLajotas * custoLajota);
+    const freteLajota = custoProduto('Frete Lajota', 50);
+    addLinha('Frete da lajota', 1, 'un', freteLajota, freteLajota);
   }
 
-  // 3. Concreto
-  const volumeConcreto = totalArea * custo('altura_capeamento_concreto', 0.04);
-  const custoConcretoM3 = custo('custo_concreto_m3', 350);
-  const custoConcretoTotal = volumeConcreto * custoConcretoM3;
-  linhasCusto.push({
-    descricao: 'Concreto (capeamento)',
-    quantidade: `${volumeConcreto.toFixed(2)} m³`,
-    unitario: formatMoney(custoConcretoM3),
-    total: formatMoney(custoConcretoTotal)
-  });
-  custoTotal += custoConcretoTotal;
+  // Concreto (cimento/areia/brita)
+  addLinha('Cimento', sacosCimento, 'sacos', custoProduto('Cimento CP II 50kg', 37), sacosCimento * custoProduto('Cimento CP II 50kg', 37));
+  addLinha('Areia Grossa', areiaM3.toFixed(3), 'm³', custoProduto('Areia Grossa', 200), areiaM3 * custoProduto('Areia Grossa', 200));
+  addLinha('Brita 0', britaM3.toFixed(3), 'm³', custoProduto('Brita 0', 200), britaM3 * custoProduto('Brita 0', 200));
 
-  // 4. Serviços comuns
-  const servicos = [
-    ['Disco de corte', '1', custo('custo_disco_corte', 10)],
-    ['ART', '1', custo('custo_art', 28)],
-    ['Plotagem de projeto', '1', custo('custo_plotagem', 10)],
-    ['Viagens de entrega', '1', custo('custo_viagem', 50)],
-    ['Diária de ajudante', `${totalArea.toFixed(2)} m²`, custo('custo_ajudante_m2', 4.5) * totalArea],
-    ['Comissão', `${totalArea.toFixed(2)} m²`, custo('custo_comissao_m2', 1) * totalArea],
-  ];
-  servicos.forEach(([desc, qtd, valor]) => {
-    linhasCusto.push({
-      descricao: desc,
-      quantidade: qtd,
-      unitario: formatMoney(valor / (parseFloat(qtd) || 1)),
-      total: formatMoney(valor)
-    });
-    custoTotal += valor;
-  });
+  // Serviços
+  const discoNome = 'Disco de Corte';
+  const artNome = 'ART';
+  const plotagemNome = 'Plotagem de Projeto';
+  const viagemNome = 'Viagem de Entrega';
+  const ajudanteNome = 'Diária de Ajudante';
+  const comissaoNome = 'Comissão';
+  const laudoNome = 'Laudo Técnico';
 
-  // 5. Laudo (apenas para EPS na planilha, mas deixamos configurável)
-  const custoLaudo = custo('custo_laudo', 300);
-  if (custoLaudo > 0 && tiposEnchimento.has('EPS')) {
-    linhasCusto.push({
-      descricao: 'Laudo técnico',
-      quantidade: '1',
-      unitario: formatMoney(custoLaudo),
-      total: formatMoney(custoLaudo)
-    });
-    custoTotal += custoLaudo;
+  addLinha(discoNome, 1, 'un', custoProduto(discoNome, 10), custoProduto(discoNome, 10));
+  addLinha(artNome, 1, 'un', custoProduto(artNome, 28), custoProduto(artNome, 28));
+  addLinha(plotagemNome, 1, 'un', custoProduto(plotagemNome, 10), custoProduto(plotagemNome, 10));
+  addLinha(viagemNome, 1, 'un', custoProduto(viagemNome, 50), custoProduto(viagemNome, 50));
+  const ajudanteTotal = totalArea * custoProduto(ajudanteNome, 4.5);
+  addLinha(ajudanteNome, totalArea.toFixed(2), 'm²', custoProduto(ajudanteNome, 4.5), ajudanteTotal);
+  const comissaoTotal = totalArea * custoProduto(comissaoNome, 1);
+  addLinha(comissaoNome, totalArea.toFixed(2), 'm²', custoProduto(comissaoNome, 1), comissaoTotal);
+
+  if (tiposEnchimento.has('EPS')) {
+    const laudo = custoProduto(laudoNome, 300);
+    if (laudo > 0) addLinha(laudoNome, 1, 'un', laudo, laudo);
   }
 
-  // Margem de lucro e preço de venda
-  const margem = custo('margem_lucro_laje', 20);
-  const precoVenda = custoTotal * (1 + margem / 100);
+  // Margem e preço de venda
+  const margemLucro = 20; // percentual fixo ou pode vir de produto "Margem de Lucro"
+  const precoVenda = custoTotal * (1 + margemLucro / 100);
   const precoM2 = totalArea > 0 ? precoVenda / totalArea : 0;
 
-  // Montar HTML do resultado
   const html = `
     <div class="bg-white rounded-xl border shadow-sm p-6">
       <h3 class="font-bold text-slate-800 mb-4">Detalhamento de Custos</h3>
       <div class="overflow-x-auto">
-        <table class="w-full text-sm" id="laje-detalhamento-tabela">
+        <table class="w-full text-sm">
           <thead class="bg-slate-50">
             <tr>
               <th class="p-3 text-left">Descrição</th>
@@ -728,10 +795,10 @@ async function gerarDetalhamento() {
             </tr>
           </thead>
           <tbody>
-            ${linhasCusto.map(l => `
+            ${linhas.map(l => `
               <tr class="border-b">
-                <td class="p-3 font-medium">${l.descricao}</td>
-                <td class="p-3 text-center">${l.quantidade}</td>
+                <td class="p-3 font-medium">${l.desc}</td>
+                <td class="p-3 text-center">${l.qtd}</td>
                 <td class="p-3 text-right">${l.unitario}</td>
                 <td class="p-3 text-right">${l.total}</td>
               </tr>
@@ -746,7 +813,7 @@ async function gerarDetalhamento() {
         </div>
         <div class="bg-slate-50 p-4 rounded-lg text-center">
           <p class="text-slate-500 text-sm">Margem de Lucro</p>
-          <p class="text-2xl font-bold text-green-600">${margem}%</p>
+          <p class="text-2xl font-bold text-green-600">${margemLucro}%</p>
         </div>
         <div class="bg-orange-50 p-4 rounded-lg text-center">
           <p class="text-slate-500 text-sm">Preço de Venda</p>
@@ -762,6 +829,12 @@ async function gerarDetalhamento() {
 
   showLoading(false);
   lucide.createIcons();
+}
+
+// Função auxiliar para carregar produtos sem exibir loading
+async function carregarProdutosLajeSilencioso() {
+  const { data } = await sb.from('laje_produtos').select('*').order('descricao');
+  if (data) LAJE.produtosList = data;
 }
 
 function binPackingRBF(tamanhos, comprimentoBarra = 12.0, iteracoes = 100) {
