@@ -563,18 +563,19 @@ function imprimirPlanoCorte() {
   // Agrupa barras com cortes idênticos
   const gruposMap = new Map();
   barras.forEach(b => {
-    const chave = JSON.stringify(b.cortes); // mesma sequência = mesma chave
+    const chave = JSON.stringify(b.cortes);
     if (!gruposMap.has(chave)) {
       gruposMap.set(chave, { cortes: b.cortes, qtd: 0, sobra: b.sobra });
     }
     gruposMap.get(chave).qtd++;
-    // a sobra é a mesma para todas as barras do grupo (já que cortes idênticos)
   });
 
-  const grupos = Array.from(gruposMap.values());
+  // Converte para array e ordena por quantidade decrescente (maior → menor)
+  const grupos = Array.from(gruposMap.values())
+    .sort((a, b) => b.qtd - a.qtd);
 
-  // Paleta de cores suaves para os grupos
-  const coresFundo = ['#f0f9ff', '#fef3c7', '#ecfdf5', '#fce7f3', '#e0f2fe', '#fef9c3', '#dcfce7', '#fce7f3'];
+  // Paleta de cores profissionais (sem rosa)
+  const coresFundo = ['#e0f2fe', '#fef9c3', '#dcfce7', '#e2e8f0', '#f3e8ff', '#dbeafe'];
   let corIndex = 0;
 
   let totalSobra = 0;
@@ -583,7 +584,6 @@ function imprimirPlanoCorte() {
     const cor = coresFundo[corIndex % coresFundo.length];
     corIndex++;
 
-    // Constrói lista de cortes com checkboxes
     const cortesTd = g.cortes.map(c => 
       `<span style="display:inline-block; margin-right:8px; font-weight:bold; font-size:13px;">${c.toFixed(2)} m</span><span style="font-size:14px;">☐</span>`
     ).join('<span style="margin:0 4px; color:#999;">|</span>');
@@ -614,7 +614,7 @@ function imprimirPlanoCorte() {
         <strong>Sobra total:</strong> ${totalSobra.toFixed(2)} m (${perdaPerc}%) |
         <strong>Cortes:</strong> ${barras.reduce((s,b) => s + b.cortes.length, 0)} unidades
       </div>
-      <p style="font-size:11px; margin:0 0 8px 0;">🔹 Cada linha representa um <strong>grupo de barras idênticas</strong>. A quantidade de barras está na primeira coluna.</p>
+      <p style="font-size:11px; margin:0 0 8px 0;">🔹 Cada linha representa um <strong>grupo de barras idênticas</strong>. A quantidade está na primeira coluna.</p>
       <table width="100%" style="border-collapse:collapse; margin-bottom:15px;">
         <thead>
           <tr style="background:#e5e7eb;">
