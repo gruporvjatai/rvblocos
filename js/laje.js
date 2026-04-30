@@ -674,10 +674,9 @@ async function gerarDetalhamento() {
   const { data: itens, error } = await sb.from('laje_itens_orcamento').select('*').eq('id_orcamento', idOrc);
   if (error || !itens?.length) { showLoading(false); return showToast('Nenhum item.', true); }
 
-  // 2. Garantir que a lista de produtos esteja carregada
+  // 2. Garantir lista de produtos carregada
   await carregarProdutosLajeSilencioso();
 
-  // Totais
   let totalVigotas = 0, totalArea = 0, totalEpsLinear = 0;
   const tamanhosVigota = [];
   const tiposEnchimento = new Set();
@@ -691,27 +690,29 @@ async function gerarDetalhamento() {
     alturas.add(i.altura);
   });
 
-  // 3. Treliça
   const metrosLinearesTrelica = tamanhosVigota.reduce((a, b) => a + b, 0);
   const barras = binPackingFFD(tamanhosVigota, 12.0);
   const numBarras = barras.length;
   const alturaModa = [...alturas].sort((a, b) => b - a)[0] || 8;
   const tipoPredominante = [...tiposEnchimento][0] || 'EPS';
 
-  // 4. Capeamento
+  // Capeamento
   const espessuraCapeamento = (alturaModa <= 12) ? 0.02 : 0.04;
-  const volumeConcreto = totalArea * espessuraCapeamento;
+  const larguraCapeamento = 0.12; // 12 cm
+  const secaoCapeamento = larguraCapeamento * espessuraCapeamento; // m²
+  const volumeConcreto = totalArea * espessuraCapeamento; // m³
 
-  // 5. Traço
+  // Traço: volume por betonada (0,231 m³)
   const volumePorTraco = 0.231;
   const numTracos = Math.ceil(volumeConcreto / volumePorTraco);
+  const metrosLinearesPorTraco = volumePorTraco / secaoCapeamento; // ≈ 48 m para 4cm, 96 m para 2cm
   const sacosCimento = Math.ceil(numTracos * 1.5);
   const areiaM3 = numTracos * 0.117;
   const britaM3 = numTracos * 0.09;
   const latasAreia = Math.ceil(areiaM3 / 0.018);
   const latasBrita = Math.ceil(britaM3 / 0.018);
 
-  // 6. Função de custo
+  // Função de custo
   function custoProduto(nomePadrao, padrao = 0) {
     const p = LAJE.produtosList.find(x => x.descricao === nomePadrao);
     return p ? Number(p.custo_unitario) : padrao;
@@ -736,15 +737,15 @@ async function gerarDetalhamento() {
   const custoTrelica = custoProduto(trelicaNome, alturaModa <= 8 ? 68 : (alturaModa <= 12 ? 92 : 105));
   addLinha('Treliça', `${numBarras} barras`, `${metrosLinearesTrelica.toFixed(2)} m lineares`, custoTrelica, numBarras * custoTrelica);
 
-  // Enchimento
+  // Enchimento – EPS (placa de 1,00 m × 0,50 m → cobre 1 m linear)
   if (tiposEnchimento.has('EPS')) {
-    const placasEps = Math.ceil(totalEpsLinear / 0.50);
-    const epsNome = `EPS H${alturaModa} placa 50x50`;
+    const placasEps = Math.ceil(totalEpsLinear); // cada placa = 1 m linear
+    const epsNome = `EPS H${alturaModa} placa 50x50`; // manter nome do banco
     const custoEpsPlaca = custoProduto(epsNome, 11.90);
     addLinha(
       'EPS (isopor)',
       `${placasEps} placas`,
-      `${totalEpsLinear.toFixed(2)} m lineares (equivale a ${placasEps} placas de 50 cm)`,
+      `${totalEpsLinear.toFixed(2)} m lineares (equivale a ${placasEps} placas de 1,00×0,50 m)`,
       custoEpsPlaca,
       placasEps * custoEpsPlaca
     );
@@ -760,11 +761,29 @@ async function gerarDetalhamento() {
   }
 
   // Concreto
-  addLinha('Cimento', `${sacosCimento} sacos`, `${numTracos} traços (1,5 saco cada)`, custoProduto('Cimento CP II 50kg', 37), sacosCimento * custoProduto('Cimento CP II 50kg', 37));
-  addLinha('Areia Grossa', `${areiaM3.toFixed(3)} m³`, `${latasAreia} latas (18L)`, custoProduto('Areia Grossa', 200), areiaM3 * custoProduto('Areia Grossa', 200));
-  addLinha('Brita 0', `${britaM3.toFixed(3)} m³`, `${latasBrita} latas (18L)`, custoProduto('Brita 0', 200), britaM3 * custoProduto('Brita 0', 200));
+  addLinha(
+    'Cimento',
+    `${sacosCimento} sacos`,
+    `${numTracos} traços (${metrosLinearesPorTraco.toFixed(0)} m lineares de capeamento por traço)`,
+    custoProduto('Cimento CP II 50kg', 37),
+    sacosCimento * custoProduto('Cimento CP II 50kg', 37)
+  );
+  addLinha(
+    'Areia Grossa',
+    `${areiaM3.toFixed(3)} m³`,
+    `${latasAreia} latas (18 L)`,
+    custoProduto('Areia Grossa', 200),
+    areiaM3 * custoProduto('Areia Grossa', 200)
+  );
+  addLinha(
+    'Brita 0',
+    `${britaM3.toFixed(3)} m³`,
+    `${latasBrita} latas (18 L)`,
+    custoProduto('Brita 0', 200),
+    britaM3 * custoProduto('Brita 0', 200)
+  );
 
-  // Serviços
+  // Serviços gerais
   addLinha('Disco de Corte', '1 un', '', custoProduto('Disco de Corte', 10), custoProduto('Disco de Corte', 10));
   addLinha('ART', '1 un', '', custoProduto('ART', 28), custoProduto('ART', 28));
   addLinha('Plotagem', '1 un', '', custoProduto('Plotagem de Projeto', 10), custoProduto('Plotagem de Projeto', 10));
@@ -778,11 +797,10 @@ async function gerarDetalhamento() {
     if (laudo > 0) addLinha('Laudo Técnico', '1 un', '', laudo, laudo);
   }
 
-  // Armazena para uso no recálculo
+  // Armazena para recálculo da margem/frete
   LAJE.custoTotalDetalhamento = custoTotal;
   LAJE.areaTotalDetalhamento = totalArea;
 
-  // Margem padrão 20%
   const margemInicial = 20;
   const precoVendaInicial = custoTotal * (1 + margemInicial / 100);
   const precoM2Inicial = totalArea > 0 ? precoVendaInicial / totalArea : 0;
@@ -848,7 +866,6 @@ async function gerarDetalhamento() {
   lucide.createIcons();
 }
 
-// Recalcula o preço de venda ao alterar margem ou checkbox do frete
 function recalcularDetalhamento() {
   const margemInput = document.getElementById('detalhe-margem-lucro');
   const freteCheck = document.getElementById('detalhe-frete-check');
@@ -859,10 +876,10 @@ function recalcularDetalhamento() {
   const area = LAJE.areaTotalDetalhamento || 1;
 
   let precoVenda = custo * (1 + margem / 100);
-  // Aplica 6% de frete se marcado (sobre o valor já com margem)
   if (freteCheck && freteCheck.checked) {
     precoVenda = precoVenda * 1.06;
   }
+
   const precoM2 = precoVenda / area;
 
   const pv = document.getElementById('detalhe-preco-venda');
@@ -871,28 +888,6 @@ function recalcularDetalhamento() {
   if (pm) pm.innerText = formatMoney(precoM2);
 }
 
-// Função chamada ao alterar a margem de lucro
-function recalcularDetalhamento() {
-  const margemInput = document.getElementById('detalhe-margem-lucro');
-  if (!margemInput) return;
-  const margem = parseFloat(margemInput.value) || 0;
-  const custo = LAJE.custoTotalDetalhamento || 0;
-  const area = LAJE.areaTotalDetalhamento || 1;
-
-  const precoVenda = custo * (1 + margem / 100);
-  const precoM2 = precoVenda / area;
-
-  const pv = document.getElementById('detalhe-preco-venda');
-  const pm = document.getElementById('detalhe-preco-m2');
-  if (pv) pv.innerText = formatMoney(precoVenda);
-  if (pm) pm.innerText = formatMoney(precoM2);
-}
-
-// Função auxiliar para carregar produtos sem exibir loading
-async function carregarProdutosLajeSilencioso() {
-  const { data } = await sb.from('laje_produtos').select('*').order('descricao');
-  if (data) LAJE.produtosList = data;
-}
 
 function binPackingRBF(tamanhos, comprimentoBarra = 12.0, iteracoes = 100) {
   if (tamanhos.length === 0) return [];
