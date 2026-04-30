@@ -861,12 +861,14 @@ async function gerarDetalhamento() {
           <p class="text-xs text-slate-500"><span id="detalhe-preco-m2">${formatMoney(precoM2Inicial)}</span> / m²</p>       
           
         </div>
-        <button onclick="enviarParaOrcamento()" class="mt-3 bg-green-600 hover:bg-green-700 text-white px-4 py-2 rounded-lg font-bold text-sm w-full">
-          <i data-lucide="send"></i> Enviar para Orçamento
-        </button>
+        
       </div>
+      
       <p class="text-xs text-slate-400 mt-2">* Ajuste a margem de lucro ou marque o frete para recalcular o preço de venda automaticamente.</p>
     </div>
+    <button onclick="enviarParaOrcamento()" class="mt-3 bg-green-600 hover:bg-green-700 text-white px-4 py-2 rounded-lg font-bold text-sm w-full">
+          <i data-lucide="send"></i> Enviar para Orçamento
+        </button>
   `;
 
   document.getElementById('laje-detalhamento-resultado').innerHTML = html;
