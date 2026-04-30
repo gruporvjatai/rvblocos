@@ -680,7 +680,7 @@
           <i data-lucide="printer"></i>
         </button>
       </div>
-      <div class="flex items-center gap-4 mt-4">
+     <div class="flex items-center gap-4 mt-4">
         <span class="text-sm font-bold text-slate-600">Algoritmo de Otimização:</span>
         <label class="flex items-center gap-1 cursor-pointer">
           <input type="radio" name="algoritmo-corte" value="FFD" checked onchange="LAJE.algoritmoCorte = this.value" class="accent-orange-600">
@@ -693,6 +693,10 @@
         <label class="flex items-center gap-1 cursor-pointer">
           <input type="radio" name="algoritmo-corte" value="RBF" onchange="LAJE.algoritmoCorte = this.value" class="accent-orange-600">
           <span class="text-sm">RBF (Randomizado)</span>
+        </label>
+        <label class="flex items-center gap-1 cursor-pointer">
+          <input type="radio" name="algoritmo-corte" value="DP" onchange="LAJE.algoritmoCorte = this.value" class="accent-orange-600">
+          <span class="text-sm">DP (Ótimo)</span>
         </label>
       </div>
     </div>
