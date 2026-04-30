@@ -674,10 +674,10 @@ async function gerarDetalhamento() {
   const { data: itens, error } = await sb.from('laje_itens_orcamento').select('*').eq('id_orcamento', idOrc);
   if (error || !itens?.length) { showLoading(false); return showToast('Nenhum item.', true); }
 
-  // 2. Buscar produtos cadastrados
-  await carregarProdutosLajeSilencioso();  // garante que LAJE.produtosList esteja atualizado
+  // 2. Garantir que a lista de produtos esteja carregada
+  await carregarProdutosLajeSilencioso();
 
-  // Totais do orçamento
+  // Totais
   let totalVigotas = 0, totalArea = 0, totalEpsLinear = 0;
   const tamanhosVigota = [];
   const tiposEnchimento = new Set();
@@ -691,106 +691,104 @@ async function gerarDetalhamento() {
     alturas.add(i.altura);
   });
 
-  // 3. Número de barras de treliça
+  // 3. Número de barras de treliça (metragem linear)
+  const metrosLinearesTrelica = tamanhosVigota.reduce((a, b) => a + b, 0);
   const barras = binPackingFFD(tamanhosVigota, 12.0);
   const numBarras = barras.length;
-  const alturaModa = [...alturas].sort((a,b)=>b-a)[0] || 8;
+  const alturaModa = [...alturas].sort((a, b) => b - a)[0] || 8;
   const tipoPredominante = [...tiposEnchimento][0] || 'EPS';
 
-  // 4. Capeamento: espessura conforme altura
-  const espessuraCapeamento = (alturaModa <= 12) ? 0.02 : 0.04; // 2cm ou 4cm
+  // 4. Capeamento
+  const espessuraCapeamento = (alturaModa <= 12) ? 0.02 : 0.04;
   const volumeConcreto = totalArea * espessuraCapeamento;
 
-  // 5. Traço: volume por betonada (calculado com base nos materiais)
-  // 1,5 saco cimento (50kg) + 5 latas brita (18L) + 6,5 latas areia (18L) = ~0,117+0,09+0,0238 = 0,231 m³
-  const volumePorTraco = 0.231;
+  // 5. Traço
+  const volumePorTraco = 0.231; // m³ por traço
   const numTracos = Math.ceil(volumeConcreto / volumePorTraco);
-
-  // 6. Insumos do traço
   const sacosCimento = Math.ceil(numTracos * 1.5);
   const areiaM3 = numTracos * 0.117;
   const britaM3 = numTracos * 0.09;
+  const latasAreia = Math.ceil(areiaM3 / 0.018);
+  const latasBrita = Math.ceil(britaM3 / 0.018);
+  const placasEps = Math.ceil(totalEpsLinear); // cada placa = 1m
 
-  // 7. Função para buscar custo do produto cadastrado pelo nome
+  // 6. Função para custo de produto
   function custoProduto(nomePadrao, padrao = 0) {
     const p = LAJE.produtosList.find(x => x.descricao === nomePadrao);
     return p ? Number(p.custo_unitario) : padrao;
   }
 
-  // Linhas da tabela de detalhamento
+  // Linhas da tabela
   const linhas = [];
   let custoTotal = 0;
 
-  function addLinha(desc, qtd, unidade, vlrUnit, vlrTotal) {
-    linhas.push({ desc, qtd: `${qtd} ${unidade}`, unitario: formatMoney(vlrUnit), total: formatMoney(vlrTotal) });
+  function addLinha(desc, qtd, composicao, vlrUnit, vlrTotal) {
+    linhas.push({
+      desc,
+      qtd,
+      composicao: composicao || '',
+      unitario: formatMoney(vlrUnit),
+      total: formatMoney(vlrTotal)
+    });
     custoTotal += vlrTotal;
   }
 
   // Treliça
   const trelicaNome = `Treliça TG${alturaModa} 12m`;
   const custoTrelica = custoProduto(trelicaNome, alturaModa <= 8 ? 68 : (alturaModa <= 12 ? 92 : 105));
-  addLinha('Treliça', numBarras, 'barras', custoTrelica, numBarras * custoTrelica);
+  addLinha('Treliça', `${numBarras} barras`, `${metrosLinearesTrelica.toFixed(2)} m lineares`, custoTrelica, numBarras * custoTrelica);
 
   // Enchimento
   if (tiposEnchimento.has('EPS')) {
     const epsNome = `EPS H${alturaModa} 1m`;
     const custoEps = custoProduto(epsNome, 6.9);
-    const totalEps = totalEpsLinear * custoEps;
-    addLinha('EPS (isopor)', totalEpsLinear.toFixed(2), 'm', custoEps, totalEps);
+    addLinha('EPS (isopor)', `${totalEpsLinear.toFixed(2)} m`, `${placasEps} placas (1m)`, custoEps, totalEpsLinear * custoEps);
     const freteIsopor = custoProduto('Frete Isopor', 0);
-    if (freteIsopor > 0) addLinha('Frete do isopor', 1, 'un', freteIsopor, freteIsopor);
+    if (freteIsopor > 0) addLinha('Frete do isopor', '1 un', '', freteIsopor, freteIsopor);
   }
   if (tiposEnchimento.has('LAJOTA_CERAMICA')) {
     const totalLajotas = Math.ceil(totalArea * 12);
     const custoLajota = custoProduto('Lajota Cerâmica', 1.7);
-    addLinha('Lajota', totalLajotas, 'peças', custoLajota, totalLajotas * custoLajota);
+    addLinha('Lajota', `${totalLajotas} peças`, '', custoLajota, totalLajotas * custoLajota);
     const freteLajota = custoProduto('Frete Lajota', 50);
-    addLinha('Frete da lajota', 1, 'un', freteLajota, freteLajota);
+    addLinha('Frete da lajota', '1 un', '', freteLajota, freteLajota);
   }
 
-  // Concreto (cimento/areia/brita)
-  addLinha('Cimento', sacosCimento, 'sacos', custoProduto('Cimento CP II 50kg', 37), sacosCimento * custoProduto('Cimento CP II 50kg', 37));
-  addLinha('Areia Grossa', areiaM3.toFixed(3), 'm³', custoProduto('Areia Grossa', 200), areiaM3 * custoProduto('Areia Grossa', 200));
-  addLinha('Brita 0', britaM3.toFixed(3), 'm³', custoProduto('Brita 0', 200), britaM3 * custoProduto('Brita 0', 200));
+  // Concreto
+  addLinha('Cimento', `${sacosCimento} sacos`, `${numTracos} traços (1,5 saco cada)`, custoProduto('Cimento CP II 50kg', 37), sacosCimento * custoProduto('Cimento CP II 50kg', 37));
+  addLinha('Areia Grossa', `${areiaM3.toFixed(3)} m³`, `${latasAreia} latas (18L)`, custoProduto('Areia Grossa', 200), areiaM3 * custoProduto('Areia Grossa', 200));
+  addLinha('Brita 0', `${britaM3.toFixed(3)} m³`, `${latasBrita} latas (18L)`, custoProduto('Brita 0', 200), britaM3 * custoProduto('Brita 0', 200));
 
   // Serviços
-  const discoNome = 'Disco de Corte';
-  const artNome = 'ART';
-  const plotagemNome = 'Plotagem de Projeto';
-  const viagemNome = 'Viagem de Entrega';
-  const ajudanteNome = 'Diária de Ajudante';
-  const comissaoNome = 'Comissão';
-  const laudoNome = 'Laudo Técnico';
-
-  addLinha(discoNome, 1, 'un', custoProduto(discoNome, 10), custoProduto(discoNome, 10));
-  addLinha(artNome, 1, 'un', custoProduto(artNome, 28), custoProduto(artNome, 28));
-  addLinha(plotagemNome, 1, 'un', custoProduto(plotagemNome, 10), custoProduto(plotagemNome, 10));
-  addLinha(viagemNome, 1, 'un', custoProduto(viagemNome, 50), custoProduto(viagemNome, 50));
-  const ajudanteTotal = totalArea * custoProduto(ajudanteNome, 4.5);
-  addLinha(ajudanteNome, totalArea.toFixed(2), 'm²', custoProduto(ajudanteNome, 4.5), ajudanteTotal);
-  const comissaoTotal = totalArea * custoProduto(comissaoNome, 1);
-  addLinha(comissaoNome, totalArea.toFixed(2), 'm²', custoProduto(comissaoNome, 1), comissaoTotal);
-
+  addLinha('Disco de Corte', '1 un', '', custoProduto('Disco de Corte', 10), custoProduto('Disco de Corte', 10));
+  addLinha('ART', '1 un', '', custoProduto('ART', 28), custoProduto('ART', 28));
+  addLinha('Plotagem', '1 un', '', custoProduto('Plotagem de Projeto', 10), custoProduto('Plotagem de Projeto', 10));
+  addLinha('Viagem', '1 un', '', custoProduto('Viagem de Entrega', 50), custoProduto('Viagem de Entrega', 50));
+  const ajudanteTotal = totalArea * custoProduto('Diária de Ajudante', 4.5);
+  addLinha('Diária Ajudante', `${totalArea.toFixed(2)} m²`, '', custoProduto('Diária de Ajudante', 4.5), ajudanteTotal);
+  const comissaoTotal = totalArea * custoProduto('Comissão', 1);
+  addLinha('Comissão', `${totalArea.toFixed(2)} m²`, '', custoProduto('Comissão', 1), comissaoTotal);
   if (tiposEnchimento.has('EPS')) {
-    const laudo = custoProduto(laudoNome, 300);
-    if (laudo > 0) addLinha(laudoNome, 1, 'un', laudo, laudo);
+    const laudo = custoProduto('Laudo Técnico', 300);
+    if (laudo > 0) addLinha('Laudo Técnico', '1 un', '', laudo, laudo);
   }
 
-  // Margem e preço de venda
-  const margemLucro = 20; // percentual fixo ou pode vir de produto "Margem de Lucro"
-  const precoVenda = custoTotal * (1 + margemLucro / 100);
-  const precoM2 = totalArea > 0 ? precoVenda / totalArea : 0;
+  // Salva valores para uso no recálculo da margem
+  LAJE.custoTotalDetalhamento = custoTotal;
+  LAJE.areaTotalDetalhamento = totalArea;
 
+  // Monta HTML
   const html = `
     <div class="bg-white rounded-xl border shadow-sm p-6">
-      <h3 class="font-bold text-slate-800 mb-4">Detalhamento de Custos</h3>
+      <h3 class="font-bold text-slate-800 mb-4">Detalhamento de Custos e Materiais</h3>
       <div class="overflow-x-auto">
         <table class="w-full text-sm">
           <thead class="bg-slate-50">
             <tr>
               <th class="p-3 text-left">Descrição</th>
               <th class="p-3 text-center">Quantidade</th>
-              <th class="p-3 text-right">Valor Unitário</th>
+              <th class="p-3 text-center">Composição</th>
+              <th class="p-3 text-right">Valor Unit.</th>
               <th class="p-3 text-right">Total</th>
             </tr>
           </thead>
@@ -799,36 +797,59 @@ async function gerarDetalhamento() {
               <tr class="border-b">
                 <td class="p-3 font-medium">${l.desc}</td>
                 <td class="p-3 text-center">${l.qtd}</td>
+                <td class="p-3 text-center text-xs text-slate-500">${l.composicao}</td>
                 <td class="p-3 text-right">${l.unitario}</td>
                 <td class="p-3 text-right">${l.total}</td>
-              </tr>
-            `).join('')}
+              </tr>`).join('')}
           </tbody>
         </table>
       </div>
-      <div class="mt-6 grid grid-cols-1 md:grid-cols-3 gap-4">
+
+      <!-- Margem editável + totais -->
+      <div class="mt-6 grid grid-cols-1 md:grid-cols-4 gap-4 items-end">
         <div class="bg-slate-50 p-4 rounded-lg text-center">
           <p class="text-slate-500 text-sm">Custo Total</p>
-          <p class="text-2xl font-bold text-slate-800">${formatMoney(custoTotal)}</p>
+          <p class="text-2xl font-bold text-slate-800" id="detalhe-custo-total">${formatMoney(custoTotal)}</p>
         </div>
         <div class="bg-slate-50 p-4 rounded-lg text-center">
-          <p class="text-slate-500 text-sm">Margem de Lucro</p>
-          <p class="text-2xl font-bold text-green-600">${margemLucro}%</p>
+          <label class="text-slate-500 text-sm block">Margem de Lucro (%)</label>
+          <input type="number" id="detalhe-margem-lucro" value="20" min="0" max="200" step="0.1"
+            class="w-24 text-center border rounded p-1 mt-1 mx-auto" onchange="recalcularDetalhamento()">
         </div>
         <div class="bg-orange-50 p-4 rounded-lg text-center">
           <p class="text-slate-500 text-sm">Preço de Venda</p>
-          <p class="text-2xl font-bold text-orange-600">${formatMoney(precoVenda)}</p>
-          <p class="text-xs text-slate-500">${formatMoney(precoM2)} / m²</p>
+          <p class="text-2xl font-bold text-orange-600" id="detalhe-preco-venda">${formatMoney(custoTotal * 1.2)}</p>
+        </div>
+        <div class="bg-orange-50 p-4 rounded-lg text-center">
+          <p class="text-slate-500 text-sm">Preço por m²</p>
+          <p class="text-2xl font-bold text-orange-600" id="detalhe-preco-m2">${formatMoney(totalArea > 0 ? (custoTotal * 1.2) / totalArea : 0)}</p>
         </div>
       </div>
+      <p class="text-xs text-slate-400 mt-2">* Ajuste a margem de lucro para recalcular automaticamente o preço de venda.</p>
     </div>
   `;
 
   document.getElementById('laje-detalhamento-resultado').innerHTML = html;
   document.getElementById('laje-detalhamento-resultado').classList.remove('hidden');
-
   showLoading(false);
   lucide.createIcons();
+}
+
+// Função chamada ao alterar a margem de lucro
+function recalcularDetalhamento() {
+  const margemInput = document.getElementById('detalhe-margem-lucro');
+  if (!margemInput) return;
+  const margem = parseFloat(margemInput.value) || 0;
+  const custo = LAJE.custoTotalDetalhamento || 0;
+  const area = LAJE.areaTotalDetalhamento || 1;
+
+  const precoVenda = custo * (1 + margem / 100);
+  const precoM2 = precoVenda / area;
+
+  const pv = document.getElementById('detalhe-preco-venda');
+  const pm = document.getElementById('detalhe-preco-m2');
+  if (pv) pv.innerText = formatMoney(precoVenda);
+  if (pm) pm.innerText = formatMoney(precoM2);
 }
 
 // Função auxiliar para carregar produtos sem exibir loading
