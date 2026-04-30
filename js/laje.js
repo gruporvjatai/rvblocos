@@ -41,6 +41,11 @@ async function carregarProdutosLaje() {
   renderProdutosLaje();
 }
 
+async function carregarProdutosLajeSilencioso() {
+  const { data } = await sb.from('laje_produtos').select('*').order('descricao');
+  if (data) LAJE.produtosList = data;
+}
+
 function renderProdutosLaje() {
   const tbody = document.getElementById('laje-produtos-tbody');
   if (!tbody) return;
