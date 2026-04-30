@@ -852,7 +852,7 @@ async function gerarDetalhamento() {
         <div class="bg-white border border-slate-200 p-4 rounded-lg text-center flex flex-col items-center justify-center">
           <label class="flex items-center gap-2 cursor-pointer">
             <input type="checkbox" id="detalhe-frete-check" class="w-5 h-5 accent-orange-600" onchange="recalcularDetalhamento()">
-            <span class="text-sm font-medium text-slate-700">Com frete (6%)</span>
+            <span class="text-sm font-medium text-slate-700">Frete (6%)</span>
           </label>
         </div>
         <div class="bg-orange-50 p-4 rounded-lg text-center">
