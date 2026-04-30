@@ -739,10 +739,18 @@ async function gerarDetalhamento() {
   addLinha('Treliça', `${numBarras} barras`, `${metrosLinearesTrelica.toFixed(2)} m lineares`, custoTrelica, numBarras * custoTrelica);
 
   // Enchimento
+  // Enchimento - EPS
   if (tiposEnchimento.has('EPS')) {
-    const epsNome = `EPS H${alturaModa} 1m`;
-    const custoEps = custoProduto(epsNome, 6.9);
-    addLinha('EPS (isopor)', `${totalEpsLinear.toFixed(2)} m`, `${placasEps} placas (1m)`, custoEps, totalEpsLinear * custoEps);
+    const placasEps = Math.ceil(totalEpsLinear / 0.50);  // cada placa cobre 0,50 m linear
+    const epsNome = `EPS H${alturaModa} placa 50x50`;
+    const custoEpsPlaca = custoProduto(epsNome, 11.90);
+    addLinha(
+      'EPS (isopor)',
+      `${placasEps} placas`,
+      `${totalEpsLinear.toFixed(2)} m lineares (${(totalEpsLinear / 0.50).toFixed(1)} placas)`,
+      custoEpsPlaca,
+      placasEps * custoEpsPlaca
+    );
     const freteIsopor = custoProduto('Frete Isopor', 0);
     if (freteIsopor > 0) addLinha('Frete do isopor', '1 un', '', freteIsopor, freteIsopor);
   }
