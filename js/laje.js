@@ -411,82 +411,6 @@ function binPackingBFD(tamanhos, comprimentoBarra = 12.0) {
   return barras;
 }
 
-/*async function gerarPlanoCorte() {
-  const idOrc = document.getElementById('laje-corte-select').value;
-  if (!idOrc) return showToast('Selecione um orçamento aprovado.', true);
-  showLoading(true);
-
-  const { data: itens, error } = await sb.from('laje_itens_orcamento')
-    .select('tamanho_vigota, qtd_vigotas').eq('id_orcamento', idOrc);
-  if (error || !itens?.length) {
-    showLoading(false);
-    return showToast('Nenhuma vigota encontrada.', true);
-  }
-
-  const tamanhos = [];
-  for (const item of itens) {
-    for (let i = 0; i < Number(item.qtd_vigotas); i++) {
-      tamanhos.push(Number(item.tamanho_vigota));
-    }
-  }
-
-  const barra12m = obterConfig('comprimento_barra_trelica', 12.0);
-  //const barras = LAJE.algoritmoCorte === 'BFD' ? binPackingBFD(tamanhos, barra12m) : binPackingFFD(tamanhos, barra12m);
-  let barras;
-if (LAJE.algoritmoCorte === 'BFD') {
-  barras = binPackingBFD(tamanhos, barra12m);
-} else if (LAJE.algoritmoCorte === 'RBF') {
-  barras = binPackingRBF(tamanhos, barra12m, 100); // 100 tentativas
-} else {
-  barras = binPackingFFD(tamanhos, barra12m);
-}
-  
-  LAJE.planoCorteCache = { barras, idOrc };
-
-  document.getElementById('laje-corte-resultado').classList.remove('hidden');
-  const tbody = document.getElementById('laje-corte-tbody');
-  const cards = document.getElementById('laje-corte-cards');
-  let totalSobra = 0;
-
-  tbody.innerHTML = barras.map((b, i) => {
-    totalSobra += b.sobra;
-    const aproveitamento = ((b.usado / barra12m) * 100).toFixed(1);
-    let statusHtml = '';
-    if (b.sobra < 0.30) statusHtml = '<span class="text-green-600 font-bold">🟢 Ótimo</span>';
-    else if (b.sobra < 0.80) statusHtml = '<span class="text-amber-600 font-bold">🟡 Atenção</span>';
-    else statusHtml = '<span class="text-red-600 font-bold">🔴 Desperdício</span>';
-    return `<tr class="border-b">
-      <td class="p-3 font-bold">Barra ${i+1}</td>
-      <td class="p-3 font-mono">${b.cortes.map(c => c.toFixed(2)+'m').join(' + ')}</td>
-      <td class="p-3">${b.sobra.toFixed(2)} m</td>
-      <td class="p-3">${aproveitamento}%</td>
-      <td class="p-3">${statusHtml}</td>
-    </tr>`;
-  }).join('');
-
-  cards.innerHTML = barras.map((b, i) => {
-    const sobraCor = b.sobra < 0.30 ? 'text-green-600' : (b.sobra < 0.80 ? 'text-amber-600' : 'text-red-600');
-    const statusTexto = b.sobra < 0.30 ? 'Ótimo aproveitamento' : (b.sobra < 0.80 ? 'Atenção' : 'Desperdício');
-    const statusEmoji = b.sobra < 0.30 ? '🟢' : (b.sobra < 0.80 ? '🟡' : '🔴');
-    return `<div class="bg-white border rounded-xl p-5 shadow-sm">
-      <h4 class="font-bold text-slate-800 mb-2">Barra ${i+1}</h4>
-      <p class="text-sm"><span class="text-slate-500">Cortes:</span> <span class="font-mono font-bold">${b.cortes.map(c => c.toFixed(2)+'m').join(' + ')}</span></p>
-      <p class="text-sm mt-1">Sobra: <span class="font-bold ${sobraCor}">${b.sobra.toFixed(2)} m</span></p>
-      <p class="text-xs text-slate-400 mt-1">Usado: ${b.usado.toFixed(2)} m / 12,00 m (${((b.usado/barra12m)*100).toFixed(1)}%)</p>
-      <p class="text-xs font-bold mt-2 ${sobraCor}">${statusEmoji} ${statusTexto}</p>
-    </div>`;
-  }).join('');
-
-  cards.insertAdjacentHTML('beforeend', `
-    <div class="col-span-full bg-slate-50 border border-dashed border-slate-300 rounded-xl p-5 text-center">
-      <p class="text-lg font-bold text-slate-700">Total: ${barras.length} barra(s) de 12,00 m</p>
-      <p class="text-sm text-slate-500">Sobra acumulada: ${totalSobra.toFixed(2)} m (${((totalSobra/(barras.length*12))*100).toFixed(1)}% de perda)</p>
-    </div>
-  `);
-
-  showLoading(false);
-  lucide.createIcons();
-}*/
 
 async function gerarPlanoCorte() {
   const idOrc = document.getElementById('laje-corte-select').value;
@@ -513,6 +437,8 @@ async function gerarPlanoCorte() {
     barras = binPackingBFD(tamanhos, barra12m);
   } else if (LAJE.algoritmoCorte === 'RBF') {
     barras = binPackingRBF(tamanhos, barra12m, 100);
+  } else if (LAJE.algoritmoCorte === 'DP') {
+    barras = binPackingDP(tamanhos, barra12m);
   } else {
     barras = binPackingFFD(tamanhos, barra12m);
   }
@@ -945,4 +871,148 @@ async function salvarCustosMateriais() {
     showToast('Erro ao salvar: ' + e.message, true);
   }
   showLoading(false);
+}
+
+/* ======================================================== cloude ===========================*/
+
+// ==================== ALGORITMO DP — CORTE ÓTIMO ====================
+/**
+ * binPackingDP — Programação Dinâmica para corte 1D
+ * Garante o menor número de barras possível usando memoização.
+ * Para cada barra, encontra a combinação de peças que maximiza
+ * o uso sem ultrapassar 12m, priorizando o menor desperdício.
+ * Ideal para lotes com poucos tamanhos distintos (caso típico de lajes).
+ */
+function binPackingDP(tamanhos, comprimentoBarra = 12.0, precisao = 100) {
+  if (tamanhos.length === 0) return [];
+
+  // Arredonda para inteiros escalados (evita problemas de float)
+  const escala = precisao; // 1 unidade = 0.01m → precisão de 1cm
+  const C = Math.round(comprimentoBarra * escala);
+  const itens = tamanhos.map(t => Math.round(t * escala));
+
+  // Conta quantas peças de cada tamanho temos
+  const contagem = new Map();
+  itens.forEach(t => contagem.set(t, (contagem.get(t) || 0) + 1));
+  const tipos = [...contagem.keys()].sort((a, b) => b - a); // maiores primeiro
+
+  // DP: para cada capacidade c (0..C), qual o máximo que conseguimos preencher
+  // usando as peças disponíveis (sem repetir além do estoque)
+  // Resultado: dp[c] = {usado, peçasUsadas[]}
+  function melhorCombinacaoParaBarra(disponivel) {
+    // disponivel: Map<tamanho, qtd restante>
+    const dp = new Array(C + 1).fill(null);
+    dp[0] = { usado: 0, pecas: [] };
+
+    for (const [tam, qtd] of disponivel) {
+      if (qtd <= 0) continue;
+      // Itera de trás para frente para cada quantidade disponível deste tipo
+      for (let q = 1; q <= qtd; q++) {
+        // De C até tam (bounded knapsack, 1 item por vez)
+        for (let c = C; c >= tam; c--) {
+          if (dp[c - tam] !== null) {
+            const novoUsado = dp[c - tam].usado + tam;
+            if (novoUsado === c && (dp[c] === null || dp[c].usado < novoUsado)) {
+              dp[c] = {
+                usado: novoUsado,
+                pecas: [...dp[c - tam].pecas, tam]
+              };
+            }
+          }
+        }
+      }
+    }
+
+    // Encontra o melhor preenchimento (maior usado sem ultrapassar C)
+    let melhor = dp[0];
+    for (let c = C; c >= 0; c--) {
+      if (dp[c] !== null && dp[c].usado > melhor.usado) {
+        melhor = dp[c];
+      }
+    }
+    return melhor;
+  }
+
+  // Knapsack bounded completo para maximizar uso de cada barra
+  function knapsackBounded(disponivel) {
+    // Cria array de todos os itens disponíveis
+    const todosItens = [];
+    for (const [tam, qtd] of disponivel) {
+      for (let q = 0; q < qtd; q++) todosItens.push(tam);
+    }
+
+    // DP simples 0/1 com rastreamento
+    const n = todosItens.length;
+    // Para evitar explosão de memória, limitamos a 60 itens por barra
+    const MAX_ITENS = 60;
+    const itensUsados = todosItens.slice(0, MAX_ITENS);
+    const m = itensUsados.length;
+
+    // dp[j] = maior soma ≤ C usando subconjunto dos primeiros i itens
+    const dp = new Int32Array(C + 1);
+    const escolha = Array.from({ length: m }, () => new Uint8Array(C + 1));
+
+    for (let i = 0; i < m; i++) {
+      const tam = itensUsados[i];
+      for (let c = C; c >= tam; c--) {
+        if (dp[c - tam] + tam > dp[c]) {
+          dp[c] = dp[c - tam] + tam;
+          escolha[i][c] = 1;
+        }
+      }
+    }
+
+    // Reconstrói quais peças foram escolhidas
+    const pecasEscolhidas = [];
+    let c = C;
+    for (let i = m - 1; i >= 0; i--) {
+      if (escolha[i][c]) {
+        pecasEscolhidas.push(itensUsados[i]);
+        c -= itensUsados[i];
+      }
+    }
+
+    return { usado: dp[C] > 0 ? dp[C] : dp.reduce((mx, v) => Math.max(mx, v), 0), pecas: pecasEscolhidas };
+  }
+
+  // Processo principal: preenche barras uma a uma
+  const barras = [];
+  const disponivel = new Map(contagem); // cópia mutável
+  let totalRestante = itens.length;
+
+  while (totalRestante > 0) {
+    const resultado = knapsackBounded(disponivel);
+
+    if (resultado.pecas.length === 0) {
+      // Segurança: pega a menor peça restante
+      for (const [tam, qtd] of disponivel) {
+        if (qtd > 0) {
+          resultado.pecas = [tam];
+          resultado.usado = tam;
+          break;
+        }
+      }
+    }
+
+    // Remove as peças usadas do estoque
+    const contLocal = new Map();
+    resultado.pecas.forEach(p => contLocal.set(p, (contLocal.get(p) || 0) + 1));
+    for (const [tam, qtdUsada] of contLocal) {
+      disponivel.set(tam, disponivel.get(tam) - qtdUsada);
+      if (disponivel.get(tam) <= 0) disponivel.delete(tam);
+      totalRestante -= qtdUsada;
+    }
+
+    const usadoReal = parseFloat((resultado.usado / escala).toFixed(3));
+    const sobraReal = parseFloat((comprimentoBarra - usadoReal).toFixed(3));
+
+    barras.push({
+      cortes: resultado.pecas.map(p => parseFloat((p / escala).toFixed(3))).sort((a, b) => b - a),
+      usado: usadoReal,
+      sobra: sobraReal
+    });
+  }
+
+  barras.sort((a, b) => a.sobra - b.sobra);
+  return barras;
 }
