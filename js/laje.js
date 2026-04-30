@@ -858,7 +858,10 @@ async function gerarDetalhamento() {
         <div class="bg-orange-50 p-4 rounded-lg text-center">
           <p class="text-slate-500 text-sm">Preço de Venda</p>
           <p class="text-2xl font-bold text-orange-600" id="detalhe-preco-venda">${formatMoney(precoVendaInicial)}</p>
-          <p class="text-xs text-slate-500"><span id="detalhe-preco-m2">${formatMoney(precoM2Inicial)}</span> / m²</p>
+          <p class="text-xs text-slate-500"><span id="detalhe-preco-m2">${formatMoney(precoM2Inicial)}</span> / m²</p>       
+          <button onclick="enviarParaOrcamento()" class="mt-3 bg-green-600 hover:bg-green-700 text-white px-4 py-2 rounded-lg font-bold text-sm w-full">
+          <i data-lucide="send"></i> Enviar para Orçamento
+        </button>
         </div>
       </div>
       <p class="text-xs text-slate-400 mt-2">* Ajuste a margem de lucro ou marque o frete para recalcular o preço de venda automaticamente.</p>
