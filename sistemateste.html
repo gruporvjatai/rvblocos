@@ -584,6 +584,10 @@
       class="px-4 py-2 rounded-t-lg font-bold text-sm bg-slate-100 text-slate-600 hover:bg-slate-200">
       Detalhamento
     </button>
+    <button onclick="switchLajeTab('itens')" id="tab-itens-btn"
+      class="px-4 py-2 rounded-t-lg font-bold text-sm bg-slate-100 text-slate-600 hover:bg-slate-200">
+      Itens Fabricação
+    </button>
   </div>
 
   <!-- Aba 1: Vendas / Orçamento -->
@@ -724,59 +728,73 @@
     </div>
   </div>
 
-  <!-- Aba 3: Detalhamento -->
-  <div id="laje-tab-detalhamento" class="hidden">
-    <div class="bg-white rounded-xl border shadow-sm p-6 mb-6">
-      <label class="block text-sm font-bold text-slate-700 mb-2">Selecione o orçamento:</label>
-      <div class="flex gap-2">
-        <select id="laje-detalhamento-select" class="flex-1 p-3 border rounded-lg bg-white text-sm">
-          <option value="">-- Selecione --</option>
-        </select>
-        <button onclick="gerarDetalhamento()" class="bg-indigo-700 text-white px-6 py-3 rounded-lg font-bold hover:bg-indigo-800">
-          <i data-lucide="file-text"></i> Gerar Detalhamento
-        </button>
-      </div>
-    </div>
-   <!-- <div id="laje-detalhamento-resultado" class="hidden space-y-4">
-      <div class="bg-white rounded-xl border shadow-sm p-6">
-        <h3 class="font-bold text-slate-800 mb-4">Materiais e Quantidades</h3>
-        <div class="overflow-x-auto">
-          <table class="w-full text-sm" id="laje-detalhamento-tabela">
-            <thead class="bg-slate-50"><tr><th class="p-3">Material</th><th class="p-3">Quantidade</th></tr></thead>
-            <tbody id="laje-detalhamento-tbody"></tbody>
-          </table>
-        </div>
-      </div>
-    </div>-->
-    <div id="laje-detalhamento-resultado" class="hidden space-y-4">      
-  </div>
-    <!-- Botão para abrir modal -->
-    <div class="mt-4 flex justify-end">
-      <button onclick="abrirModalCustosMateriais()" class="bg-indigo-600 text-white px-6 py-2 rounded-lg font-bold hover:bg-indigo-700 flex items-center gap-2">
-        <i data-lucide="settings"></i> Configurar Custos
+ <!-- Aba 3: Detalhamento REFEITA -->
+<div id="laje-tab-detalhamento" class="hidden">
+  <div class="bg-white rounded-xl border shadow-sm p-6 mb-6">
+    <label class="block text-sm font-bold text-slate-700 mb-2">Selecione o orçamento:</label>
+    <div class="flex gap-2">
+      <select id="laje-detalhamento-select" class="flex-1 p-3 border rounded-lg bg-white text-sm">
+        <option value="">-- Selecione --</option>
+      </select>
+      <button onclick="gerarDetalhamento()" class="bg-indigo-700 text-white px-6 py-3 rounded-lg font-bold hover:bg-indigo-800">
+        <i data-lucide="file-text"></i> Gerar Detalhamento
       </button>
     </div>
-    
-    <!-- Modal para configurar custos -->
-    <div id="modal-custos-materiais" class="hidden fixed inset-0 bg-black/40 z-50 flex items-center justify-center p-4">
-      <div class="bg-white rounded-2xl w-full max-w-2xl shadow-2xl max-h-[90vh] overflow-y-auto">
-        <div class="p-5 border-b flex justify-between items-center bg-slate-50 rounded-t-2xl">
-          <h3 class="font-bold text-slate-800 flex items-center gap-2"><i data-lucide="settings" class="text-indigo-500"></i> Configurar Custos dos Materiais</h3>
-          <button onclick="fecharModalCustosMateriais()" class="text-slate-400 hover:text-red-500"><i data-lucide="x"></i></button>
-        </div>
-        <div class="p-6 space-y-4">
-          <div id="custos-form-container" class="grid grid-cols-1 md:grid-cols-2 gap-4">
-            <!-- Os campos serão gerados dinamicamente pelo JS -->
-          </div>
-          <div class="flex gap-2 pt-4 border-t">
-            <button onclick="fecharModalCustosMateriais()" class="flex-1 py-3 bg-white border border-slate-300 rounded-xl font-bold text-slate-600 hover:bg-slate-100">Cancelar</button>
-            <button onclick="salvarCustosMateriais()" class="flex-1 py-3 bg-indigo-600 rounded-xl font-bold text-white hover:bg-indigo-700 shadow-lg">Salvar</button>
-          </div>
-        </div>
-      </div>
-    </div>
- </div>
+  </div>
+  <div id="laje-detalhamento-resultado" class="hidden space-y-4">
+    <!-- Preenchido pelo JS -->
+  </div>
+</div>
 
+<!-- Aba 4: Itens Fabricação -->
+<div id="laje-tab-itens" class="hidden">
+  <div class="flex justify-between items-center mb-4">
+    <h3 class="font-bold text-slate-700 flex items-center gap-2 text-lg">
+      <i data-lucide="package"></i> Insumos e Materiais
+    </h3>
+    <button onclick="abrirModalProduto()" class="bg-blue-600 text-white px-4 py-2 rounded-lg font-bold hover:bg-blue-700 flex items-center gap-2">
+      <i data-lucide="plus"></i> Novo Produto
+    </button>
+  </div>
+  <div class="bg-white rounded-xl border shadow-sm overflow-hidden">
+    <table class="w-full text-sm text-left">
+      <thead class="bg-slate-50 text-slate-600">
+        <tr>
+          <th class="p-3">Descrição</th>
+          <th class="p-3">Unidade</th>
+          <th class="p-3">Custo Unitário</th>
+          <th class="p-3">Tipo</th>
+          <th class="p-3 text-center">Ações</th>
+        </tr>
+      </thead>
+      <tbody id="laje-produtos-tbody"></tbody>
+    </table>
+  </div>
+</div>
+
+<!-- Modal para cadastrar/editar produto -->
+<div id="modal-produto-laje" class="hidden fixed inset-0 bg-black/40 z-50 flex items-center justify-center p-4">
+  <div class="bg-white rounded-2xl w-full max-w-md shadow-2xl">
+    <div class="p-5 border-b flex justify-between items-center bg-slate-50 rounded-t-2xl">
+      <h3 class="font-bold text-slate-800" id="modal-produto-titulo">Novo Produto</h3>
+      <button onclick="fecharModalProduto()" class="text-slate-400 hover:text-red-500"><i data-lucide="x"></i></button>
+    </div>
+    <div class="p-6 space-y-4">
+      <input type="hidden" id="laje-produto-id">
+      <input type="text" id="laje-produto-descricao" placeholder="Descrição" class="w-full p-3 border rounded-lg text-sm">
+      <input type="text" id="laje-produto-unidade" placeholder="Unidade (ex: saco, m³, m, peça)" class="w-full p-3 border rounded-lg text-sm">
+      <input type="number" id="laje-produto-custo" placeholder="Custo unitário" step="0.01" class="w-full p-3 border rounded-lg text-sm">
+      <select id="laje-produto-tipo" class="w-full p-3 border rounded-lg bg-white text-sm">
+        <option value="material">Material</option>
+        <option value="servico">Serviço</option>
+        <option value="frete">Frete</option>
+      </select>
+      <button onclick="salvarProdutoLaje()" class="w-full bg-green-600 text-white py-3 rounded-lg font-bold hover:bg-green-700">
+        <i data-lucide="save"></i> Salvar
+      </button>
+    </div>
+  </div>
+</div>
   <!-- Modal: Adicionar Cômodo -->
   <div id="modal-comodo-laje" class="hidden fixed inset-0 bg-black/40 z-50 flex items-center justify-center p-4">
     <div class="bg-white rounded-2xl w-full max-w-lg shadow-2xl max-h-[90vh] overflow-y-auto">
