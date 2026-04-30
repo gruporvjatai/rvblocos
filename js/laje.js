@@ -691,7 +691,7 @@ async function gerarDetalhamento() {
     alturas.add(i.altura);
   });
 
-  // 3. Número de barras de treliça (metragem linear)
+  // 3. Treliça
   const metrosLinearesTrelica = tamanhosVigota.reduce((a, b) => a + b, 0);
   const barras = binPackingFFD(tamanhosVigota, 12.0);
   const numBarras = barras.length;
@@ -703,22 +703,20 @@ async function gerarDetalhamento() {
   const volumeConcreto = totalArea * espessuraCapeamento;
 
   // 5. Traço
-  const volumePorTraco = 0.231; // m³ por traço
+  const volumePorTraco = 0.231;
   const numTracos = Math.ceil(volumeConcreto / volumePorTraco);
   const sacosCimento = Math.ceil(numTracos * 1.5);
   const areiaM3 = numTracos * 0.117;
   const britaM3 = numTracos * 0.09;
   const latasAreia = Math.ceil(areiaM3 / 0.018);
   const latasBrita = Math.ceil(britaM3 / 0.018);
-  const placasEps = Math.ceil(totalEpsLinear); // cada placa = 1m
 
-  // 6. Função para custo de produto
+  // 6. Função de custo
   function custoProduto(nomePadrao, padrao = 0) {
     const p = LAJE.produtosList.find(x => x.descricao === nomePadrao);
     return p ? Number(p.custo_unitario) : padrao;
   }
 
-  // Linhas da tabela
   const linhas = [];
   let custoTotal = 0;
 
@@ -739,15 +737,14 @@ async function gerarDetalhamento() {
   addLinha('Treliça', `${numBarras} barras`, `${metrosLinearesTrelica.toFixed(2)} m lineares`, custoTrelica, numBarras * custoTrelica);
 
   // Enchimento
-  // Enchimento - EPS
   if (tiposEnchimento.has('EPS')) {
-    const placasEps = Math.ceil(totalEpsLinear / 0.50);  // cada placa cobre 0,50 m linear
+    const placasEps = Math.ceil(totalEpsLinear / 0.50);
     const epsNome = `EPS H${alturaModa} placa 50x50`;
     const custoEpsPlaca = custoProduto(epsNome, 11.90);
     addLinha(
       'EPS (isopor)',
       `${placasEps} placas`,
-      `${totalEpsLinear.toFixed(2)} m lineares (${(totalEpsLinear / 0.50).toFixed(1)} placas)`,
+      `${totalEpsLinear.toFixed(2)} m lineares (equivale a ${placasEps} placas de 50 cm)`,
       custoEpsPlaca,
       placasEps * custoEpsPlaca
     );
@@ -781,11 +778,16 @@ async function gerarDetalhamento() {
     if (laudo > 0) addLinha('Laudo Técnico', '1 un', '', laudo, laudo);
   }
 
-  // Salva valores para uso no recálculo da margem
+  // Armazena para uso no recálculo
   LAJE.custoTotalDetalhamento = custoTotal;
   LAJE.areaTotalDetalhamento = totalArea;
 
-  // Monta HTML
+  // Margem padrão 20%
+  const margemInicial = 20;
+  const precoVendaInicial = custoTotal * (1 + margemInicial / 100);
+  const precoM2Inicial = totalArea > 0 ? precoVendaInicial / totalArea : 0;
+
+  // HTML do resultado
   const html = `
     <div class="bg-white rounded-xl border shadow-sm p-6">
       <h3 class="font-bold text-slate-800 mb-4">Detalhamento de Custos e Materiais</h3>
@@ -813,8 +815,8 @@ async function gerarDetalhamento() {
         </table>
       </div>
 
-      <!-- Margem editável + totais -->
-      <div class="mt-6 grid grid-cols-1 md:grid-cols-4 gap-4 items-end">
+      <!-- Margem editável + frete + totais -->
+      <div class="mt-6 grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4 items-end">
         <div class="bg-slate-50 p-4 rounded-lg text-center">
           <p class="text-slate-500 text-sm">Custo Total</p>
           <p class="text-2xl font-bold text-slate-800" id="detalhe-custo-total">${formatMoney(custoTotal)}</p>
@@ -824,16 +826,19 @@ async function gerarDetalhamento() {
           <input type="number" id="detalhe-margem-lucro" value="20" min="0" max="200" step="0.1"
             class="w-24 text-center border rounded p-1 mt-1 mx-auto" onchange="recalcularDetalhamento()">
         </div>
+        <div class="bg-white border border-slate-200 p-4 rounded-lg text-center flex flex-col items-center justify-center">
+          <label class="flex items-center gap-2 cursor-pointer">
+            <input type="checkbox" id="detalhe-frete-check" class="w-5 h-5 accent-orange-600" onchange="recalcularDetalhamento()">
+            <span class="text-sm font-medium text-slate-700">Com frete (6%)</span>
+          </label>
+        </div>
         <div class="bg-orange-50 p-4 rounded-lg text-center">
           <p class="text-slate-500 text-sm">Preço de Venda</p>
-          <p class="text-2xl font-bold text-orange-600" id="detalhe-preco-venda">${formatMoney(custoTotal * 1.2)}</p>
-        </div>
-        <div class="bg-orange-50 p-4 rounded-lg text-center">
-          <p class="text-slate-500 text-sm">Preço por m²</p>
-          <p class="text-2xl font-bold text-orange-600" id="detalhe-preco-m2">${formatMoney(totalArea > 0 ? (custoTotal * 1.2) / totalArea : 0)}</p>
+          <p class="text-2xl font-bold text-orange-600" id="detalhe-preco-venda">${formatMoney(precoVendaInicial)}</p>
+          <p class="text-xs text-slate-500"><span id="detalhe-preco-m2">${formatMoney(precoM2Inicial)}</span> / m²</p>
         </div>
       </div>
-      <p class="text-xs text-slate-400 mt-2">* Ajuste a margem de lucro para recalcular automaticamente o preço de venda.</p>
+      <p class="text-xs text-slate-400 mt-2">* Ajuste a margem de lucro ou marque o frete para recalcular o preço de venda automaticamente.</p>
     </div>
   `;
 
@@ -841,6 +846,29 @@ async function gerarDetalhamento() {
   document.getElementById('laje-detalhamento-resultado').classList.remove('hidden');
   showLoading(false);
   lucide.createIcons();
+}
+
+// Recalcula o preço de venda ao alterar margem ou checkbox do frete
+function recalcularDetalhamento() {
+  const margemInput = document.getElementById('detalhe-margem-lucro');
+  const freteCheck = document.getElementById('detalhe-frete-check');
+  if (!margemInput) return;
+
+  const margem = parseFloat(margemInput.value) || 0;
+  const custo = LAJE.custoTotalDetalhamento || 0;
+  const area = LAJE.areaTotalDetalhamento || 1;
+
+  let precoVenda = custo * (1 + margem / 100);
+  // Aplica 6% de frete se marcado (sobre o valor já com margem)
+  if (freteCheck && freteCheck.checked) {
+    precoVenda = precoVenda * 1.06;
+  }
+  const precoM2 = precoVenda / area;
+
+  const pv = document.getElementById('detalhe-preco-venda');
+  const pm = document.getElementById('detalhe-preco-m2');
+  if (pv) pv.innerText = formatMoney(precoVenda);
+  if (pm) pm.innerText = formatMoney(precoM2);
 }
 
 // Função chamada ao alterar a margem de lucro
