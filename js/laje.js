@@ -813,7 +813,12 @@ async function gerarDetalhamento() {
   // HTML do resultado
   const html = `
     <div class="bg-white rounded-xl border shadow-sm p-6">
-      <h3 class="font-bold text-slate-800 mb-4">Detalhamento de Custos e Materiais</h3>
+      <h3 class="font-bold text-slate-800 mb-4 flex justify-between items-center">
+        <span>Detalhamento de Custos e Materiais</span>
+        <button onclick="imprimirDetalhamento()" class="bg-slate-200 hover:bg-slate-300 text-slate-700 px-4 py-2 rounded-lg font-bold text-sm flex items-center gap-2 no-print">
+          <i data-lucide="printer" class="w-4 h-4"></i> Imprimir
+        </button>
+      </h3>
       <div class="overflow-x-auto">
         <table class="w-full text-sm">
           <thead class="bg-slate-50">
@@ -1226,4 +1231,40 @@ async function enviarParaOrcamento() {
     console.error('Exceção ao inserir:', err);
     showToast('Erro ao criar orçamento: ' + err.message, true);
   }
+}
+
+
+function imprimirDetalhamento() {
+  const resultado = document.getElementById('laje-detalhamento-resultado');
+  if (!resultado || resultado.classList.contains('hidden')) {
+    return showToast('Gere o detalhamento primeiro.', true);
+  }
+
+  const printArea = document.getElementById('print-area');
+  if (!printArea) return;
+
+  // Clona o conteúdo para não remover da tela
+  printArea.innerHTML = resultado.innerHTML;
+
+  // Aplica estilos de impressão inline para melhorar a aparência
+  const estilo = document.createElement('style');
+  estilo.textContent = `
+    body { background: white; font-family: Arial, sans-serif; }
+    table { width: 100%; border-collapse: collapse; }
+    th, td { padding: 6px; border-bottom: 1px solid #ddd; text-align: left; }
+    th { background: #f1f5f9; }
+    .bg-slate-50, .bg-orange-50, .bg-white { background: #f9fafb !important; }
+    .rounded-lg { border-radius: 8px; }
+    .shadow-sm { box-shadow: none; }
+    .p-4, .p-6 { padding: 12px; }
+    .text-2xl { font-size: 1.25rem; }
+    button { display: none; }
+    #detalhe-margem-lucro { border: 1px solid #ccc; }
+  `;
+  printArea.appendChild(estilo);
+
+  setTimeout(() => {
+    window.print();
+    limparAreaImpressao();
+  }, 300);
 }
