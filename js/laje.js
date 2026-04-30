@@ -560,15 +560,36 @@ function imprimirPlanoCorte() {
   const orc = LAJE.orcamentosList.find(o => o.id == idOrc);
   const cliente = orc ? orc.cliente_nome : 'Não informado';
 
+  // Agrupa barras com cortes idênticos
+  const gruposMap = new Map();
+  barras.forEach(b => {
+    const chave = JSON.stringify(b.cortes); // mesma sequência = mesma chave
+    if (!gruposMap.has(chave)) {
+      gruposMap.set(chave, { cortes: b.cortes, qtd: 0, sobra: b.sobra });
+    }
+    gruposMap.get(chave).qtd++;
+    // a sobra é a mesma para todas as barras do grupo (já que cortes idênticos)
+  });
+
+  const grupos = Array.from(gruposMap.values());
+
+  // Paleta de cores suaves para os grupos
+  const coresFundo = ['#f0f9ff', '#fef3c7', '#ecfdf5', '#fce7f3', '#e0f2fe', '#fef9c3', '#dcfce7', '#fce7f3'];
+  let corIndex = 0;
+
   let totalSobra = 0;
-  const maxCortes = Math.max(...barras.map(b => b.cortes.length));
-  let linhas = barras.map((b, i) => {
-    totalSobra += b.sobra;
-    const cortesTd = b.cortes.map(c => 
+  let linhas = grupos.map((g, idx) => {
+    totalSobra += g.sobra * g.qtd;
+    const cor = coresFundo[corIndex % coresFundo.length];
+    corIndex++;
+
+    // Constrói lista de cortes com checkboxes
+    const cortesTd = g.cortes.map(c => 
       `<span style="display:inline-block; margin-right:8px; font-weight:bold; font-size:13px;">${c.toFixed(2)} m</span><span style="font-size:14px;">☐</span>`
     ).join('<span style="margin:0 4px; color:#999;">|</span>');
-    return `<tr>
-      <td style="padding:5px; border:1px solid #000; width:60px; text-align:center; font-weight:bold;">Barra ${i+1}</td>
+
+    return `<tr style="background-color:${cor};">
+      <td style="padding:5px; border:1px solid #000; text-align:center; font-weight:bold;">${g.qtd}x</td>
       <td style="padding:5px; border:1px solid #000;">${cortesTd}</td>
     </tr>`;
   }).join('');
@@ -577,7 +598,6 @@ function imprimirPlanoCorte() {
 
   printArea.innerHTML = `
     <div style="font-family: 'Segoe UI', Arial, sans-serif; padding:10mm; max-width:190mm; margin:0 auto; background:#fff; font-size:12px;">
-      <!-- Cabeçalho -->
       <table width="100%" style="border-bottom:1px solid #ea580c; padding-bottom:5px; margin-bottom:10px;">
         <tr>
           <td width="45"><img src="https://lh3.googleusercontent.com/d/1SIoZ2JlalfMnGDZTXBk7ZYuPgwxX3odF" style="height:28px;"></td>
@@ -589,23 +609,21 @@ function imprimirPlanoCorte() {
           </td>
         </tr>
       </table>
-      <!-- Resumo -->
       <div style="margin-bottom:10px; font-size:11px;">
         <strong>Total de barras:</strong> ${barras.length} | 
         <strong>Sobra total:</strong> ${totalSobra.toFixed(2)} m (${perdaPerc}%) |
         <strong>Cortes:</strong> ${barras.reduce((s,b) => s + b.cortes.length, 0)} unidades
       </div>
-      <!-- Tabela principal -->
+      <p style="font-size:11px; margin:0 0 8px 0;">🔹 Cada linha representa um <strong>grupo de barras idênticas</strong>. A quantidade de barras está na primeira coluna.</p>
       <table width="100%" style="border-collapse:collapse; margin-bottom:15px;">
         <thead>
           <tr style="background:#e5e7eb;">
-            <th style="padding:6px; border:1px solid #000; width:60px;">Barra</th>
+            <th style="padding:6px; border:1px solid #000; width:60px;">Qtd</th>
             <th style="padding:6px; border:1px solid #000;">Cortes (☐ após cada = concluído)</th>
           </tr>
         </thead>
         <tbody>${linhas}</tbody>
       </table>
-      <!-- Assinatura -->
       <div style="border-top:1px solid #ea580c; padding-top:8px; display:flex; justify-content:space-between; font-size:10px;">
         <div>Conferido por: ________________________</div>
         <div>Data: _____ / _____ / __________</div>
