@@ -154,11 +154,12 @@
         <button onclick="navigate('quotes')" id="nav-quotes" class="nav-btn w-full flex items-center space-x-3 px-4 py-3 rounded-lg text-slate-400 hover:bg-slate-800 hover:text-white transition-all"><i data-lucide="folder-open"></i> <span class="font-medium text-sm">Orçamentos</span></button>
         <button onclick="navigate('fin')" id="nav-fin" class="nav-btn w-full flex items-center space-x-3 px-4 py-3 rounded-lg text-slate-400 hover:bg-slate-800 hover:text-white transition-all"><i data-lucide="bar-chart-3"></i> <span class="font-medium text-sm">Financeiro</span></button>
         <div class="border-t border-slate-700 my-2 pt-2"></div>
-        <button onclick="navigate('reports')" id="nav-reports" class="nav-btn w-full flex items-center space-x-3 px-4 py-3 rounded-lg text-slate-400 hover:bg-slate-800 hover:text-white transition-all"><i data-lucide="pie-chart"></i> <span class="font-medium text-sm">Relatórios</span></button>
+        <button onclick="navigate('equipe')" id="nav-equipe" class="nav-btn w-full flex items-center space-x-3 px-4 py-3 rounded-lg text-slate-400 hover:bg-slate-800 hover:text-white transition-all"><i data-lucide="users"></i> <span class="font-medium text-sm">Equipe</span></button>
         <button onclick="navigate('clients')" id="nav-clients" class="nav-btn w-full flex items-center space-x-3 px-4 py-3 rounded-lg text-slate-400 hover:bg-slate-800 hover:text-white transition-all"><i data-lucide="users"></i> <span class="font-medium text-sm">Clientes</span></button>
         <button onclick="navigate('prod')" id="nav-prod" class="nav-btn w-full flex items-center space-x-3 px-4 py-3 rounded-lg text-slate-400 hover:bg-slate-800 hover:text-white transition-all"><i data-lucide="package"></i> <span class="font-medium text-sm">Produtos</span></button>
         <button onclick="navigate('production')" id="nav-production" class="nav-btn w-full flex items-center space-x-3 px-4 py-3 rounded-lg text-slate-400 hover:bg-slate-800 hover:text-white transition-all"><i data-lucide="hammer"></i> <span class="font-medium text-sm">Produção</span></button>
         <button onclick="navigate('lajes')" id="nav-lajes" class="nav-btn w-full flex items-center space-x-3 px-4 py-3 rounded-lg text-slate-400 hover:bg-slate-800 hover:text-white transition-all"><i data-lucide="layers"></i> <span class="font-medium text-sm">Lajes</span></button>
+        <button onclick="navigate('reports')" id="nav-reports" class="nav-btn w-full flex items-center space-x-3 px-4 py-3 rounded-lg text-slate-400 hover:bg-slate-800 hover:text-white transition-all"><i data-lucide="pie-chart"></i> <span class="font-medium text-sm">Relatórios</span></button>
         <div class="border-t border-slate-700 my-2 pt-2"></div>
         <button onclick="navigate('users')" id="nav-users" class="nav-btn w-full flex items-center space-x-3 px-4 py-3 rounded-lg text-slate-400 hover:bg-slate-800 hover:text-white transition-all"><i data-lucide="user-cog"></i> <span class="font-medium text-sm">Usuários</span></button>
 
@@ -678,7 +679,7 @@
           <option value="">-- Selecione --</option>
         </select>
         <button onclick="gerarPlanoCorte()" class="bg-slate-800 text-white px-6 py-3 rounded-lg font-bold hover:bg-slate-700">
-          <i data-lucide="scissors"></i> Gerar Corte
+          <i data-lucide="scissors"></i>
         </button>
         <button onclick="imprimirPlanoCorte()" class="bg-white border border-slate-300 text-slate-700 px-4 py-3 rounded-lg font-bold hover:bg-slate-100">
           <i data-lucide="printer"></i>
@@ -737,7 +738,7 @@
         <option value="">-- Selecione --</option>
       </select>
       <button onclick="gerarDetalhamento()" class="bg-indigo-700 text-white px-6 py-3 rounded-lg font-bold hover:bg-indigo-800">
-        <i data-lucide="file-text"></i> Gerar Detalhamento
+        <i data-lucide="file-text"></i>
       </button>
     </div>
   </div>
@@ -856,6 +857,8 @@
     </div>
   </div>
 </div>
+
+      <div id="view-equipe" class="hidden-section"></div>
     </main>
 
     <div id="print-area" class="print-only"></div>
@@ -1155,6 +1158,7 @@ function navigate(viewId) {
     if(viewId === 'expedition') renderExpedition();
     if(viewId === 'fin') renderFinance();
     if(viewId === 'reports') {} 
+    if (viewId === 'equipe') { if (typeof renderEquipe === 'function') renderEquipe(); }
     if(viewId === 'clients') renderClients();
     if(viewId === 'users') renderUsers();
     if(viewId === 'prod') renderProducts();
@@ -4127,6 +4131,7 @@ function printPeriodReport() {
 }
 
     </script>
+    <script src="js/equipe.js"></script>
     <script src="js/laje.js"></script> 
   </body>
 </html>
