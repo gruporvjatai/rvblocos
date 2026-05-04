@@ -1,0 +1,747 @@
+// equipe.js – Gestão de Equipe (RV Blocos – v1)
+(function () {
+  'use strict';
+
+  let subAbaAtiva = 'lancamentos';
+
+  window.addEventListener('load', function () {
+    const originalNavigate = window.navigate;
+    window.navigate = function (viewId) {
+      originalNavigate(viewId);
+      if (viewId === 'equipe') renderEquipe();
+    };
+  });
+
+  function renderEquipe() {
+    const container = document.getElementById('view-equipe');
+    if (!container) return;
+
+    container.innerHTML = `
+      <div class="space-y-4 p-4">
+        <div class="flex bg-white rounded-xl shadow-sm border p-1 gap-1 w-fit">
+          <button id="eq-tab-lancamentos" onclick="alternarSubAbaEquipe('lancamentos')"
+            class="px-5 py-2.5 rounded-lg text-sm font-bold transition-all
+            ${subAbaAtiva === 'lancamentos' ? 'bg-orange-600 text-white shadow' : 'bg-white text-slate-600 hover:bg-slate-100'}">
+            <i data-lucide="file-text" class="inline w-4 h-4 mr-1"></i> Lançamentos
+          </button>
+          <button id="eq-tab-cadastro" onclick="alternarSubAbaEquipe('cadastro')"
+            class="px-5 py-2.5 rounded-lg text-sm font-bold transition-all
+            ${subAbaAtiva === 'cadastro' ? 'bg-orange-600 text-white shadow' : 'bg-white text-slate-600 hover:bg-slate-100'}">
+            <i data-lucide="users" class="inline w-4 h-4 mr-1"></i> Cadastro
+          </button>
+        </div>
+
+        <div id="eq-aba-lancamentos" class="${subAbaAtiva === 'lancamentos' ? '' : 'hidden'}">
+          ${getLancamentosHTML()}
+        </div>
+        <div id="eq-aba-cadastro" class="${subAbaAtiva === 'cadastro' ? '' : 'hidden'}">
+          ${getCadastroHTML()}
+        </div>
+      </div>
+    `;
+
+    if (subAbaAtiva === 'lancamentos') carregarLancamentos();
+    else carregarCadastro();
+    lucide.createIcons();
+    window.alternarSubAbaEquipe = alternarSubAbaEquipe;
+  }
+
+  function alternarSubAbaEquipe(nova) {
+    subAbaAtiva = nova;
+    renderEquipe();
+  }
+
+  function getLancamentosHTML() {
+    return `
+      <div class="space-y-6">
+        <div class="flex justify-between items-center">
+          <h2 class="text-xl font-bold text-slate-800 flex gap-2 items-center">
+            <i data-lucide="file-text" class="text-orange-500"></i> Folhas de Pagamento
+          </h2>
+          <div class="flex gap-2">
+            <button onclick="abrirModalVale()" class="bg-amber-500 hover:bg-amber-600 text-white px-4 py-2 rounded-lg font-bold text-sm shadow flex items-center gap-2">
+              <i data-lucide="minus-circle" class="w-4 h-4"></i> Lançar Vale
+            </button>
+            <button onclick="abrirModalCriarFolha()" class="bg-orange-600 hover:bg-orange-700 text-white px-4 py-2 rounded-lg font-bold text-sm shadow flex items-center gap-2">
+              <i data-lucide="plus-circle" class="w-4 h-4"></i> Criar Folha
+            </button>
+            <button onclick="imprimirFolhaGeral()" class="bg-slate-800 hover:bg-slate-900 text-white px-4 py-2 rounded-lg font-bold text-sm shadow flex items-center gap-2">
+              <i data-lucide="printer" class="w-4 h-4"></i> Imprimir Folha
+            </button>
+          </div>
+        </div>
+
+        <div class="flex items-center gap-3 bg-white p-3 rounded-xl border shadow-sm">
+          <label class="text-xs font-bold text-slate-600">Mês Referência:</label>
+          <input type="month" id="eq-filtro-mes" class="p-2 border rounded-lg text-sm focus:ring-2 focus:ring-orange-500 outline-none" />
+          <button onclick="carregarLancamentos()" class="bg-orange-600 hover:bg-orange-700 text-white px-4 py-2 rounded-lg font-bold text-sm shadow">Filtrar</button>
+          <button onclick="document.getElementById('eq-filtro-mes').value=''; carregarLancamentos()" class="bg-slate-200 hover:bg-slate-300 text-slate-700 px-3 py-2 rounded-lg text-sm font-bold">Limpar</button>
+        </div>
+
+        <div class="bg-white rounded-xl border shadow-sm overflow-hidden">
+          <div class="overflow-x-auto">
+            <table class="w-full text-sm text-left">
+              <thead class="bg-slate-800 text-white">
+                <tr>
+                  <th class="p-3">Funcionário</th>
+                  <th class="p-3">Tipo</th>
+                  <th class="p-3">Mês Ref.</th>
+                  <th class="p-3 text-center">Base</th>
+                  <th class="p-3 text-center">Vales</th>
+                  <th class="p-3 text-center">Líquido</th>
+                  <th class="p-3 text-center">Status</th>
+                  <th class="p-3 text-center">Ações</th>
+                </tr>
+              </thead>
+              <tbody id="eq-lista-folhas" class="divide-y"></tbody>
+            </table>
+          </div>
+        </div>
+
+        <div class="bg-white rounded-xl border shadow-sm overflow-hidden mt-4">
+          <div class="p-3 bg-slate-50 border-b flex justify-between items-center">
+            <h3 class="font-bold text-slate-700 text-sm"><i data-lucide="minus-circle" class="w-4 h-4 inline mr-1 text-amber-600"></i> Vales Lançados</h3>
+          </div>
+          <div class="overflow-x-auto">
+            <table class="w-full text-sm text-left">
+              <thead class="bg-slate-100 text-slate-700">
+                <tr>
+                  <th class="p-3">Funcionário</th>
+                  <th class="p-3">Mês Ref.</th>
+                  <th class="p-3 text-right">Valor</th>
+                  <th class="p-3 text-center">Ação</th>
+                </tr>
+              </thead>
+              <tbody id="eq-lista-vales" class="divide-y"></tbody>
+            </table>
+          </div>
+        </div>
+      </div>
+    `;
+  }
+
+  function getCadastroHTML() {
+    return `
+      <div class="space-y-4">
+        <div class="flex justify-between items-center">
+          <h2 class="text-xl font-bold text-slate-800 flex gap-2 items-center">
+            <i data-lucide="users" class="text-orange-500"></i> Equipe
+          </h2>
+          <button onclick="abrirModalFuncionario()" class="bg-orange-600 hover:bg-orange-700 text-white px-4 py-2 rounded-lg font-bold text-sm shadow flex items-center gap-2">
+            <i data-lucide="user-plus" class="w-4 h-4"></i> Cadastrar Novo
+          </button>
+        </div>
+
+        <div class="flex items-center gap-3 bg-white p-3 rounded-xl border shadow-sm">
+          <label class="text-xs font-bold text-slate-600">Tipo:</label>
+          <select id="eq-filtro-tipo" class="p-2 border rounded-lg text-sm focus:ring-2 focus:ring-orange-500 outline-none" onchange="carregarCadastro()">
+            <option value="">Todos</option>
+            <option value="Mensal">Fixo Mensal</option>
+            <option value="Diarista">Diarista</option>
+          </select>
+        </div>
+
+        <div class="bg-white rounded-xl border shadow-sm overflow-hidden">
+          <div class="overflow-x-auto">
+            <table class="w-full text-sm text-left">
+              <thead class="bg-slate-800 text-white">
+                <tr>
+                  <th class="p-3">Nome</th>
+                  <th class="p-3">Tipo</th>
+                  <th class="p-3 text-center">Valor Mensal</th>
+                  <th class="p-3 text-center">Valor Diária</th>
+                  <th class="p-3">Chave PIX</th>
+                  <th class="p-3 text-center">Status</th>
+                  <th class="p-3 text-center">Ações</th>
+                </tr>
+              </thead>
+              <tbody id="eq-lista-funcionarios" class="divide-y"></tbody>
+            </table>
+          </div>
+        </div>
+      </div>
+    `;
+  }
+
+  // ========== MODAL CRIAR FOLHA ==========
+  function abrirModalCriarFolha() {
+    const mesRef = document.getElementById('eq-filtro-mes')?.value || new Date().toISOString().slice(0,7);
+    carregarEquipeParaFolha(mesRef);
+  }
+
+  async function carregarEquipeParaFolha(mesRef) {
+    showLoading(true);
+    const { data: equipe } = await sb.from('equipe').select('*').eq('ativo', true);
+    const { data: vales } = await sb.from('vales').select('*').eq('mes_referencia', mesRef);
+    const valesMap = {};
+    (vales||[]).forEach(v => { valesMap[v.equipe_id] = (valesMap[v.equipe_id]||0) + v.valor; });
+
+    let html = `
+      <div class="fixed inset-0 bg-black/50 z-50 flex items-center justify-center p-4" id="modal-folha">
+        <div class="bg-white rounded-2xl w-full max-w-4xl shadow-2xl flex flex-col max-h-[85vh]">
+          <div class="p-4 border-b flex justify-between items-center bg-slate-50 rounded-t-2xl">
+            <h3 class="font-bold text-lg text-slate-800"><i data-lucide="file-plus" class="inline w-5 h-5 text-orange-600 mr-1"></i> Criar Folha – ${mesRef}</h3>
+            <button onclick="document.getElementById('modal-folha').remove()" class="text-slate-400 hover:text-red-500"><i data-lucide="x"></i></button>
+          </div>
+          <div class="p-4 overflow-y-auto flex-1">
+            <table class="w-full text-sm">
+              <thead class="bg-slate-100 text-slate-700">
+                <tr>
+                  <th class="p-2 text-left">Funcionário</th>
+                  <th class="p-2 text-center">Tipo</th>
+                  <th class="p-2 text-center">Salário Base</th>
+                  <th class="p-2 text-center">Vales</th>
+                  <th class="p-2 text-center">Dias Trab.</th>
+                  <th class="p-2 text-center">Valor Líquido (editável)</th>
+                </tr>
+              </thead>
+              <tbody>`;
+    equipe.forEach(f => {
+      const vales = valesMap[f.id] || 0;
+      let base = f.tipo === 'Mensal' ? (f.valor_mensal || 0) : (f.valor_diaria || 0) * 0;
+      const liquido = base - vales;
+      html += `
+        <tr class="border-b" data-id="${f.id}" data-diaria="${f.valor_diaria || 0}" data-vales="${vales}">
+          <td class="p-2 font-bold">${f.nome}</td>
+          <td class="p-2 text-center">${f.tipo}</td>
+          <td class="p-2 text-center">${formatMoney(base)}</td>
+          <td class="p-2 text-center text-red-600">-${formatMoney(vales)}</td>
+          <td class="p-2 text-center">
+            ${f.tipo === 'Diarista' ? `<input type="number" id="dias-${f.id}" value="0" min="0" class="w-16 p-1 border rounded text-center text-sm" onchange="recalcularFolhaItem('${f.id}')">` : '–'}
+          </td>
+          <td class="p-2 text-center">
+            <input type="number" id="liquido-${f.id}" value="${liquido.toFixed(2)}" step="0.01" class="w-24 p-1 border rounded text-center font-bold text-orange-700 text-sm" />
+          </td>
+        </tr>`;
+    });
+    html += `</tbody></table></div>
+          <div class="p-4 border-t bg-slate-50 rounded-b-2xl flex gap-2">
+            <button onclick="document.getElementById('modal-folha').remove()" class="flex-1 py-2 bg-slate-200 hover:bg-slate-300 rounded-lg font-bold text-slate-700">Cancelar</button>
+            <button onclick="salvarFolha('${mesRef}')" class="flex-1 py-2 bg-orange-600 hover:bg-orange-700 text-white rounded-lg font-bold shadow">Salvar Folha</button>
+          </div>
+        </div>
+      </div>`;
+    document.body.insertAdjacentHTML('beforeend', html);
+    lucide.createIcons();
+    showLoading(false);
+  }
+
+  window.recalcularFolhaItem = function(id) {
+    const row = document.querySelector(`#modal-folha tr[data-id="${id}"]`);
+    if (!row) return;
+    const dias = parseFloat(document.getElementById(`dias-${id}`)?.value) || 0;
+    const valDiaria = parseFloat(row.dataset.diaria) || 0;
+    const vales = parseFloat(row.dataset.vales) || 0;
+    const base = dias * valDiaria;
+    const liquido = base - vales;
+    const inputLiq = document.getElementById(`liquido-${id}`);
+    if (inputLiq) inputLiq.value = liquido.toFixed(2);
+  };
+
+  async function salvarFolha(mesRef) {
+    showLoading(true);
+    const { data: equipe } = await sb.from('equipe').select('*').eq('ativo', true);
+    const { data: vales } = await sb.from('vales').select('*').eq('mes_referencia', mesRef);
+    const valesMap = {};
+    (vales||[]).forEach(v => { valesMap[v.equipe_id] = (valesMap[v.equipe_id]||0) + v.valor; });
+
+    const folhas = [];
+    equipe.forEach(f => {
+      const valesTotal = valesMap[f.id] || 0;
+      const liquidoEl = document.getElementById(`liquido-${f.id}`);
+      if (!liquidoEl) return;
+      const valorPago = parseFloat(liquidoEl.value) || 0;
+      let dias = 0;
+      if (f.tipo === 'Diarista') {
+        dias = parseInt(document.getElementById(`dias-${f.id}`)?.value) || 0;
+      }
+      const base = f.tipo === 'Mensal' ? (f.valor_mensal || 0) : (f.valor_diaria || 0) * dias;
+      folhas.push({
+        equipe_id: f.id,
+        mes_referencia: mesRef,
+        tipo: f.tipo,
+        salario_base: base,
+        vales_total: valesTotal,
+        valor_pago: valorPago,
+        status: 'PENDENTE',
+        dias_trabalhados: dias,
+        chave_pix: f.chave_pix,
+        data_criacao: new Date().toISOString()
+      });
+    });
+
+    const { error } = await sb.from('folhas').insert(folhas);
+    if (error) { showLoading(false); alert('Erro ao salvar folha: ' + error.message); return; }
+
+    document.getElementById('modal-folha')?.remove();
+    showLoading(false);
+    alert('Folha criada com sucesso!');
+    carregarLancamentos();
+  }
+
+  // ========== MODAL VALE ==========
+  async function abrirModalVale() {
+    const mesRef = document.getElementById('eq-filtro-mes')?.value || new Date().toISOString().slice(0,7);
+    const { data: equipe } = await sb.from('equipe').select('*').eq('ativo', true);
+    let options = equipe.map(f => `<option value="${f.id}">${f.nome}</option>`).join('');
+
+    const html = `
+      <div class="fixed inset-0 bg-black/50 z-50 flex items-center justify-center p-4" id="modal-vale">
+        <div class="bg-white rounded-2xl w-full max-w-md shadow-2xl">
+          <div class="p-4 border-b flex justify-between items-center bg-slate-50 rounded-t-2xl">
+            <h3 class="font-bold text-lg"><i data-lucide="minus-circle" class="inline w-5 h-5 text-amber-600 mr-1"></i>Lançar Vale</h3>
+            <button onclick="document.getElementById('modal-vale').remove()" class="text-slate-400 hover:text-red-500"><i data-lucide="x"></i></button>
+          </div>
+          <div class="p-4 space-y-4">
+            <div>
+              <label class="block text-xs font-bold text-slate-600 mb-1">Funcionário</label>
+              <select id="vale-funcionario" class="w-full p-2 border rounded-lg text-sm">${options}</select>
+            </div>
+            <div>
+              <label class="block text-xs font-bold text-slate-600 mb-1">Valor (R$)</label>
+              <input type="number" id="vale-valor" step="0.01" class="w-full p-2 border rounded-lg text-sm font-bold text-red-600" placeholder="0.00">
+            </div>
+            <div>
+              <label class="block text-xs font-bold text-slate-600 mb-1">Mês Referência</label>
+              <input type="month" id="vale-mes" value="${mesRef}" class="w-full p-2 border rounded-lg text-sm">
+            </div>
+          </div>
+          <div class="p-4 border-t bg-slate-50 flex gap-2 rounded-b-2xl">
+            <button onclick="document.getElementById('modal-vale').remove()" class="flex-1 py-2 bg-slate-200 hover:bg-slate-300 rounded-lg font-bold">Cancelar</button>
+            <button onclick="salvarVale()" class="flex-1 py-2 bg-amber-600 hover:bg-amber-700 text-white rounded-lg font-bold shadow">Salvar</button>
+          </div>
+        </div>
+      </div>`;
+    document.body.insertAdjacentHTML('beforeend', html);
+    lucide.createIcons();
+  }
+
+  async function salvarVale() {
+    const funcId = document.getElementById('vale-funcionario')?.value;
+    const valor = parseFloat(document.getElementById('vale-valor')?.value);
+    const mes = document.getElementById('vale-mes')?.value;
+    if (!funcId || isNaN(valor) || !mes) return alert('Preencha todos os campos.');
+
+    const { error } = await sb.from('vales').insert([{
+      equipe_id: funcId,
+      valor,
+      mes_referencia: mes,
+      data: new Date().toISOString()
+    }]);
+    if (error) return alert('Erro: ' + error.message);
+    document.getElementById('modal-vale')?.remove();
+    alert('Vale lançado!');
+    carregarLancamentos();
+  }
+
+  // ========== LISTAGEM DE FOLHAS E VALES ==========
+  async function carregarLancamentos() {
+    const mesFiltro = document.getElementById('eq-filtro-mes')?.value;
+    let query = sb.from('folhas').select('*, equipe(*)').order('mes_referencia', { ascending: false });
+    if (mesFiltro) query = query.eq('mes_referencia', mesFiltro);
+
+    const { data: folhas, error } = await query;
+    if (error) return alert('Erro ao carregar folhas.');
+
+    const tbody = document.getElementById('eq-lista-folhas');
+    if (!folhas || folhas.length === 0) {
+      tbody.innerHTML = '<tr><td colspan="8" class="p-4 text-center text-slate-400">Nenhuma folha encontrada.</td></tr>';
+    } else {
+      tbody.innerHTML = folhas.map(f => `
+        <tr class="border-b hover:bg-slate-50">
+          <td class="p-3 font-bold">${f.equipe?.nome || '–'}</td>
+          <td class="p-3">${f.tipo}</td>
+          <td class="p-3">${f.mes_referencia}</td>
+          <td class="p-3 text-center">${formatMoney(f.salario_base)}</td>
+          <td class="p-3 text-center text-red-600">-${formatMoney(f.vales_total)}</td>
+          <td class="p-3 text-center font-bold text-orange-700">${formatMoney(f.valor_pago)}</td>
+          <td class="p-3 text-center">
+            <span class="px-2 py-1 rounded text-xs font-bold ${f.status === 'PAGO' ? 'bg-green-100 text-green-700' : 'bg-yellow-100 text-yellow-700'}">${f.status}</span>
+          </td>
+          <td class="p-3 text-center flex gap-2 justify-center">
+            <button onclick="imprimirFolha('${f.id}')" class="text-slate-600 hover:text-orange-600 bg-white border p-1.5 rounded shadow-sm" title="Imprimir Recibo"><i data-lucide="printer" class="w-4 h-4"></i></button>
+            ${f.status === 'PENDENTE' ? `<button onclick="baixarFolha('${f.id}')" class="text-green-600 hover:text-green-800 bg-white border p-1.5 rounded shadow-sm" title="Pagar"><i data-lucide="check-circle" class="w-4 h-4"></i></button>` : ''}
+            <button onclick="excluirFolha('${f.id}')" class="text-red-500 hover:text-red-700 bg-white border p-1.5 rounded shadow-sm" title="Excluir/Estornar"><i data-lucide="trash-2" class="w-4 h-4"></i></button>
+          </td>
+        </tr>
+      `).join('');
+    }
+
+    const { data: vales, error: errVales } = await sb.from('vales').select('*, equipe(nome)').order('data', { ascending: false });
+    if (mesFiltro) {
+      const valesFiltrados = (vales||[]).filter(v => v.mes_referencia === mesFiltro);
+      preencherTabelaVales(valesFiltrados);
+    } else {
+      preencherTabelaVales(vales || []);
+    }
+
+    lucide.createIcons();
+  }
+
+  function preencherTabelaVales(vales) {
+    const tbody = document.getElementById('eq-lista-vales');
+    if (!vales.length) {
+      tbody.innerHTML = '<tr><td colspan="4" class="p-4 text-center text-slate-400">Nenhum vale lançado.</td></tr>';
+      return;
+    }
+    tbody.innerHTML = vales.map(v => `
+      <tr class="border-b hover:bg-slate-50">
+        <td class="p-3 font-medium">${v.equipe?.nome || '–'}</td>
+        <td class="p-3">${v.mes_referencia}</td>
+        <td class="p-3 text-right font-bold text-red-600">${formatMoney(v.valor)}</td>
+        <td class="p-3 text-center">
+          <button onclick="excluirVale('${v.id}')" class="text-red-500 hover:text-red-700 bg-white border p-1.5 rounded shadow-sm" title="Excluir Vale"><i data-lucide="x-circle" class="w-4 h-4"></i></button>
+        </td>
+      </tr>
+    `).join('');
+  }
+
+  // ========== AÇÕES ==========
+  window.baixarFolha = async function(id) {
+    if (!confirm('Confirmar pagamento desta folha? Isso lançará uma despesa no financeiro.')) return;
+    const { data: folha } = await sb.from('folhas').select('*, equipe(*)').eq('id', id).single();
+    if (!folha) return alert('Folha não encontrada.');
+
+    const descricao = `Salário ${folha.equipe.nome} (${folha.mes_referencia})`;
+    const novoIdDespesa = window.getNextId ? window.getNextId(STATE.expenses) : Math.floor(Math.random() * 1000000);
+
+    const { error: errDesp } = await sb.from('despesas').insert([{
+      id: novoIdDespesa,
+      item: 'Salário',
+      quantidade: 1,
+      unidade: 'Un',
+      custo: folha.valor_pago,
+      data: new Date().toISOString(),
+      observacao: descricao,
+      status: 'PAGO'
+    }]);
+
+    if (errDesp) return alert('Erro ao lançar despesa: ' + errDesp.message);
+
+    await sb.from('folhas').update({ status: 'PAGO', despesa_id: novoIdDespesa }).eq('id', id);
+
+    const novoIdLog = window.getNextId ? window.getNextId(STATE.logs) : Math.floor(Math.random() * 1000000);
+    await sb.from('logs').insert([{
+      id: novoIdLog,
+      tipo: 'despesa',
+      produto_nome: 'Salário',
+      quantidade: 1,
+      data: new Date().toISOString(),
+      observacao: descricao,
+      valor_total: folha.valor_pago,
+      status: 'ATIVO',
+      status_financeiro: 'PAGO',
+      valor_pago: folha.valor_pago
+    }]);
+
+    alert('Pagamento registrado com sucesso!');
+    carregarLancamentos();
+  };
+
+  window.excluirFolha = async function(id) {
+    const { data: folha } = await sb.from('folhas').select('*').eq('id', id).single();
+    if (!folha) return;
+
+    if (folha.status === 'PAGO' && folha.despesa_id) {
+      if (!confirm('Esta folha já foi paga. Deseja estorná-la? A despesa será removida.')) return;
+      await sb.from('despesas').delete().eq('id', folha.despesa_id);
+      await sb.from('logs').delete().like('observacao', `Salário ${folha.equipe?.nome || ''}%`).eq('valor_total', folha.valor_pago);
+    } else if (folha.status === 'PAGO') {
+      if (!confirm('Esta folha está marcada como PAGA, mas não possui vínculo de despesa. Deseja excluí-la mesmo assim?')) return;
+    } else {
+      if (!confirm('Deseja excluir esta folha pendente?')) return;
+    }
+
+    await sb.from('folhas').delete().eq('id', id);
+    alert('Folha excluída/estornada com sucesso!');
+    carregarLancamentos();
+  };
+
+  window.excluirVale = async function(id) {
+    if (!confirm('Excluir este vale?')) return;
+    await sb.from('vales').delete().eq('id', id);
+    alert('Vale excluído.');
+    carregarLancamentos();
+  };
+
+  // ========== IMPRESSÃO RECIBO INDIVIDUAL ==========
+  window.imprimirFolha = async function(id) {
+    const { data: folha } = await sb.from('folhas').select('*, equipe(*)').eq('id', id).single();
+    if (!folha) return;
+
+    const corpo = `
+      <div style="font-family: 'Helvetica', sans-serif; padding: 30px; max-width: 700px; margin: auto; border: 1px solid #ccc; background: #fff;">
+        <div style="display: flex; justify-content: space-between; align-items: center; border-bottom: 2px solid #ea580c; padding-bottom: 15px; margin-bottom: 25px;">
+          <div style="display: flex; align-items: center; gap: 15px;">
+            <img src="https://lh3.googleusercontent.com/d/1SIoZ2JlalfMnGDZTXBk7ZYuPgwxX3odF" style="max-height: 70px;" alt="Logo">
+            <div>
+              <h2 style="margin:0; color: #ea580c; font-size: 20px;">RV BLOCOS E ESTRUTURAS</h2>
+              <p style="margin:2px 0; font-size: 11px; color: #475569;">CNPJ: 46.889.791/0001-53</p>
+              <p style="margin:2px 0; font-size: 11px; color: #475569;">Rua Mineiros, 532 - Jataí - GO</p>
+            </div>
+          </div>
+          <div style="text-align: right;">
+            <h3 style="margin:0; font-size: 16px; font-weight: bold;">RECIBO DE PAGAMENTO</h3>
+            <p style="margin:2px 0; font-size: 11px;">Mês Ref: ${folha.mes_referencia}</p>
+          </div>
+        </div>
+
+        <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 20px; margin-bottom: 25px;">
+          <div>
+            <strong>Funcionário:</strong> ${folha.equipe.nome}<br>
+            <strong>Tipo:</strong> ${folha.tipo}<br>
+            ${folha.tipo === 'Diarista' ? `<strong>Dias Trabalhados:</strong> ${folha.dias_trabalhados}<br>` : ''}
+            <strong>Chave PIX:</strong> ${folha.chave_pix || 'Não informada'}
+          </div>
+          <div style="text-align: right;">
+            <table style="width: 100%; border-collapse: collapse; font-size: 0.9em;">
+              <tr><td>Salário Base:</td><td style="text-align: right;">${formatMoney(folha.salario_base)}</td></tr>
+              <tr><td style="color: #b91c1c;">Vales (-):</td><td style="text-align: right; color: #b91c1c;">-${formatMoney(folha.vales_total)}</td></tr>
+              <tr style="border-top: 2px solid #1e293b; font-weight: bold; font-size: 1.1em;"><td>Valor Líquido:</td><td style="text-align: right;">${formatMoney(folha.valor_pago)}</td></tr>
+            </table>
+          </div>
+        </div>
+
+        <div style="border: 1px dashed #94a3b8; padding: 12px; border-radius: 6px; background: #f8fafc; margin-bottom: 25px; font-size: 0.9em;">
+          Recebemos de RV BLOCOS E ESTRUTURAS a importância acima referente ao pagamento do mês de <strong>${folha.mes_referencia}</strong>.
+        </div>
+
+        <div style="margin-top: 60px; text-align: center;">
+          <div style="width: 50%; border-top: 1px solid #000; margin: 0 auto 5px auto;"></div>
+          <span style="font-weight: bold; font-size: 0.85em;">Assinatura do Funcionário</span>
+        </div>
+
+        <div style="margin-top: 30px; font-size: 0.7em; color: #94a3b8; text-align: center;">
+          Documento gerado em ${new Date().toLocaleDateString('pt-BR')} pelo sistema RV Blocos
+        </div>
+      </div>
+    `;
+    const janela = window.open('', '_blank', 'width=800,height=600');
+    janela.document.write(corpo);
+    janela.document.close();
+    janela.print();
+  };
+
+  // ========== IMPRIMIR FOLHA GERAL DO MÊS ==========
+  window.imprimirFolhaGeral = async function() {
+    const mesRef = document.getElementById('eq-filtro-mes')?.value;
+    if (!mesRef) return alert('Selecione um mês de referência para imprimir a folha.');
+
+    const { data: folhas } = await sb.from('folhas').select('*, equipe(*)').eq('mes_referencia', mesRef).order('equipe(nome)');
+    if (!folhas || folhas.length === 0) return alert('Nenhuma folha encontrada para este mês.');
+
+    let totalGeral = 0;
+    const linhas = folhas.map(f => {
+      totalGeral += f.valor_pago;
+      return `
+        <tr style="border-bottom: 1px solid #ddd;">
+          <td style="padding: 8px 5px;">${f.equipe?.nome || '–'}</td>
+          <td style="padding: 8px 5px;">${f.tipo}</td>
+          <td style="padding: 8px 5px; text-align: center;">${f.tipo === 'Diarista' ? f.dias_trabalhados : '–'}</td>
+          <td style="padding: 8px 5px; text-align: right;">${formatMoney(f.valor_pago)}</td>
+          <td style="padding: 8px 5px; font-size: 0.85em; color: #444;">${f.chave_pix || ''}</td>
+        </tr>`;
+    }).join('');
+
+    const corpo = `
+      <div style="font-family: 'Helvetica', sans-serif; padding: 20px; max-width: 800px; margin: auto; background: white;">
+        <div style="display: flex; justify-content: space-between; align-items: center; border-bottom: 2px solid #ea580c; padding-bottom: 10px; margin-bottom: 20px;">
+          <div style="display: flex; align-items: center; gap: 10px;">
+            <img src="https://lh3.googleusercontent.com/d/1SIoZ2JlalfMnGDZTXBk7ZYuPgwxX3odF" style="max-height: 50px;" alt="Logo">
+            <div>
+              <h2 style="margin:0; color: #ea580c; font-size: 18px;">RV BLOCOS E ESTRUTURAS</h2>
+              <p style="margin:2px 0; font-size: 10px; color: #475569;">CNPJ: 46.889.791/0001-53</p>
+            </div>
+          </div>
+          <div style="text-align: right;">
+            <h3 style="margin:0; font-size: 16px;">FOLHA DE PAGAMENTO</h3>
+            <p style="margin:2px 0; font-size: 12px;">Mês Referência: ${mesRef}</p>
+          </div>
+        </div>
+
+        <table style="width: 100%; border-collapse: collapse; margin-bottom: 20px; font-size: 0.9em;">
+          <thead>
+            <tr style="background: #1e293b; color: white;">
+              <th style="padding: 10px 8px; text-align: left;">Funcionário</th>
+              <th style="padding: 10px 8px; text-align: left;">Tipo</th>
+              <th style="padding: 10px 8px; text-align: center;">Dias</th>
+              <th style="padding: 10px 8px; text-align: right;">Valor Pago</th>
+              <th style="padding: 10px 8px; text-align: left;">Chave PIX</th>
+            </tr>
+          </thead>
+          <tbody>
+            ${linhas}
+          </tbody>
+          <tfoot>
+            <tr style="font-weight: bold; background: #f1f5f9; border-top: 2px solid #1e293b;">
+              <td colspan="3" style="padding: 10px 8px; text-align: right;">TOTAL DA FOLHA:</td>
+              <td style="padding: 10px 8px; text-align: right; font-size: 1.1em;">${formatMoney(totalGeral)}</td>
+              <td></td>
+            </tr>
+          </tfoot>
+        </table>
+
+        <div style="font-size: 0.8em; text-align: center; color: #666; margin-top: 30px;">
+          Emitido em ${new Date().toLocaleDateString('pt-BR')} pelo sistema RV Blocos
+        </div>
+      </div>
+    `;
+    const janela = window.open('', '_blank', 'width=850,height=700');
+    janela.document.write(corpo);
+    janela.document.close();
+    janela.print();
+  };
+
+  // ========== CADASTRO DE FUNCIONÁRIOS ==========
+  async function carregarCadastro() {
+    const tipoFiltro = document.getElementById('eq-filtro-tipo')?.value;
+    let query = sb.from('equipe').select('*').order('nome');
+    if (tipoFiltro) query = query.eq('tipo', tipoFiltro);
+
+    const { data, error } = await query;
+    if (error) return alert('Erro ao carregar equipe.');
+
+    const tbody = document.getElementById('eq-lista-funcionarios');
+    if (!data || data.length === 0) {
+      tbody.innerHTML = '<tr><td colspan="7" class="p-4 text-center text-slate-400">Nenhum funcionário encontrado.</td></tr>';
+      return;
+    }
+
+    tbody.innerHTML = data.map(f => `
+      <tr class="border-b hover:bg-slate-50">
+        <td class="p-3 font-bold">${f.nome}</td>
+        <td class="p-3">${f.tipo}</td>
+        <td class="p-3 text-center">${f.valor_mensal ? formatMoney(f.valor_mensal) : '–'}</td>
+        <td class="p-3 text-center">${f.valor_diaria ? formatMoney(f.valor_diaria) : '–'}</td>
+        <td class="p-3 text-sm">${f.chave_pix || '–'}</td>
+        <td class="p-3 text-center">
+          <span class="px-2 py-1 rounded text-xs font-bold ${f.ativo ? 'bg-green-100 text-green-700' : 'bg-red-100 text-red-600'}">${f.ativo ? 'Ativo' : 'Inativo'}</span>
+        </td>
+        <td class="p-3 text-center flex gap-2 justify-center">
+          <button onclick="editarFuncionario('${f.id}')" class="text-indigo-600 hover:text-indigo-800 bg-white border p-1.5 rounded shadow-sm"><i data-lucide="edit-3" class="w-4 h-4"></i></button>
+          <button onclick="alternarStatusFuncionario('${f.id}')" class="text-slate-600 hover:text-red-600 bg-white border p-1.5 rounded shadow-sm"><i data-lucide="power" class="w-4 h-4"></i></button>
+        </td>
+      </tr>
+    `).join('');
+    lucide.createIcons();
+  }
+
+  window.abrirModalFuncionario = function(id = null) {
+    const titulo = id ? 'Editar Funcionário' : 'Novo Funcionário';
+    let html = `
+      <div class="fixed inset-0 bg-black/50 z-50 flex items-center justify-center p-4" id="modal-func">
+        <div class="bg-white rounded-2xl w-full max-w-md shadow-2xl">
+          <div class="p-4 border-b flex justify-between items-center bg-slate-50 rounded-t-2xl">
+            <h3 class="font-bold text-lg">${titulo}</h3>
+            <button onclick="document.getElementById('modal-func').remove()" class="text-slate-400 hover:text-red-500"><i data-lucide="x"></i></button>
+          </div>
+          <div class="p-4 space-y-3">
+            <input type="hidden" id="func-id" value="${id || ''}">
+            <div>
+              <label class="block text-xs font-bold text-slate-600">Nome</label>
+              <input type="text" id="func-nome" class="w-full p-2 border rounded-lg text-sm" placeholder="Nome completo">
+            </div>
+            <div>
+              <label class="block text-xs font-bold text-slate-600">Tipo</label>
+              <select id="func-tipo" class="w-full p-2 border rounded-lg text-sm" onchange="toggleCamposValor()">
+                <option value="Mensal">Fixo Mensal</option>
+                <option value="Diarista">Diarista</option>
+              </select>
+            </div>
+            <div id="campo-mensal">
+              <label class="block text-xs font-bold text-slate-600">Salário Mensal (R$)</label>
+              <input type="number" id="func-valor-mensal" step="0.01" class="w-full p-2 border rounded-lg text-sm" placeholder="0.00">
+            </div>
+            <div id="campo-diaria" class="hidden">
+              <label class="block text-xs font-bold text-slate-600">Valor Diária (R$)</label>
+              <input type="number" id="func-valor-diaria" step="0.01" class="w-full p-2 border rounded-lg text-sm" placeholder="0.00">
+            </div>
+            <div>
+              <label class="block text-xs font-bold text-slate-600">Chave PIX</label>
+              <input type="text" id="func-pix" class="w-full p-2 border rounded-lg text-sm" placeholder="Chave PIX (CPF/Telefone/E-mail)">
+            </div>
+          </div>
+          <div class="p-4 border-t bg-slate-50 flex gap-2 rounded-b-2xl">
+            <button onclick="document.getElementById('modal-func').remove()" class="flex-1 py-2 bg-slate-200 hover:bg-slate-300 rounded-lg font-bold">Cancelar</button>
+            <button onclick="salvarFuncionario()" class="flex-1 py-2 bg-orange-600 hover:bg-orange-700 text-white rounded-lg font-bold shadow">Salvar</button>
+          </div>
+        </div>
+      </div>`;
+    document.body.insertAdjacentHTML('beforeend', html);
+    lucide.createIcons();
+    if (id) preencherFormFuncionario(id);
+  };
+
+  window.toggleCamposValor = function() {
+    const tipo = document.getElementById('func-tipo')?.value;
+    document.getElementById('campo-mensal').classList.toggle('hidden', tipo !== 'Mensal');
+    document.getElementById('campo-diaria').classList.toggle('hidden', tipo !== 'Diarista');
+  };
+
+  async function preencherFormFuncionario(id) {
+    const { data } = await sb.from('equipe').select('*').eq('id', id).single();
+    if (!data) return;
+    document.getElementById('func-id').value = data.id;
+    document.getElementById('func-nome').value = data.nome;
+    document.getElementById('func-tipo').value = data.tipo;
+    document.getElementById('func-valor-mensal').value = data.valor_mensal || '';
+    document.getElementById('func-valor-diaria').value = data.valor_diaria || '';
+    document.getElementById('func-pix').value = data.chave_pix || '';
+    toggleCamposValor();
+  }
+
+  window.salvarFuncionario = async function() {
+    const id = document.getElementById('func-id')?.value;
+    const nome = document.getElementById('func-nome')?.value.trim();
+    const tipo = document.getElementById('func-tipo')?.value;
+    const valorMensal = parseFloat(document.getElementById('func-valor-mensal')?.value) || 0;
+    const valorDiaria = parseFloat(document.getElementById('func-valor-diaria')?.value) || 0;
+    const pix = document.getElementById('func-pix')?.value.trim();
+
+    if (!nome) return alert('Nome obrigatório.');
+
+    const payload = {
+      nome,
+      tipo,
+      valor_mensal: tipo === 'Mensal' ? valorMensal : null,
+      valor_diaria: tipo === 'Diarista' ? valorDiaria : null,
+      chave_pix: pix,
+      ativo: true
+    };
+
+    let error;
+    if (id) {
+      const { error: err } = await sb.from('equipe').update(payload).eq('id', id);
+      error = err;
+    } else {
+      const { error: err } = await sb.from('equipe').insert([payload]);
+      error = err;
+    }
+
+    if (error) return alert('Erro ao salvar: ' + error.message);
+    document.getElementById('modal-func')?.remove();
+    carregarCadastro();
+  };
+
+  window.editarFuncionario = function(id) { abrirModalFuncionario(id); };
+
+  window.alternarStatusFuncionario = async function(id) {
+    const { data } = await sb.from('equipe').select('ativo').eq('id', id).single();
+    const novo = !data.ativo;
+    await sb.from('equipe').update({ ativo: novo }).eq('id', id);
+    carregarCadastro();
+  };
+
+  // Expor funções globais
+  window.abrirModalCriarFolha = abrirModalCriarFolha;
+  window.abrirModalVale = abrirModalVale;
+  window.salvarVale = salvarVale;
+  window.salvarFolha = salvarFolha;
+  window.imprimirFolha = imprimirFolha;
+  window.imprimirFolhaGeral = imprimirFolhaGeral;
+  window.baixarFolha = baixarFolha;
+  window.excluirFolha = excluirFolha;
+  window.excluirVale = excluirVale;
+  window.carregarLancamentos = carregarLancamentos;
+  window.carregarCadastro = carregarCadastro;
+})();
