@@ -1,4 +1,4 @@
-// equipe.js – Gestão de Equipe (RV Blocos – v1)
+// equipe.js – Gestão de Equipe (RV Blocos – v2)
 (function () {
   'use strict';
 
@@ -396,15 +396,19 @@
     `).join('');
   }
 
-  // ========== AÇÕES ==========
+  // ========== AÇÕES (BAIXAR / ESTORNAR) ==========
   window.baixarFolha = async function(id) {
     if (!confirm('Confirmar pagamento desta folha? Isso lançará uma despesa no financeiro.')) return;
     const { data: folha } = await sb.from('folhas').select('*, equipe(*)').eq('id', id).single();
     if (!folha) return alert('Folha não encontrada.');
 
     const descricao = `Salário ${folha.equipe.nome} (${folha.mes_referencia})`;
-    const novoIdDespesa = window.getNextId ? window.getNextId(STATE.expenses) : Math.floor(Math.random() * 1000000);
 
+    // IDs únicos (usa a função global getNextId já existente no sistema)
+    const novoIdDespesa = (typeof getNextId === 'function') ? getNextId() : Math.floor(Math.random() * 1000000);
+    const novoIdLog = (typeof getNextId === 'function') ? getNextId() : Math.floor(Math.random() * 1000000);
+
+    // 1. Inserir despesa (sem campo status)
     const { error: errDesp } = await sb.from('despesas').insert([{
       id: novoIdDespesa,
       item: 'Salário',
@@ -412,15 +416,14 @@
       unidade: 'Un',
       custo: folha.valor_pago,
       data: new Date().toISOString(),
-      observacao: descricao,
-      status: 'PAGO'
+      observacao: descricao
     }]);
-
     if (errDesp) return alert('Erro ao lançar despesa: ' + errDesp.message);
 
+    // 2. Atualizar folha para PAGO e vincular despesa
     await sb.from('folhas').update({ status: 'PAGO', despesa_id: novoIdDespesa }).eq('id', id);
 
-    const novoIdLog = window.getNextId ? window.getNextId(STATE.logs) : Math.floor(Math.random() * 1000000);
+    // 3. Log financeiro (tabela logs)
     await sb.from('logs').insert([{
       id: novoIdLog,
       tipo: 'despesa',
@@ -439,13 +442,17 @@
   };
 
   window.excluirFolha = async function(id) {
-    const { data: folha } = await sb.from('folhas').select('*').eq('id', id).single();
+    const { data: folha } = await sb.from('folhas').select('*, equipe(*)').eq('id', id).single();
     if (!folha) return;
 
+    const descricao = `Salário ${folha.equipe?.nome || ''} (${folha.mes_referencia})`;
+
     if (folha.status === 'PAGO' && folha.despesa_id) {
-      if (!confirm('Esta folha já foi paga. Deseja estorná-la? A despesa será removida.')) return;
+      if (!confirm('Esta folha já foi paga. Deseja estorná-la? A despesa e o registro financeiro serão removidos.')) return;
+      // Remove a despesa vinculada
       await sb.from('despesas').delete().eq('id', folha.despesa_id);
-      await sb.from('logs').delete().like('observacao', `Salário ${folha.equipe?.nome || ''}%`).eq('valor_total', folha.valor_pago);
+      // Remove o log financeiro (usa a descrição exata e valor)
+      await sb.from('logs').delete().eq('observacao', descricao).eq('valor_total', folha.valor_pago);
     } else if (folha.status === 'PAGO') {
       if (!confirm('Esta folha está marcada como PAGA, mas não possui vínculo de despesa. Deseja excluí-la mesmo assim?')) return;
     } else {
@@ -464,7 +471,7 @@
     carregarLancamentos();
   };
 
-  // ========== IMPRESSÃO RECIBO INDIVIDUAL ==========
+  // ========== IMPRESSÃO ==========
   window.imprimirFolha = async function(id) {
     const { data: folha } = await sb.from('folhas').select('*, equipe(*)').eq('id', id).single();
     if (!folha) return;
@@ -522,7 +529,6 @@
     janela.print();
   };
 
-  // ========== IMPRIMIR FOLHA GERAL DO MÊS ==========
   window.imprimirFolhaGeral = async function() {
     const mesRef = document.getElementById('eq-filtro-mes')?.value;
     if (!mesRef) return alert('Selecione um mês de referência para imprimir a folha.');
@@ -592,7 +598,7 @@
     janela.print();
   };
 
-  // ========== CADASTRO DE FUNCIONÁRIOS ==========
+  // ========== CADASTRO ==========
   async function carregarCadastro() {
     const tipoFiltro = document.getElementById('eq-filtro-tipo')?.value;
     let query = sb.from('equipe').select('*').order('nome');
