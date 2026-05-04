@@ -160,6 +160,7 @@
         <button onclick="navigate('production')" id="nav-production" class="nav-btn w-full flex items-center space-x-3 px-4 py-3 rounded-lg text-slate-400 hover:bg-slate-800 hover:text-white transition-all"><i data-lucide="hammer"></i> <span class="font-medium text-sm">Produção</span></button>
         <button onclick="navigate('lajes')" id="nav-lajes" class="nav-btn w-full flex items-center space-x-3 px-4 py-3 rounded-lg text-slate-400 hover:bg-slate-800 hover:text-white transition-all"><i data-lucide="layers"></i> <span class="font-medium text-sm">Lajes</span></button>
         <button onclick="navigate('reports')" id="nav-reports" class="nav-btn w-full flex items-center space-x-3 px-4 py-3 rounded-lg text-slate-400 hover:bg-slate-800 hover:text-white transition-all"><i data-lucide="pie-chart"></i> <span class="font-medium text-sm">Relatórios</span></button>
+        <button onclick="navigate('gerencial')" id="nav-gerencial"class="nav-btn w-full flex items-center space-x-3 px-4 py-3 rounded-lg text-slate-400 hover:bg-slate-800 hover:text-white transition-all"><i data-lucide="trending-up"></i> <span class="font-medium text-sm">Gerencial</span></button>
         <div class="border-t border-slate-700 my-2 pt-2"></div>
         <button onclick="navigate('users')" id="nav-users" class="nav-btn w-full flex items-center space-x-3 px-4 py-3 rounded-lg text-slate-400 hover:bg-slate-800 hover:text-white transition-all"><i data-lucide="user-cog"></i> <span class="font-medium text-sm">Usuários</span></button>
 
@@ -442,13 +443,13 @@
                   <p class="text-xs text-slate-500 font-medium">Filtre vendas por data, cliente ou método de pagamento.</p>
               </div>
 
-              <div class="bg-slate-50 p-6 rounded-xl border border-slate-200 opacity-60 flex flex-col items-center text-center gap-3">
+              <!--<div class="bg-slate-50 p-6 rounded-xl border border-slate-200 opacity-60 flex flex-col items-center text-center gap-3">
                   <div class="w-14 h-14 bg-slate-200 text-slate-400 rounded-full flex items-center justify-center">
                       <i data-lucide="trending-up" class="w-7 h-7"></i>
                   </div>
                   <h3 class="font-bold text-slate-700 text-lg">Produtos Mais Vendidos</h3>
                   <span class="bg-slate-200 text-slate-500 text-[10px] font-bold uppercase px-2 py-1 rounded">Em Breve</span>
-              </div>
+              </div>-->
           </div>
       </div>
 
@@ -859,6 +860,7 @@
 </div>
 
       <div id="view-equipe" class="hidden-section"></div>
+      <div id="view-gerencial" class="hidden-section"></div>
     </main>
 
     <div id="print-area" class="print-only"></div>
@@ -1163,6 +1165,7 @@ function navigate(viewId) {
     if(viewId === 'users') renderUsers();
     if(viewId === 'prod') renderProducts();
     if(viewId === 'production') renderProductionSelect();
+    if (viewId === 'gerencial') { if (typeof renderGerencial === 'function') renderGerencial(); }
     if (viewId === 'lajes') {switchLajeTab(LAJE.tabAtiva || 'orcamento');carregarOrcamentosLaje();}
   
     lucide.createIcons();
@@ -4131,6 +4134,7 @@ function printPeriodReport() {
 }
 
     </script>
+    <script src="js/gerencial.js"></script>
     <script src="js/equipe.js"></script>
     <script src="js/laje.js"></script> 
   </body>
