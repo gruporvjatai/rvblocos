@@ -129,6 +129,7 @@ function onDataLoaded() {
         navigate(current);
     }
     showLoading(false);
+    updateClientSelects();
 }
 
 function applyRBAC() {
