@@ -55,3 +55,11 @@ function getNextId(...arrays) {
     }
     return max + 1;
 }
+
+function limparAreaImpressao() {
+    const printArea = document.getElementById('print-area');
+    if (printArea) printArea.innerHTML = '';
+    // Reexibe o modal de histórico caso esteja escondido
+    const modal = document.getElementById('pos-history-modal');
+    if (modal) modal.style.display = '';
+}
