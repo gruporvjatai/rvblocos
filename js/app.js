@@ -98,7 +98,7 @@ async function loadData() {
             return q;
         });
 
-        // Despesas (já com campo status – se não existir, assume PENDENTE)
+        // Despesas
         STATE.expenses = (resDesp.data || []).map(e => ({
             id: e.id, item: e.item, quantity: Number(e.quantidade), unit: e.unidade,
             cost: Number(e.custo), date: e.data, note: e.observacao,
@@ -111,7 +111,6 @@ async function loadData() {
         STATE.configLaje = {};
         configs.forEach(c => { STATE.configLaje[c.chave] = c.valor; });
 
-        // Ação final
         onDataLoaded();
     } catch (err) {
         showLoading(false);
@@ -129,7 +128,6 @@ function onDataLoaded() {
         navigate(current);
     }
     showLoading(false);
-    updateClientSelects();
 }
 
 function applyRBAC() {
@@ -138,10 +136,8 @@ function applyRBAC() {
         if (userJson) {
             const user = JSON.parse(userJson);
             if (user.tipo === 'producao') {
-                const navFin = document.getElementById('nav-fin');
-                const navUsers = document.getElementById('nav-users');
-                if (navFin) navFin.style.display = 'none';
-                if (navUsers) navUsers.style.display = 'none';
+                document.getElementById('nav-fin').style.display = 'none';
+                document.getElementById('nav-users').style.display = 'none';
             }
         }
     } catch (e) { console.error("RBAC error", e); }
@@ -150,36 +146,6 @@ function applyRBAC() {
 function fazerLogoff() {
     localStorage.removeItem('rv_user');
     window.location.replace('index.html');
-}
-
-function renderDashboard() {
-    const grid = document.getElementById('dash-grid');
-    if (!grid) return;
-
-    const sortedProducts = (STATE.products || []).slice().sort((a, b) => Number(a.id) - Number(b.id));
-
-    grid.innerHTML = sortedProducts.map(p => {
-        const percent = Math.min(100, (p.stock / 2000) * 100);
-        return `<div class="bg-white p-5 rounded-xl border border-slate-100 shadow-sm relative overflow-hidden group hover:shadow-md transition">
-            <div class="flex justify-between items-start mb-2">
-                <h4 class="font-bold text-slate-700 truncate">${p.name}</h4>
-                <span class="text-xs bg-slate-100 text-slate-500 px-2 py-1 rounded">${p.category || 'Geral'}</span>
-            </div>
-            <div class="flex items-end gap-2 mt-2">
-                <div class="flex flex-col">
-                    <span class="text-xs text-slate-400">Físico</span>
-                    <span class="text-xl font-bold text-slate-700">${p.stock}</span>
-                </div>
-                <div class="flex flex-col items-end flex-1">
-                    <span class="text-xs text-slate-400">Disponível</span>
-                    <span class="text-xl font-bold ${p.available < 100 ? 'text-red-600' : 'text-blue-600'}">${p.available}</span>
-                </div>
-            </div>
-            <div class="w-full bg-slate-100 h-2 rounded-full mt-4 overflow-hidden">
-                <div class="h-full rounded-full ${p.available < 100 ? 'bg-red-500' : 'bg-blue-500'}" style="width: ${percent}%"></div>
-            </div>
-        </div>`;
-    }).join('');
 }
 
 // ====== NAVEGAÇÃO ======
@@ -207,29 +173,23 @@ function navigate(viewId) {
     const activeBtn = document.getElementById('nav-' + viewId);
     if (activeBtn) activeBtn.classList.add('bg-orange-600', 'text-white', 'shadow-lg');
 
-    // Chama renderização específica
-    if (viewId === 'dash') renderDashboard();
-    if (viewId === 'pos') { renderPOSProducts(); renderCart(); }
-    if (viewId === 'quotes') renderQuotesList();
+    // Renderiza a view correspondente
+    if (viewId === 'dash')       renderDashboard();
+    if (viewId === 'pos')        renderPDV();
     if (viewId === 'expedition') renderExpedition();
+    if (viewId === 'quotes')     renderQuotes();
     if (viewId === 'fin') {
-        const range = getCurrentMonthRange();
-        if (!document.getElementById('rec-start').value) document.getElementById('rec-start').value = range.start;
-        if (!document.getElementById('rec-end').value) document.getElementById('rec-end').value = range.end;
-        if (!document.getElementById('exp-start').value) document.getElementById('exp-start').value = range.start;
-        if (!document.getElementById('exp-end').value) document.getElementById('exp-end').value = range.end;
         renderFinance();
+        // As datas padrão já são definidas dentro de renderFinance()
     }
-    if (viewId === 'reports') {}
-    if (viewId === 'equipe') { if (typeof renderEquipe === 'function') renderEquipe(); }
-    if (viewId === 'clients') renderClients();
-    if (viewId === 'users') renderUsers();
-    if (viewId === 'prod') renderProducts();
-    if (viewId === 'production') renderProductionSelect();
-    if (viewId === 'gerencial') { if (typeof renderGerencial === 'function') renderGerencial(); }
-    if (viewId === 'lajes') { switchLajeTab(LAJE.tabAtiva || 'orcamento'); carregarOrcamentosLaje(); }
+    if (viewId === 'reports')    renderReports();
+    if (viewId === 'clients')    renderClients();
+    if (viewId === 'users')      renderUsers();
+    if (viewId === 'prod')       renderProducts();
+    if (viewId === 'production') renderProduction();
+    if (viewId === 'lajes')      renderLajes();
+    if (viewId === 'gerencial')  { if (typeof renderGerencial === 'function') renderGerencial(); }
+    if (viewId === 'equipe')     { if (typeof renderEquipe === 'function') renderEquipe(); }
 
     lucide.createIcons();
 }
-
-
