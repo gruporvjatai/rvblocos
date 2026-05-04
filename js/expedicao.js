@@ -551,9 +551,3 @@ function printExpeditionHistory() {
     }, 500);
 }
 
-function limparAreaImpressao() {
-    document.getElementById('print-area').innerHTML = '';
-    // Garante que o modal de histórico volte ao normal se estiver aberto
-    const modal = document.getElementById('pos-history-modal');
-    if (modal) modal.style.display = '';
-}
