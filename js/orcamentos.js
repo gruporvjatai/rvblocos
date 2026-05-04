@@ -1,12 +1,61 @@
-// ====== ORÇAMENTOS ======
+// =================================================================
+// MÓDULO ORÇAMENTOS - RV BLOCOS
+// =================================================================
 
-function renderQuotesList() {
+// =================================================================
+// RENDER PRINCIPAL - chamado por navigate('quotes')
+// =================================================================
+function renderQuotes() {
+    const container = document.getElementById('view-quotes');
+    if (!container) return;
+
+    container.innerHTML = `
+    <div class="flex justify-between items-center mb-6 flex-wrap gap-4">
+        <h2 class="text-2xl font-bold text-slate-800 flex items-center gap-2">
+            <i data-lucide="folder-open"></i> Orçamentos
+        </h2>
+        <div class="flex gap-2">
+            <input type="text" id="quotes-search" placeholder="Buscar cliente ou ID..." 
+                   class="p-2 border rounded-lg text-sm w-64 focus:ring-2 focus:ring-orange-500 outline-none"
+                   onkeyup="carregarListaOrcamentos()">
+            <button onclick="limparFiltroOrcamentos()" class="p-2 bg-slate-200 rounded-lg hover:bg-slate-300">
+                <i data-lucide="x" class="w-4 h-4"></i>
+            </button>
+        </div>
+    </div>
+
+    <div class="bg-white rounded-xl border shadow-sm overflow-hidden">
+        <div class="overflow-x-auto">
+            <table class="w-full text-sm text-left">
+                <thead class="bg-slate-50 text-slate-700 border-b">
+                    <tr>
+                        <th class="p-4">ID</th>
+                        <th class="p-4">Cliente</th>
+                        <th class="p-4">Data</th>
+                        <th class="p-4">Itens</th>
+                        <th class="p-4 text-right">Valor (R$)</th>
+                        <th class="p-4 text-center">Ações</th>
+                    </tr>
+                </thead>
+                <tbody id="quotes-list" class="divide-y"></tbody>
+            </table>
+        </div>
+    </div>
+    `;
+
+    carregarListaOrcamentos();
+    lucide.createIcons();
+}
+
+// =================================================================
+// CARREGAR LISTA DE ORÇAMENTOS
+// =================================================================
+function carregarListaOrcamentos() {
     const tbody = document.getElementById('quotes-list');
     if (!tbody) return;
 
     let quotes = [...(STATE.quotes || [])];
 
-    // Filtro de busca (cliente ou ID)
     const searchTerm = (document.getElementById('quotes-search')?.value || '').toLowerCase();
     if (searchTerm) {
         quotes = quotes.filter(q =>
@@ -15,7 +64,7 @@ function renderQuotesList() {
         );
     }
 
-    // Ordenar do mais recente para o mais antigo
+    // Ordena do mais recente para o mais antigo
     quotes.sort((a, b) => new Date(b.date) - new Date(a.date));
 
     if (quotes.length === 0) {
@@ -26,9 +75,9 @@ function renderQuotesList() {
 
     tbody.innerHTML = quotes.map(q => {
         const valorLiquido = q.total - (q.discount || 0);
-        const clientPhone = getClientPhoneByName(q.clientName);
+        const clientPhone = obterTelefoneCliente(q.clientName);
         const whatsappLink = clientPhone
-            ? `https://wa.me/55${clientPhone.replace(/\D/g, '')}?text=Olá! Gostaria de mais informações sobre o orçamento #${q.id}`
+            ? `https://wa.me/55${clientPhone.replace(/\D/g, '')}?text=Olá! Segue o orçamento #${q.id} no valor de ${formatMoney(valorLiquido)}`
             : '#';
 
         return `
@@ -40,22 +89,22 @@ function renderQuotesList() {
             <td class="p-4 text-right font-bold text-green-600">${formatMoney(valorLiquido)}</td>
             <td class="p-4 text-center">
                 <div class="flex justify-center gap-2 flex-wrap">
-                    <button onclick="sendQuoteWhatsApp('${q.id}')" class="text-green-600 hover:text-green-800 p-1" title="WhatsApp">
+                    <button onclick="enviarWhatsAppOrcamento('${q.id}')" class="text-green-600 hover:text-green-800 p-1" title="WhatsApp">
                         <i data-lucide="message-circle" width="18"></i>
                     </button>
-                    <button onclick="loadQuoteToCart('${q.id}')" class="text-blue-600 hover:text-blue-800 p-1" title="Editar / Faturar">
+                    <button onclick="carregarOrcamentoNoCarrinho('${q.id}')" class="text-blue-600 hover:text-blue-800 p-1" title="Editar / Faturar">
                         <i data-lucide="edit-3" width="18"></i>
                     </button>
-                    <button onclick="duplicateQuote('${q.id}')" class="text-amber-600 hover:text-amber-800 p-1" title="Duplicar">
+                    <button onclick="duplicarOrcamento('${q.id}')" class="text-amber-600 hover:text-amber-800 p-1" title="Duplicar">
                         <i data-lucide="copy" width="18"></i>
                     </button>
-                    <button onclick="downloadQuotePDF('${q.id}')" class="text-indigo-600 hover:text-indigo-800 p-1" title="Download PDF">
+                    <button onclick="baixarPDFOrcamento('${q.id}')" class="text-indigo-600 hover:text-indigo-800 p-1" title="Download PDF">
                         <i data-lucide="file-down" width="18"></i>
                     </button>
-                    <button onclick="printQuote('${q.id}')" class="text-slate-600 hover:text-slate-800 p-1" title="Imprimir">
+                    <button onclick="imprimirOrcamento('${q.id}')" class="text-slate-600 hover:text-slate-800 p-1" title="Imprimir">
                         <i data-lucide="printer" width="18"></i>
                     </button>
-                    <button onclick="deleteQuote('${q.id}')" class="text-red-600 hover:text-red-800 p-1" title="Excluir">
+                    <button onclick="excluirOrcamento('${q.id}')" class="text-red-600 hover:text-red-800 p-1" title="Excluir">
                         <i data-lucide="trash-2" width="18"></i>
                     </button>
                 </div>
@@ -66,23 +115,34 @@ function renderQuotesList() {
     lucide.createIcons();
 }
 
-function clearQuoteFilters() {
+// =================================================================
+// UTILITÁRIOS
+// =================================================================
+function limparFiltroOrcamentos() {
     const campo = document.getElementById('quotes-search');
     if (campo) campo.value = '';
-    renderQuotesList();
+    carregarListaOrcamentos();
 }
 
-function getClientPhoneByName(clientName) {
+function obterTelefoneCliente(clientName) {
     if (!clientName || clientName === 'Consumidor Final') return null;
     const client = STATE.clients.find(c => c.name === clientName);
     return client?.phone || null;
 }
 
-async function sendQuoteWhatsApp(id) {
+function escapeHtml(str) {
+    if (!str) return '';
+    return str.replace(/[&<>]/g, m => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;' }[m]));
+}
+
+// =================================================================
+// WHATSAPP
+// =================================================================
+async function enviarWhatsAppOrcamento(id) {
     const quote = STATE.quotes.find(q => String(q.id) === String(id));
     if (!quote) return showToast("Orçamento não encontrado", true);
 
-    const phone = getClientPhoneByName(quote.clientName);
+    const phone = obterTelefoneCliente(quote.clientName);
     if (!phone) return showToast("Cliente sem telefone cadastrado", true);
 
     const itemsText = quote.items.map(i => `${i.name} (x${i.qty})`).join(', ');
@@ -91,7 +151,10 @@ async function sendQuoteWhatsApp(id) {
     window.open(`https://wa.me/55${phone.replace(/\D/g, '')}?text=${encodeURIComponent(msg)}`, '_blank');
 }
 
-async function duplicateQuote(id) {
+// =================================================================
+// DUPLICAR
+// =================================================================
+async function duplicarOrcamento(id) {
     const original = STATE.quotes.find(q => String(q.id) === String(id));
     if (!original) return showToast("Orçamento original não encontrado", true);
 
@@ -131,8 +194,26 @@ async function duplicateQuote(id) {
     showLoading(false);
 }
 
-// ====== PDF E IMPRESSÃO ======
-function getQuoteHTMLForPDF(quote) {
+// =================================================================
+// EXCLUIR
+// =================================================================
+async function excluirOrcamento(id) {
+    if (!confirm("Excluir orçamento?")) return;
+    showLoading(true);
+    const { error } = await sb.from('logs').delete().eq('id', id).eq('tipo', 'orcamento');
+    if (error) {
+        showLoading(false);
+        return showToast("Erro: " + error.message, true);
+    }
+    showToast("Excluído!");
+    await loadData();
+    navigate('quotes');
+}
+
+// =================================================================
+// PDF E IMPRESSÃO (usando html2pdf)
+// =================================================================
+function gerarHTMLOrcamento(quote) {
     const clientName = quote.clientName || 'Consumidor Final';
     const cli = STATE.clients.find(c => c.name === clientName) || {
         name: clientName, doc: '', phone: '', address: ''
@@ -154,11 +235,11 @@ function getQuoteHTMLForPDF(quote) {
     const finalTotal = Math.max(0, subtotal - discount);
 
     const addressToShow = quote.deliveryAddress
-        ? `<div style="padding:4px; background-color:#fef3c7; border-left:3px solid #f59e0b; margin-top:5px;"><strong>ENTREGA:</strong><br>${quote.deliveryAddress}</div>`
+        ? `<div style="padding:4px; background:#fef3c7; border-left:3px solid #f59e0b; margin-top:5px;"><strong>ENTREGA:</strong><br>${quote.deliveryAddress}</div>`
         : (cli.address || 'Endereço não informado');
 
     return `
-    <div class="invoice-full" style="width:100%; max-width:800px; margin:0 auto; font-family:'Helvetica', Arial, sans-serif; background:white; padding:20px; border:1px solid #000;">
+    <div class="invoice-full" style="width:100%; max-width:800px; margin:0 auto; font-family:'Helvetica',Arial,sans-serif; background:white; padding:20px; border:1px solid #000;">
         <div class="header-section" style="display:flex; border-bottom:2px solid #000; padding-bottom:15px; margin-bottom:20px;">
             <div class="logo-area" style="width:120px; display:flex; align-items:center; justify-content:center; border-right:1px solid #e2e8f0; padding-right:15px; margin-right:15px;">
                 <img src="https://lh3.googleusercontent.com/d/1SIoZ2JlalfMnGDZTXBk7ZYuPgwxX3odF" style="max-height:80px;" />
@@ -221,12 +302,12 @@ function getQuoteHTMLForPDF(quote) {
     </div>`;
 }
 
-async function downloadQuotePDF(id) {
+async function baixarPDFOrcamento(id) {
     const q = STATE.quotes.find(x => x.id == id);
     if (!q) return showToast("Orçamento não encontrado", true);
 
     showLoading(true);
-    const htmlString = getQuoteHTMLForPDF(q);
+    const htmlString = gerarHTMLOrcamento(q);
 
     const opt = {
         margin: 10,
@@ -250,31 +331,14 @@ async function downloadQuotePDF(id) {
     }, 500);
 }
 
-function printQuote(id) {
+function imprimirOrcamento(id) {
     const q = STATE.quotes.find(x => x.id == id);
     if (!q) return showToast("Orçamento não encontrado", true);
 
-    const el = document.getElementById('print-area');
-    el.innerHTML = getQuoteHTMLForPDF(q);
+    const printArea = document.getElementById('print-area');
+    printArea.innerHTML = gerarHTMLOrcamento(q);
     setTimeout(() => {
         window.print();
         limparAreaImpressao();
     }, 500);
-}
-
-async function deleteQuote(id) {
-    if (!confirm("Excluir orçamento?")) return;
-    showLoading(true);
-    const { error } = await sb.from('logs').delete().eq('id', id).eq('tipo', 'orcamento');
-    if (error) {
-        showLoading(false);
-        return showToast("Erro: " + error.message, true);
-    }
-    showToast("Excluído!");
-    await loadData();
-}
-
-function escapeHtml(str) {
-    if (!str) return '';
-    return str.replace(/[&<>]/g, m => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;' }[m]));
 }
