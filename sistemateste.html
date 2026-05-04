@@ -1,543 +1,195 @@
 <!DOCTYPE html>
 <html>
-  <head>
+<head>
     <base target="_top">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <script src="https://cdn.tailwindcss.com"></script>
     <script src="https://unpkg.com/lucide@latest"></script>
-
     <meta http-equiv="Cache-Control" content="no-cache, no-store, must-revalidate">
     <meta http-equiv="Pragma" content="no-cache">
     <meta http-equiv="Expires" content="0">
-
     <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/html2pdf.js/0.10.1/html2pdf.bundle.min.js"></script>
     <script>if (!localStorage.getItem('rv_user')){window.location.replace("index.html");}</script>
     <script>if (/Android|webOS|iPhone|iPad|iPod|BlackBerry|IEMobile|Opera Mini/i.test(navigator.userAgent) || window.innerWidth <= 800) {window.location.replace("mobile.html");}</script>
-    
     <link rel="icon" type="image/png" href="logo.png">
     <link rel="shortcut icon" type="image/png" href="logo.png">
     <link rel="apple-touch-icon" href="logo.png">
-
     <meta name="mobile-web-app-capable" content="yes">
     <meta name="apple-mobile-web-app-capable" content="yes">
     <meta name="application-name" content="RV Blocos">
     <meta name="apple-mobile-web-app-title" content="RV Blocos">
-    <meta name="theme-color" content="#0f172a"> 
+    <meta name="theme-color" content="#0f172a">
     <link rel="manifest" href="manifest.json">
-
     <style>
-      body { background-color: #f1f5f9; font-family: 'Segoe UI', sans-serif; -webkit-font-smoothing: antialiased; }
-
-      .border { 
-          border-width: 1px !important; 
-          border-style: solid !important; 
-          border-color: #cbd5e1 !important; 
-      }
-      
-      .hidden-section { display: none !important; }
-      .active-section { display: block !important; animation: fadeIn 0.3s ease-in-out; }
-      @keyframes fadeIn { from { opacity: 0; transform: translateY(5px); } to { opacity: 1; transform: translateY(0); } }
-      
-      .loader { border: 3px solid #e2e8f0; border-top: 3px solid #ea580c; border-radius: 50%; width: 24px; height: 24px; animation: spin 1s linear infinite; }
-      @keyframes spin { 0% { transform: rotate(0deg); } 100% { transform: rotate(360deg); } }
-
-      .btn-action { transition: all 0.2s; display: flex; align-items: center; justify-content: center; gap: 8px; font-weight: bold; border-radius: 8px; }
-      .btn-action:active { transform: scale(0.98); }
-
-      /* IMPRESSÃO */
-      @media print {
-        @page { size: A4; margin: 10mm; }
-        body { background: white; margin: 0; padding: 0; font-family: 'Helvetica', 'Arial', sans-serif; color: #1e293b; -webkit-print-color-adjust: exact; print-color-adjust: exact; }
-        .no-print { display: none !important; }
-        .print-only { display: block !important; }
-        
-        .invoice-full, .invoice-box-orig { 
-            position: relative; 
-            z-index: 1;
-            background-color: transparent !important;
+        body { background-color: #f1f5f9; font-family: 'Segoe UI', sans-serif; }
+        .border { border-width: 1px !important; border-style: solid !important; border-color: #cbd5e1 !important; }
+        .hidden-section { display: none !important; }
+        .active-section { display: block !important; animation: fadeIn 0.3s ease-in-out; }
+        @keyframes fadeIn { from { opacity: 0; transform: translateY(5px); } to { opacity: 1; transform: translateY(0); } }
+        .loader { border: 3px solid #e2e8f0; border-top: 3px solid #ea580c; border-radius: 50%; width: 24px; height: 24px; animation: spin 1s linear infinite; }
+        @keyframes spin { 0% { transform: rotate(0deg); } 100% { transform: rotate(360deg); } }
+        .btn-action { transition: all 0.2s; display: flex; align-items: center; justify-content: center; gap: 8px; font-weight: bold; border-radius: 8px; }
+        @media print {
+            @page { size: A4; margin: 10mm; }
+            body { background: white; margin: 0; padding: 0; font-family: 'Helvetica', 'Arial', sans-serif; -webkit-print-color-adjust: exact; print-color-adjust: exact; }
+            .no-print { display: none !important; }
+            .print-only { display: block !important; }
+            .invoice-full, .invoice-box-orig { position: relative; z-index: 1; background-color: transparent !important; }
+            .invoice-full { border: 1px solid #000; min-height: 27.5cm; }
+            .invoice-box-orig { width: 100%; border: 1px solid #000; margin: 0 auto; }
+            .invoice-full::before, .invoice-box-orig::before { content: ""; position: fixed; top: 50%; left: 50%; transform: translate(-50%, -50%); width: 450px; height: 450px; background-image: url('https://lh3.googleusercontent.com/d/1SIoZ2JlalfMnGDZTXBk7ZYuPgwxX3odF'); background-size: contain; background-position: center; background-repeat: no-repeat; opacity: 0.1; z-index: -1; }
+            .header-section { display: flex; border-bottom: 2px solid #000; padding-bottom: 15px; margin-bottom: 20px; }
+            .logo-area { width: 120px; border-right: 1px solid #e2e8f0; padding-right: 15px; margin-right: 15px; }
+            .company-title { font-size: 20px; font-weight: 800; color: #ea580c; text-transform: uppercase; margin: 0; }
+            .full-table { width: 100%; border-collapse: collapse; font-size: 11px; }
+            .full-table th { background-color: #0f172a; color: white; padding: 8px; text-align: left; }
+            .full-table td { border-bottom: 1px solid #000; padding: 8px; }
+            .items-table-orig { width: 100%; border-collapse: collapse; font-size: 10px; }
+            .items-table-orig th { border-bottom: 1px solid #000; border-right: 1px solid #000; background-color: #eee; padding: 3px; }
+            .items-table-orig td { border-bottom: 1px solid #ccc; border-right: 1px solid #000; padding: 3px; }
         }
-
-        .invoice-full {
-            border: 1px solid #000; 
-            min-height: 27.5cm; 
-        }
-
-        .invoice-box-orig { 
-            width: 100%; 
-            border: 1px solid #000; 
-            margin: 0 auto; 
-        }
-
-        .invoice-full::before, .invoice-box-orig::before {
-            content: "";
-            position: fixed; 
-            top: 50%; 
-            left: 50%;
-            transform: translate(-50%, -50%);
-            width: 450px; 
-            height: 450px;
-            background-image: url('https://lh3.googleusercontent.com/d/1SIoZ2JlalfMnGDZTXBk7ZYuPgwxX3odF');
-            background-size: contain;
-            background-position: center;
-            background-repeat: no-repeat;
-            opacity: 0.1;
-            z-index: -1; 
-            -webkit-print-color-adjust: exact !important;
-            print-color-adjust: exact !important;
-        }
-
-        .header-section { display: flex; border-bottom: 2px solid #000; padding-bottom: 15px; margin-bottom: 20px; }
-        .logo-area { width: 120px; display: flex; align-items: center; justify-content: center; border-right: 1px solid #e2e8f0; padding-right: 15px; margin-right: 15px; }
-        .company-details { flex: 1; }
-        .company-title { font-size: 20px; font-weight: 800; color: #ea580c; text-transform: uppercase; margin: 0; }
-        .company-info { font-size: 11px; color: #475569; line-height: 1.4; margin-top: 5px; }
-        .doc-meta { width: 180px; text-align: right; margin-right: 20px;}
-        .doc-title { font-size: 16px; font-weight: 900; color: #0f172a; text-transform: uppercase; margin-bottom: 5px; }
-        .meta-row { font-size: 11px; margin-bottom: 2px; }
-
-        .info-grid { display: flex; gap: 20px; margin-bottom: 20px; }
-        .info-col { flex: 1; border: 1px solid #000; border-radius: 6px; overflow: hidden; }
-        .col-header { background-color: #f1f5f9; padding: 5px 10px; font-size: 10px; font-weight: bold; text-transform: uppercase; color: #64748b; border-bottom: 1px solid #000; }
-        .col-content { padding: 10px; font-size: 11px; line-height: 1.5; }
-
-        .full-table { width: 100%; border-collapse: collapse; font-size: 11px; margin-bottom: 20px; }
-        .full-table th { background-color: #0f172a; color: white; padding: 8px; text-align: left; font-weight: bold; text-transform: uppercase; font-size: 10px; }
-        .full-table td { border-bottom: 1px solid #000; padding: 8px; vertical-align: middle; }
-        .full-table tr:nth-child(even) { background-color: #f8fafc; }
-
-        .footer-section { display: flex; gap: 30px; margin-top: 10px; }
-        .notes-area { flex: 1; border: 1px dashed #cbd5e1; padding: 10px; border-radius: 6px; }
-        .notes-title { font-size: 10px; font-weight: bold; margin-bottom: 5px; color: #64748b; }
-        .notes-text { font-size: 10px; color: #334155; }
-        
-        .totals-area { width: 250px; }
-        .total-row { display: flex; justify-content: space-between; padding: 5px 0; font-size: 11px; border-bottom: 1px solid #e2e8f0; }
-        .total-row.final { border-bottom: none; border-top: 2px solid #0f172a; font-size: 14px; font-weight: 900; margin-top: 5px; padding-top: 10px; background-color: #f1f5f9; padding: 10px; }
-        
-        .signatures { margin-top: 50px; display: flex; justify-content: space-between; gap: 50px; }
-        .sign-box { flex: 1; text-align: center; }
-        .sign-line { border-top: 1px solid #000; margin-bottom: 5px; }
-        .sign-label { font-size: 10px; font-weight: bold; text-transform: uppercase; }
-
-        .header-orig { display: flex; border-bottom: 1px solid #000; }
-        .logo-box-orig { width: 100px; padding: 5px; border-right: 1px solid #000; display: flex; align-items: center; justify-content: center; }
-        .company-box-orig { flex: 1; padding: 5px; font-size: 11px; border-right: 1px solid #000; }
-        .info-box-orig { width: 150px; padding: 5px; font-size: 11px; background-color: #f9f9f9; }
-        .section-title-orig { background-color: #eee; border-top: 1px solid #000; border-bottom: 1px solid #000; font-weight: bold; padding: 2px 5px; font-size: 10px; text-transform: uppercase; }
-        .items-table-orig { width: 100%; border-collapse: collapse; font-size: 10px; }
-        .items-table-orig th { border-bottom: 1px solid #000; border-right: 1px solid #000; background-color: #eee; padding: 3px; text-align: left; }
-        .items-table-orig td { border-bottom: 1px solid #ccc; border-right: 1px solid #000; padding: 3px; }
-        .signature-orig { margin-top: 30px; text-align: center; font-size: 10px; }
-        .signature-line-orig { width: 50%; border-top: 1px solid #000; margin: 0 auto 5px auto; }
-      }
-      .print-only { display: none; }
+        .print-only { display: none; }
     </style>
-  </head>
-  <body>
+</head>
+<body>
 
-    <div class="w-64 bg-slate-900 text-white h-screen fixed left-0 top-0 flex flex-col shadow-2xl z-20 hidden md:flex no-print">
-      <div class="p-6 flex flex-col items-center border-b border-slate-700 bg-slate-900">
-        <div class="w-20 h-20 rounded-full border-4 border-orange-500 mb-3 shadow-lg bg-white overflow-hidden p-1 bg-white">
-            <img src="https://lh3.googleusercontent.com/d/1SIoZ2JlalfMnGDZTXBk7ZYuPgwxX3odF" class="w-full h-full object-contain" />
-        </div>
+<!-- Sidebar -->
+<div class="w-64 bg-slate-900 text-white h-screen fixed left-0 top-0 flex flex-col shadow-2xl z-20 hidden md:flex no-print">
+    <div class="p-6 flex flex-col items-center border-b border-slate-700 bg-slate-900">
+        <div class="w-20 h-20 rounded-full border-4 border-orange-500 mb-3 shadow-lg bg-white overflow-hidden p-1"><img src="https://lh3.googleusercontent.com/d/1SIoZ2JlalfMnGDZTXBk7ZYuPgwxX3odF" class="w-full h-full object-contain"></div>
         <h1 class="text-lg font-bold tracking-wider text-orange-500">RV BLOCOS</h1>
-      </div>
-      <nav class="flex-1 mt-4 px-3 space-y-1 overflow-y-auto">
-        <button onclick="navigate('dash')" id="nav-dash" class="nav-btn w-full flex items-center space-x-3 px-4 py-3 rounded-lg text-slate-400 hover:bg-slate-800 hover:text-white transition-all"><i data-lucide="layout-dashboard"></i> <span class="font-medium text-sm">Visão Geral</span></button>
-        <button onclick="navigate('pos')" id="nav-pos" class="nav-btn w-full flex items-center space-x-3 px-4 py-3 rounded-lg text-slate-400 hover:bg-slate-800 hover:text-white transition-all"><i data-lucide="shopping-cart"></i> <span class="font-medium text-sm">PDV / Vendas</span></button>
-        <button onclick="navigate('expedition')" id="nav-expedition" class="nav-btn w-full flex items-center space-x-3 px-4 py-3 rounded-lg text-slate-400 hover:bg-slate-800 hover:text-white transition-all border-l-4 border-transparent hover:border-orange-500"><i data-lucide="truck"></i> <span class="font-medium text-sm">Expedição / Entrega</span></button>
-        <button onclick="navigate('quotes')" id="nav-quotes" class="nav-btn w-full flex items-center space-x-3 px-4 py-3 rounded-lg text-slate-400 hover:bg-slate-800 hover:text-white transition-all"><i data-lucide="folder-open"></i> <span class="font-medium text-sm">Orçamentos</span></button>
-        <button onclick="navigate('fin')" id="nav-fin" class="nav-btn w-full flex items-center space-x-3 px-4 py-3 rounded-lg text-slate-400 hover:bg-slate-800 hover:text-white transition-all"><i data-lucide="bar-chart-3"></i> <span class="font-medium text-sm">Financeiro</span></button>
-        <div class="border-t border-slate-700 my-2 pt-2"></div>
-        <button onclick="navigate('equipe')" id="nav-equipe" class="nav-btn w-full flex items-center space-x-3 px-4 py-3 rounded-lg text-slate-400 hover:bg-slate-800 hover:text-white transition-all"><i data-lucide="users"></i> <span class="font-medium text-sm">Equipe</span></button>
-        <button onclick="navigate('clients')" id="nav-clients" class="nav-btn w-full flex items-center space-x-3 px-4 py-3 rounded-lg text-slate-400 hover:bg-slate-800 hover:text-white transition-all"><i data-lucide="users"></i> <span class="font-medium text-sm">Clientes</span></button>
-        <button onclick="navigate('prod')" id="nav-prod" class="nav-btn w-full flex items-center space-x-3 px-4 py-3 rounded-lg text-slate-400 hover:bg-slate-800 hover:text-white transition-all"><i data-lucide="package"></i> <span class="font-medium text-sm">Produtos</span></button>
-        <button onclick="navigate('production')" id="nav-production" class="nav-btn w-full flex items-center space-x-3 px-4 py-3 rounded-lg text-slate-400 hover:bg-slate-800 hover:text-white transition-all"><i data-lucide="hammer"></i> <span class="font-medium text-sm">Produção</span></button>
-        <button onclick="navigate('lajes')" id="nav-lajes" class="nav-btn w-full flex items-center space-x-3 px-4 py-3 rounded-lg text-slate-400 hover:bg-slate-800 hover:text-white transition-all"><i data-lucide="layers"></i> <span class="font-medium text-sm">Lajes</span></button>
-        <button onclick="navigate('reports')" id="nav-reports" class="nav-btn w-full flex items-center space-x-3 px-4 py-3 rounded-lg text-slate-400 hover:bg-slate-800 hover:text-white transition-all"><i data-lucide="pie-chart"></i> <span class="font-medium text-sm">Relatórios</span></button>
-        <button onclick="navigate('gerencial')" id="nav-gerencial"class="nav-btn w-full flex items-center space-x-3 px-4 py-3 rounded-lg text-slate-400 hover:bg-slate-800 hover:text-white transition-all"><i data-lucide="trending-up"></i> <span class="font-medium text-sm">Gerencial</span></button>
-        <div class="border-t border-slate-700 my-2 pt-2"></div>
-        <button onclick="navigate('users')" id="nav-users" class="nav-btn w-full flex items-center space-x-3 px-4 py-3 rounded-lg text-slate-400 hover:bg-slate-800 hover:text-white transition-all"><i data-lucide="user-cog"></i> <span class="font-medium text-sm">Usuários</span></button>
-      </nav>
-      <div class="border-t border-slate-700 my-2 pt-2"></div>
-      <button onclick="fazerLogoff()" class="nav-btn w-full flex items-center space-x-3 px-4 py-3 rounded-lg text-red-400 hover:bg-red-500 hover:text-white transition-all">
-          <i data-lucide="log-out"></i> <span class="font-medium text-sm">Sair</span>
-      </button>  
     </div>
+    <nav class="flex-1 mt-4 px-3 space-y-1 overflow-y-auto">
+        <button onclick="navigate('dash')" id="nav-dash" class="nav-btn w-full flex items-center space-x-3 px-4 py-3 rounded-lg text-slate-400 hover:bg-slate-800 hover:text-white"><i data-lucide="layout-dashboard"></i> <span>Visão Geral</span></button>
+        <button onclick="navigate('pos')" id="nav-pos" class="nav-btn w-full flex items-center space-x-3 px-4 py-3 rounded-lg text-slate-400 hover:bg-slate-800 hover:text-white"><i data-lucide="shopping-cart"></i> <span>PDV / Vendas</span></button>
+        <button onclick="navigate('expedition')" id="nav-expedition" class="nav-btn w-full flex items-center space-x-3 px-4 py-3 rounded-lg text-slate-400 hover:bg-slate-800 hover:text-white"><i data-lucide="truck"></i> <span>Expedição / Entrega</span></button>
+        <button onclick="navigate('quotes')" id="nav-quotes" class="nav-btn w-full flex items-center space-x-3 px-4 py-3 rounded-lg text-slate-400 hover:bg-slate-800 hover:text-white"><i data-lucide="folder-open"></i> <span>Orçamentos</span></button>
+        <button onclick="navigate('fin')" id="nav-fin" class="nav-btn w-full flex items-center space-x-3 px-4 py-3 rounded-lg text-slate-400 hover:bg-slate-800 hover:text-white"><i data-lucide="bar-chart-3"></i> <span>Financeiro</span></button>
+        <div class="border-t border-slate-700 my-2 pt-2"></div>
+        <button onclick="navigate('equipe')" id="nav-equipe" class="nav-btn w-full flex items-center space-x-3 px-4 py-3 rounded-lg text-slate-400 hover:bg-slate-800 hover:text-white"><i data-lucide="users"></i> <span>Equipe</span></button>
+        <button onclick="navigate('clients')" id="nav-clients" class="nav-btn w-full flex items-center space-x-3 px-4 py-3 rounded-lg text-slate-400 hover:bg-slate-800 hover:text-white"><i data-lucide="users"></i> <span>Clientes</span></button>
+        <button onclick="navigate('prod')" id="nav-prod" class="nav-btn w-full flex items-center space-x-3 px-4 py-3 rounded-lg text-slate-400 hover:bg-slate-800 hover:text-white"><i data-lucide="package"></i> <span>Produtos</span></button>
+        <button onclick="navigate('production')" id="nav-production" class="nav-btn w-full flex items-center space-x-3 px-4 py-3 rounded-lg text-slate-400 hover:bg-slate-800 hover:text-white"><i data-lucide="hammer"></i> <span>Produção</span></button>
+        <button onclick="navigate('lajes')" id="nav-lajes" class="nav-btn w-full flex items-center space-x-3 px-4 py-3 rounded-lg text-slate-400 hover:bg-slate-800 hover:text-white"><i data-lucide="layers"></i> <span>Lajes</span></button>
+        <button onclick="navigate('reports')" id="nav-reports" class="nav-btn w-full flex items-center space-x-3 px-4 py-3 rounded-lg text-slate-400 hover:bg-slate-800 hover:text-white"><i data-lucide="pie-chart"></i> <span>Relatórios</span></button>
+        <button onclick="navigate('gerencial')" id="nav-gerencial" class="nav-btn w-full flex items-center space-x-3 px-4 py-3 rounded-lg text-slate-400 hover:bg-slate-800 hover:text-white"><i data-lucide="trending-up"></i> <span>Gerencial</span></button>
+        <div class="border-t border-slate-700 my-2 pt-2"></div>
+        <button onclick="navigate('users')" id="nav-users" class="nav-btn w-full flex items-center space-x-3 px-4 py-3 rounded-lg text-slate-400 hover:bg-slate-800 hover:text-white"><i data-lucide="user-cog"></i> <span>Usuários</span></button>
+    </nav>
+    <button onclick="fazerLogoff()" class="nav-btn w-full flex items-center space-x-3 px-4 py-3 rounded-lg text-red-400 hover:bg-red-500 hover:text-white"><i data-lucide="log-out"></i> <span>Sair</span></button>
+</div>
 
-    <main class="flex-1 md:ml-64 p-4 md:p-6 overflow-y-auto h-screen no-print bg-slate-100">
-      
-      <div class="md:hidden mb-6 flex justify-between items-center">
-        <span class="font-bold text-orange-600 text-xl">RV BLOCOS</span>
-        <button onclick="navigate('pos')" class="p-2 bg-green-100 rounded text-green-700"><i data-lucide="shopping-cart"></i></button>
-      </div>
+<main class="flex-1 md:ml-64 p-4 md:p-6 overflow-y-auto h-screen no-print bg-slate-100">
+    <div id="loading" class="hidden fixed inset-0 bg-black/30 z-50 flex items-center justify-center"><div class="bg-white p-6 rounded-xl shadow-lg"><div class="loader mb-4"></div><span class="font-bold text-slate-700">Processando...</span></div></div>
+    <div id="toast" class="hidden fixed top-5 right-5 px-6 py-3 rounded-lg shadow-xl text-white font-medium z-50 bg-slate-800"></div>
 
-      <div id="loading" class="hidden fixed inset-0 bg-black/30 z-50 flex items-center justify-center">
-         <div class="bg-white p-6 rounded-xl flex flex-col items-center shadow-lg"><div class="loader mb-4"></div><span class="font-bold text-slate-700">Processando...</span></div>
-      </div>
-      <div id="toast" class="hidden fixed top-5 right-5 px-6 py-3 rounded-lg shadow-xl text-white font-medium z-50 bg-slate-800 transition-opacity duration-300"></div>
+    <!-- Containers vazios para cada view -->
+    <div id="view-dash" class="hidden-section"></div>
+    <div id="view-pos" class="hidden-section"></div>
+    <div id="view-expedition" class="hidden-section"></div>
+    <div id="view-quotes" class="hidden-section"></div>
+    <div id="view-fin" class="hidden-section"></div>
+    <div id="view-reports" class="hidden-section"></div>
+    <div id="view-clients" class="hidden-section"></div>
+    <div id="view-users" class="hidden-section"></div>
+    <div id="view-prod" class="hidden-section"></div>
+    <div id="view-production" class="hidden-section"></div>
+    <div id="view-lajes" class="hidden-section"></div>
+    <div id="view-equipe" class="hidden-section"></div>
+    <div id="view-gerencial" class="hidden-section"></div>
+</main>
 
-      <div id="view-dash" class="hidden-section"></div>
+<div id="print-area" class="print-only"></div>
 
-      <!-- PDV -->
-      <div id="view-pos" class="hidden-section"></div>
-
-      <!-- EXPEDIÇÃO (mantida como enviada anteriormente) -->
-      <div id="view-expedition" class="hidden-section"></div>
-
-      <!-- ORÇAMENTOS -->
-      <div id="view-quotes" class="hidden-section"></div>
-      
-      <!-- FINANCEIRO (completo, conforme corrigido) -->
-      <!-- Coloquei apenas o bloco principal por brevidade; use a versão completa já enviada -->
-      <div id="view-fin" class="hidden-section"></div>
-
-      <!-- RELATÓRIOS igual ao original -->    
-      <div id="view-reports" class="hidden-section"></div>
-
-      <!-- CLIENTES -->
-      <div id="view-clients" class="hidden-section"></div>
-
-      <!-- USUÁRIOS -->
-      <div id="view-users" class="hidden-section"></div>
-
-      <!-- PRODUTOS -->
-      <div id="view-prod" class="hidden-section"></div>
-
-      <!-- PRODUÇÃO COMPLETO (já fornecido) -->
-      <div id="view-production" class="hidden-section"></div>
-
-      <!-- LAJES COMPLETO (já fornecido) -->
-      <div id="view-lajes" class="hidden-section"></div>
-
-      <div id="view-equipe" class="hidden-section"></div>
-      <div id="view-gerencial" class="hidden-section"></div>
-    </main>
-
-    <div id="print-area" class="print-only"></div>
-
-
-
-    
-    <!-- ============================================================ -->
-    <!-- MODAIS                                                       -->
-    <!-- ============================================================ -->
-
-    <!-- Modal Histórico de Vendas -->
-    <div id="pos-history-modal" class="hidden fixed inset-0 bg-black/50 z-50 flex items-center justify-center p-4">
-      <div class="bg-white rounded-xl shadow-2xl w-full max-w-5xl flex flex-col max-h-[90vh] overflow-hidden">
-        <div class="p-5 border-b flex justify-between items-center bg-slate-50">
-            <h3 class="font-bold text-slate-700 flex items-center gap-2 text-lg"><i data-lucide="history"></i> Vendas Efetuadas</h3>
-            <button onclick="closePosHistoryModal()" class="p-2 bg-slate-200 hover:bg-red-100 hover:text-red-600 rounded-lg transition"><i data-lucide="x" class="w-5 h-5"></i></button>
-        </div>
-        <div class="p-4 bg-white border-b flex flex-wrap gap-3 items-center shrink-0">
-            <input type="text" id="pos-hist-search" placeholder="Buscar venda, nome ou ID..." class="flex-1 p-2.5 border rounded-lg text-sm outline-none focus:ring-2 focus:ring-orange-500 bg-slate-50" onkeyup="renderRecentHistoryModal()">
-            <input type="date" id="pos-hist-start" class="p-2.5 border rounded-lg text-sm outline-none focus:ring-2 focus:ring-orange-500 bg-slate-50" onchange="renderRecentHistoryModal()">
-            <input type="date" id="pos-hist-end" class="p-2.5 border rounded-lg text-sm outline-none focus:ring-2 focus:ring-orange-500 bg-slate-50" onchange="renderRecentHistoryModal()">
-            <button onclick="document.getElementById('pos-hist-search').value=''; document.getElementById('pos-hist-start').value=''; document.getElementById('pos-hist-end').value=''; renderRecentHistoryModal()" class="p-2.5 bg-slate-200 hover:bg-slate-300 rounded-lg text-slate-700 font-bold transition" title="Limpar Filtros"><i data-lucide="x" class="w-4 h-4"></i></button>
-        </div>
-        <div class="overflow-y-auto flex-1 p-4 bg-slate-100">
-            <div class="bg-white rounded-lg border shadow-sm overflow-hidden">
-                <table class="w-full text-sm text-left">
-                    <thead class="bg-slate-800 text-white">
-                        <tr>
-                            <th class="p-3">Pedido</th>
-                            <th class="p-3">Data</th>
-                            <th class="p-3">Cliente</th>
-                            <th class="p-3">Valor</th>
-                            <th class="p-3 text-center">Ações</th>
-                        </tr>
-                    </thead>
-                    <tbody id="pos-recent-history-modal" class="divide-y"></tbody>
-                </table>
-            </div>
-        </div>
+<!-- MODAIS -->
+<div id="pos-history-modal" class="hidden fixed inset-0 bg-black/50 z-50 flex items-center justify-center p-4">
+    <div class="bg-white rounded-xl shadow-2xl w-full max-w-5xl max-h-[90vh] overflow-hidden">
+        <div class="p-5 border-b flex justify-between bg-slate-50"><h3 class="font-bold text-slate-700"><i data-lucide="history"></i> Vendas Efetuadas</h3><button onclick="fecharHistoricoVendas()" class="p-2 bg-slate-200 hover:bg-red-100 rounded-lg"><i data-lucide="x"></i></button></div>
+        <div class="p-4 border-b flex gap-3"><input type="text" id="pos-hist-search" placeholder="Buscar..." class="flex-1 p-2.5 border rounded-lg text-sm" onkeyup="renderizarHistoricoVendas()"><input type="date" id="pos-hist-start" class="p-2.5 border rounded-lg text-sm" onchange="renderizarHistoricoVendas()"><input type="date" id="pos-hist-end" class="p-2.5 border rounded-lg text-sm" onchange="renderizarHistoricoVendas()"></div>
+        <div class="overflow-y-auto flex-1 p-4 bg-slate-100"><table class="w-full text-sm"><thead class="bg-slate-800 text-white"><tr><th class="p-3">Pedido</th><th class="p-3">Data</th><th class="p-3">Cliente</th><th class="p-3">Valor</th><th class="p-3 text-center">Ações</th></tr></thead><tbody id="pos-recent-history-modal" class="divide-y"></tbody></table></div>
     </div>
 </div>
 
-    <!-- Modal Entrega -->
-    <div id="modal-delivery" class="hidden fixed inset-0 bg-black/50 z-50 flex items-center justify-center p-4">
-        <div class="bg-white rounded-xl shadow-2xl w-full max-w-md overflow-hidden animate-[fadeIn_0.2s]">
-            <div class="bg-slate-900 p-4 flex justify-between items-center">
-                <h3 class="text-white font-bold flex items-center gap-2"><i data-lucide="truck"></i> Registrar Entrega</h3>
-                <button onclick="closeDeliveryModal()" class="text-slate-400 hover:text-white"><i data-lucide="x"></i></button>
-            </div>
-            <div class="p-6 space-y-4">
-                <div class="bg-slate-50 p-3 rounded border">
-                    <p class="text-xs text-slate-500 uppercase font-bold">Produto</p>
-                    <p id="del-prod-name" class="font-bold text-slate-800 text-lg">Nome do Produto</p>
-                    <p id="del-client-name" class="text-sm text-slate-600">Cliente</p>
-                </div>
-                
-                <div class="grid grid-cols-3 gap-2 text-center">
-                    <div class="p-2 bg-slate-100 rounded">
-                        <span class="text-xs text-slate-500 block">Pedido</span>
-                        <span id="del-qty-total" class="font-bold text-slate-800 text-xl">1000</span>
-                    </div>
-                    <div class="p-2 bg-green-50 rounded border border-green-100">
-                        <span class="text-xs text-green-600 block">Já Entregue</span>
-                        <span id="del-qty-done" class="font-bold text-green-700 text-xl">200</span>
-                    </div>
-                    <div class="p-2 bg-orange-50 rounded border border-orange-100">
-                        <span class="text-xs text-orange-600 block">Falta</span>
-                        <span id="del-qty-remain" class="font-bold text-orange-700 text-xl">800</span>
-                    </div>
-                </div>
+<div id="modal-delivery" class="hidden fixed inset-0 bg-black/50 z-50 flex items-center justify-center p-4">
+    <div class="bg-white rounded-xl shadow-2xl w-full max-w-md"><div class="bg-slate-900 p-4 flex justify-between"><h3 class="text-white font-bold"><i data-lucide="truck"></i> Registrar Entrega</h3><button onclick="closeDeliveryModal()" class="text-slate-400 hover:text-white"><i data-lucide="x"></i></button></div>
+    <div class="p-6 space-y-4"><div class="bg-slate-50 p-3 rounded border"><p id="del-prod-name" class="font-bold text-lg"></p><p id="del-client-name" class="text-sm text-slate-600"></p></div>
+    <div class="grid grid-cols-3 gap-2 text-center"><div class="p-2 bg-slate-100 rounded"><span class="text-xs">Pedido</span><span id="del-qty-total" class="font-bold text-xl"></span></div><div class="p-2 bg-green-50 rounded border"><span class="text-xs">Já Entregue</span><span id="del-qty-done" class="font-bold text-xl text-green-700"></span></div><div class="p-2 bg-orange-50 rounded border"><span class="text-xs">Falta</span><span id="del-qty-remain" class="font-bold text-xl text-orange-700"></span></div></div>
+    <input type="number" id="del-qty-input" class="w-full p-3 border-2 border-slate-300 rounded-lg text-xl font-bold text-center" placeholder="0">
+    <input type="hidden" id="del-log-id"><input type="hidden" id="del-log-prod">
+    <button onclick="confirmDelivery()" class="w-full bg-green-600 text-white py-3 rounded-lg font-bold">Confirmar Entrega</button></div></div>
+</div>
 
-                <div>
-                    <label class="block text-sm font-bold text-slate-700 mb-1">Quantidade nesta viagem:</label>
-                    <input type="number" id="del-qty-input" class="w-full p-3 border-2 border-slate-300 rounded-lg text-xl font-bold text-center focus:border-orange-500 focus:outline-none" placeholder="0">
-                </div>
-                
-                <input type="hidden" id="del-log-id">
-                <input type="hidden" id="del-log-prod">
-                
-                <div class="flex gap-2 pt-2">
-                    <button onclick="confirmDelivery()" class="flex-1 bg-green-600 hover:bg-green-700 text-white py-3 rounded-lg font-bold shadow-lg shadow-green-200">Confirmar Entrega</button>
-                </div>
-            </div>
-        </div>
-    </div>
+<div id="client-form-container" class="hidden fixed inset-0 bg-black/50 z-50 flex items-center justify-center p-4">
+    <form onsubmit="saveClient(event)" class="bg-white p-6 rounded-xl shadow-2xl w-full max-w-md"><h3 class="font-bold text-lg mb-4">Dados do Cliente</h3><input type="hidden" id="cli-id"><div class="space-y-3"><input type="text" id="cli-name" required placeholder="Nome" class="w-full p-2 border rounded"><input type="text" id="cli-phone" placeholder="Telefone" class="w-full p-2 border rounded"><input type="text" id="cli-doc" placeholder="CPF/CNPJ" class="w-full p-2 border rounded"><input type="text" id="cli-addr" placeholder="Endereço" class="w-full p-2 border rounded"></div><div class="flex gap-2 mt-6"><button type="button" onclick="document.getElementById('client-form-container').classList.add('hidden')" class="flex-1 p-2 bg-slate-200 rounded font-bold">Cancelar</button><button type="submit" class="flex-1 p-2 bg-blue-600 text-white rounded font-bold">Salvar</button></div></form>
+</div>
 
-    <!-- Modal Cliente -->
-    <div id="client-form-container" class="hidden fixed inset-0 bg-black/50 z-50 flex items-center justify-center p-4">
-        <form onsubmit="saveClient(event)" class="bg-white p-6 rounded-xl shadow-2xl w-full max-w-md">
-            <h3 class="font-bold text-lg mb-4">Dados do Cliente</h3>
-            <input type="hidden" id="cli-id">
-            <div class="space-y-3">
-                <input type="text" id="cli-name" required placeholder="Nome do Cliente" class="w-full p-2 border rounded">
-                <input type="text" id="cli-phone" placeholder="Telefone" class="w-full p-2 border rounded">
-                <input type="text" id="cli-doc" placeholder="CPF/CNPJ" class="w-full p-2 border rounded">
-                <input type="text" id="cli-addr" placeholder="Endereço" class="w-full p-2 border rounded">
-            </div>
-            <div class="flex gap-2 mt-6">
-                <button type="button" onclick="document.getElementById('client-form-container').classList.add('hidden')" class="flex-1 p-2 bg-slate-200 rounded font-bold">Cancelar</button>
-                <button type="submit" class="flex-1 p-2 bg-blue-600 text-white rounded font-bold">Salvar</button>
-            </div>
-        </form>
-    </div>
+<div id="user-form-container" class="hidden fixed inset-0 bg-black/50 z-50 flex items-center justify-center p-4">
+    <form onsubmit="saveUser(event)" class="bg-white p-6 rounded-xl shadow-2xl w-full max-w-md"><h3 class="font-bold text-lg mb-4">Dados do Usuário</h3><input type="hidden" id="usr-id"><div class="space-y-3"><input type="text" id="usr-name" required placeholder="Nome Completo" class="w-full p-2 border rounded"><input type="text" id="usr-login" required placeholder="Login" class="w-full p-2 border rounded"><input type="password" id="usr-pass" placeholder="Senha" class="w-full p-2 border rounded"><select id="usr-type" required class="w-full p-2 border rounded bg-white"><option value="admin">Administrador</option><option value="producao">Produção</option><option value="vendedor">Vendedor</option></select></div><div class="flex gap-2 mt-6"><button type="button" onclick="document.getElementById('user-form-container').classList.add('hidden')" class="flex-1 p-2 bg-slate-200 rounded font-bold">Cancelar</button><button type="submit" class="flex-1 p-2 bg-blue-600 text-white rounded font-bold">Salvar</button></div></form>
+</div>
 
-    <!-- Modal Usuário -->
-    <div id="user-form-container" class="hidden fixed inset-0 bg-black/50 z-50 flex items-center justify-center p-4">
-        <form onsubmit="saveUser(event)" class="bg-white p-6 rounded-xl shadow-2xl w-full max-w-md">
-            <h3 class="font-bold text-lg mb-4">Dados do Usuário</h3>
-            <input type="hidden" id="usr-id">
-            <div class="space-y-3">
-                <input type="text" id="usr-name" required placeholder="Nome Completo" class="w-full p-2 border rounded">
-                <input type="text" id="usr-login" required placeholder="Login / Usuário" class="w-full p-2 border rounded">
-                <input type="password" id="usr-pass" placeholder="Senha (deixe em branco para manter a mesma)" class="w-full p-2 border rounded">
-                <select id="usr-type" required class="w-full p-2 border rounded bg-white">
-                    <option value="admin">Administrador (Acesso Total)</option>
-                    <option value="producao">Produção (Sem Financeiro/Usuários)</option>
-                    <option value="vendedor">Vendedor (Padrão)</option>
-                </select>
-            </div>
-            <div class="flex gap-2 mt-6">
-                <button type="button" onclick="document.getElementById('user-form-container').classList.add('hidden')" class="flex-1 p-2 bg-slate-200 rounded font-bold">Cancelar</button>
-                <button type="submit" class="flex-1 p-2 bg-blue-600 text-white rounded font-bold">Salvar</button>
-            </div>
-        </form>
-    </div>
+<div id="prod-form-container" class="hidden fixed inset-0 bg-black/50 z-50 flex items-center justify-center p-4">
+    <form onsubmit="saveProduct(event)" class="bg-white p-6 rounded-xl shadow-2xl w-full max-w-md"><h3 class="font-bold text-lg mb-4">Dados do Produto</h3><input type="hidden" id="prd-id"><div class="space-y-3"><input type="text" id="prd-name" required placeholder="Nome" class="w-full p-2 border rounded"><input type="text" id="prd-cat" placeholder="Categoria" class="w-full p-2 border rounded"><input type="number" id="prd-price" required step="0.01" placeholder="Preço" class="w-full p-2 border rounded"><input type="number" id="prd-stock" required placeholder="Estoque Físico" class="w-full p-2 border rounded"></div><div class="flex gap-2 mt-6"><button type="button" onclick="document.getElementById('prod-form-container').classList.add('hidden')" class="flex-1 p-2 bg-slate-200 rounded font-bold">Cancelar</button><button type="submit" class="flex-1 p-2 bg-blue-600 text-white rounded font-bold">Salvar</button></div></form>
+</div>
 
-    <!-- Modal Produto -->
-    <div id="prod-form-container" class="hidden fixed inset-0 bg-black/50 z-50 flex items-center justify-center p-4">
-        <form onsubmit="saveProduct(event)" class="bg-white p-6 rounded-xl shadow-2xl w-full max-w-md">
-            <h3 class="font-bold text-lg mb-4">Dados do Produto</h3>
-            <input type="hidden" id="prd-id">
-            <div class="space-y-3">
-                <input type="text" id="prd-name" required placeholder="Nome do Produto" class="w-full p-2 border rounded">
-                <input type="text" id="prd-cat" placeholder="Categoria" class="w-full p-2 border rounded">
-                <input type="number" id="prd-price" required step="0.01" placeholder="Preço" class="w-full p-2 border rounded">
-                <input type="number" id="prd-stock" required placeholder="Estoque Físico Inicial" class="w-full p-2 border rounded">
-            </div>
-            <div class="flex gap-2 mt-6">
-                <button type="button" onclick="document.getElementById('prod-form-container').classList.add('hidden')" class="flex-1 p-2 bg-slate-200 rounded font-bold">Cancelar</button>
-                <button type="submit" class="flex-1 p-2 bg-blue-600 text-white rounded font-bold">Salvar</button>
-            </div>
-        </form>
-    </div>
+<div id="modal-receivable-edit" class="hidden fixed inset-0 bg-black/50 z-50 flex justify-center items-center p-4">
+    <div class="bg-white rounded-2xl w-full max-w-md"><div class="p-5 border-b flex justify-between bg-slate-50"><h3>Editar / Baixa</h3><button onclick="document.getElementById('modal-receivable-edit').classList.add('hidden')"><i data-lucide="x"></i></button></div>
+    <div class="p-6 space-y-4"><input type="hidden" id="rec-id"><div><span>Total: <span id="rec-total-lbl"></span></span> <span>Restante: <span id="rec-pending-lbl"></span></span></div>
+    <select id="rec-method" class="w-full p-3 border rounded-xl"><option>Dinheiro</option><option>PIX</option><option>Cartão Crédito</option><option>Cartão Débito</option><option>Boleto 5 dias</option><option>Boleto 10 dias</option><option>Boleto 15 dias</option><option>PIX 7 dias</option><option>Carteira</option></select>
+    <input type="date" id="rec-due" class="w-full p-3 border rounded-xl"><input type="number" id="rec-pay-val" placeholder="0.00" class="w-full p-3 border rounded-xl font-bold text-green-700">
+    <button onclick="salvarEdicaoRecebivel()" class="w-full py-3 bg-blue-600 text-white rounded-xl font-bold">Salvar / Baixar</button></div></div>
+</div>
 
-    <!-- Modal Editar Recebível -->
-    <div id="modal-receivable-edit" class="hidden fixed inset-0 bg-black/50 z-50 flex justify-center items-center p-4">
-        <div class="bg-white rounded-2xl w-full max-w-md shadow-2xl flex flex-col max-h-[90vh] overflow-hidden">
-            <div class="p-5 border-b flex justify-between items-center bg-slate-50">
-                <h3 class="font-bold text-slate-800 text-lg flex items-center gap-2"><i data-lucide="edit" class="text-blue-500"></i> Editar / Baixa</h3>
-                <button onclick="document.getElementById('modal-receivable-edit').classList.add('hidden')" class="text-slate-400 hover:text-red-500"><i data-lucide="x"></i></button>
-            </div>
-            <div class="p-6 space-y-4 overflow-y-auto">
-                <input type="hidden" id="rec-id">
-                <div class="flex justify-between items-center bg-slate-100 p-3 rounded">
-                    <span class="text-sm font-bold text-slate-600">Total: <span id="rec-total-lbl" class="text-blue-600"></span></span>
-                    <span class="text-sm font-bold text-slate-600">Restante: <span id="rec-pending-lbl" class="text-red-600"></span></span>
-                </div>
-                <div>
-                    <label class="block text-sm font-bold text-slate-700 mb-1">Forma de Pagto</label>
-                    <select id="rec-method" class="w-full p-3 border rounded-xl">
-                        <option>Dinheiro</option><option>PIX</option><option>Cartão Crédito</option><option>Cartão Débito</option>
-                        <option>Boleto 5 dias</option><option>Boleto 10 dias</option><option>Boleto 15 dias</option>
-                        <option>PIX 7 dias</option><option>Carteira</option>
-                    </select>
-                </div>
-                <div>
-                    <label class="block text-sm font-bold text-slate-700 mb-1">Data Vencimento</label>
-                    <input type="date" id="rec-due" class="w-full p-3 border rounded-xl focus:ring-2 focus:ring-blue-500">
-                </div>
-                <div class="pt-3 border-t mt-2">
-                    <label class="block text-sm font-bold text-green-700 mb-1">Dar Baixa (Receber Valor Agora)</label>
-                    <input type="number" id="rec-pay-val" placeholder="0.00" class="w-full p-3 border rounded-xl font-bold focus:ring-2 focus:ring-green-500 outline-none text-green-700">
-                    <p class="text-[11px] text-slate-400 mt-1">*Para editar apenas a Data/Tipo, deixe o valor em branco.</p>
-                </div>
-            </div>
-            <div class="p-5 border-t bg-slate-50 flex gap-3">
-                <button onclick="document.getElementById('modal-receivable-edit').classList.add('hidden')" class="flex-1 py-3 bg-white border border-slate-300 rounded-xl font-bold text-slate-600 hover:bg-slate-100">Cancelar</button>
-                <button onclick="saveReceivableEdit()" class="flex-1 py-3 bg-blue-600 rounded-xl font-bold text-white hover:bg-blue-700 shadow-lg">Salvar / Baixar</button>
-            </div>
-        </div>
-    </div>
+<div id="modal-revenue" class="hidden fixed inset-0 bg-black/50 z-50 flex justify-center items-center p-4">
+    <div class="bg-white rounded-2xl w-full max-w-md"><div class="p-5 border-b flex justify-between bg-slate-50"><h3>Lançar Receita Eventual</h3><button onclick="document.getElementById('modal-revenue').classList.add('hidden')"><i data-lucide="x"></i></button></div>
+    <div class="p-6 space-y-4"><input type="text" id="rev-desc" placeholder="Descrição" class="w-full p-3 border rounded-xl"><input type="text" id="rev-client" placeholder="Cliente" class="w-full p-3 border rounded-xl"><input type="number" id="rev-val" placeholder="Valor" class="w-full p-3 border rounded-xl font-bold text-blue-700"><input type="date" id="rev-due" class="w-full p-3 border rounded-xl"><select id="rev-method" class="w-full p-3 border rounded-xl"><option>Dinheiro</option><option>PIX</option><option>Cartão Crédito</option><option>Cartão Débito</option><option>Boleto 5 dias</option><option>Boleto 10 dias</option><option>Boleto 15 dias</option><option>PIX 7 dias</option><option>Carteira</option></select>
+    <button onclick="salvarReceita()" class="w-full py-3 bg-blue-600 text-white rounded-xl font-bold">Lançar Pendente</button></div></div>
+</div>
 
-    <!-- Modal Lançar Receita -->
-    <div id="modal-revenue" class="hidden fixed inset-0 bg-black/50 z-50 flex justify-center items-center p-4">
-        <div class="bg-white rounded-2xl w-full max-w-md shadow-2xl flex flex-col max-h-[90vh] overflow-hidden">
-            <div class="p-5 border-b flex justify-between items-center bg-slate-50">
-                <h3 class="font-bold text-slate-800 text-lg flex items-center gap-2"><i data-lucide="plus-circle" class="text-blue-600"></i> Lançar Receita Eventual</h3>
-                <button onclick="document.getElementById('modal-revenue').classList.add('hidden')" class="text-slate-400 hover:text-red-500"><i data-lucide="x"></i></button>
-            </div>
-            <div class="p-6 space-y-4 overflow-y-auto">
-                <div>
-                    <label class="block text-sm font-bold text-slate-700 mb-1">Descrição / Origem</label>
-                    <input type="text" id="rev-desc" placeholder="Ex: Venda de sucata, Serviço extra..." class="w-full p-3 border rounded-xl focus:ring-2 focus:ring-blue-600 outline-none bg-white">
-                </div>
-                <div>
-                    <label class="block text-sm font-bold text-slate-700 mb-1">Nome do Cliente (Opcional)</label>
-                    <input type="text" id="rev-client" placeholder="Ex: João Silva" class="w-full p-3 border rounded-xl focus:ring-2 focus:ring-blue-600 outline-none">
-                </div>
-                <div>
-                    <label class="block text-sm font-bold text-slate-700 mb-1">Valor a Receber (R$)</label>
-                    <input type="number" id="rev-val" placeholder="0.00" class="w-full p-3 border rounded-xl font-bold text-blue-700 focus:ring-2 focus:ring-blue-600 outline-none">
-                </div>
-                <div>
-                    <label class="block text-sm font-bold text-slate-700 mb-1">Data de Vencimento</label>
-                    <input type="date" id="rev-due" class="w-full p-3 border rounded-xl focus:ring-2 focus:ring-blue-600 outline-none">
-                </div>
-                <div>
-                    <label class="block text-sm font-bold text-slate-700 mb-1">Forma de Pagto Base</label>
-                    <select id="rev-method" class="w-full p-3 border rounded-xl focus:ring-2 focus:ring-blue-600 outline-none">
-                        <option>Dinheiro</option><option>PIX</option><option>Cartão Crédito</option><option>Cartão Débito</option>
-                        <option>Boleto 5 dias</option><option>Boleto 10 dias</option><option>Boleto 15 dias</option>
-                        <option>PIX 7 dias</option><option>Carteira</option>
-                    </select>
-                </div>
-            </div>
-            <div class="p-5 border-t bg-slate-50 flex gap-3">
-                <button onclick="document.getElementById('modal-revenue').classList.add('hidden')" class="flex-1 py-3 bg-white border border-slate-300 rounded-xl font-bold text-slate-600 hover:bg-slate-100">Cancelar</button>
-                <button onclick="saveRevenue()" class="flex-1 py-3 bg-blue-600 rounded-xl font-bold text-white hover:bg-blue-700 shadow-lg">Lançar Pendente</button>
-            </div>
-        </div>
-    </div>
+<div id="modal-expense" class="hidden fixed inset-0 bg-black/50 z-50 flex justify-center items-center p-4">
+    <div class="bg-white rounded-2xl w-full max-w-md"><div class="p-5 border-b flex justify-between bg-slate-50"><h3>Registrar Nova Saída</h3><button onclick="document.getElementById('modal-expense').classList.add('hidden')"><i data-lucide="x"></i></button></div>
+    <div class="p-6 space-y-4"><input type="hidden" id="exp-id"><select id="exp-item" class="w-full p-3 border rounded-xl"><option>Cimento</option><option>Areia</option><option>Brita</option><option>Frete</option><option>Salário</option><option>Combustível</option><option>Imposto</option><option>Maquinas</option><option>Despesas Diversas</option></select>
+    <input type="text" id="exp-provider" placeholder="Fornecedor" class="w-full p-3 border rounded-xl"><input type="number" id="exp-cost" placeholder="0.00" class="w-full p-3 border rounded-xl font-bold text-red-600"><input type="date" id="exp-date" class="w-full p-3 border rounded-xl"><input type="text" id="exp-note" placeholder="Observação" class="w-full p-3 border rounded-xl">
+    <button onclick="salvarDespesa()" class="w-full py-3 bg-red-600 text-white rounded-xl font-bold">Salvar Pendente</button></div></div>
+</div>
 
-    <!-- Modal Despesa -->
-    <div id="modal-expense" class="hidden fixed inset-0 bg-black/50 z-50 flex justify-center items-center p-4">
-        <div class="bg-white rounded-2xl w-full max-w-md shadow-2xl flex flex-col max-h-[90vh] overflow-hidden">
-            <div class="p-5 border-b flex justify-between items-center bg-slate-50">
-                <h3 class="font-bold text-slate-800 text-lg flex items-center gap-2"><i data-lucide="minus-circle" class="text-red-500"></i> Registrar Nova Saída</h3>
-                <button onclick="document.getElementById('modal-expense').classList.add('hidden')" class="text-slate-400 hover:text-red-500"><i data-lucide="x"></i></button>
-            </div>
-            <div class="p-6 space-y-4 overflow-y-auto">
-                 <input type="hidden" id="exp-id">
-                 <div>
-                    <label class="block text-sm font-bold text-slate-700 mb-1">Categoria da Despesa</label>
-                    <select id="exp-item" class="w-full p-3 border rounded-xl focus:ring-2 focus:ring-red-500 outline-none bg-white">
-                        <option value="Cimento">Cimento</option>
-                        <option value="Areia">Areia</option>
-                        <option value="Brita">Brita</option>
-                        <option value="Frete">Frete</option>
-                        <option value="Salário">Salário</option>
-                        <option value="Combustível">Combustível</option>
-                        <option value="Imposto">Imposto</option>
-                        <option value="Maquinas">Máquinas</option>
-                        <option value="Despesas Diversas">Despesas Diversas</option>
-                    </select>
-                </div>
-                <div>
-                    <label class="block text-sm font-bold text-slate-700 mb-1">Nome / Fornecedor</label>
-                    <input type="text" id="exp-provider" placeholder="Ex: João da Silva..." class="w-full p-3 border rounded-xl focus:ring-2 focus:ring-red-500 outline-none">
-                </div>
-                <div>
-                    <label class="block text-sm font-bold text-slate-700 mb-1">Custo Total (R$)</label>
-                    <input type="number" id="exp-cost" placeholder="0.00" class="w-full p-3 border rounded-xl font-bold text-red-600 focus:ring-2 focus:ring-red-500 outline-none">
-                </div>
-                <div>
-                    <label class="block text-sm font-bold text-slate-700 mb-1">Data de Vencimento</label>
-                    <input type="date" id="exp-date" class="w-full p-3 border rounded-xl focus:ring-2 focus:ring-red-500 outline-none">
-                </div>
-                <div>
-                    <label class="block text-sm font-bold text-slate-700 mb-1">Observação</label>
-                    <input type="text" id="exp-note" placeholder="Descrição ou detalhes..." class="w-full p-3 border rounded-xl focus:ring-2 focus:ring-red-500 outline-none">
-                </div>
-            </div>
-            <div class="p-5 border-t bg-slate-50 flex gap-3">
-                <button onclick="document.getElementById('modal-expense').classList.add('hidden')" class="flex-1 py-3 bg-white border border-slate-300 rounded-xl font-bold text-slate-600 hover:bg-slate-100">Cancelar</button>
-                <button onclick="saveExpense()" class="flex-1 py-3 bg-red-600 rounded-xl font-bold text-white hover:bg-red-700 shadow-lg">Salvar Pendente</button>
-            </div>
-        </div>
-    </div>
+<div id="modal-period-report" class="hidden fixed inset-0 bg-black/50 z-50 flex justify-center items-center p-4">
+    <div class="bg-white rounded-2xl w-full max-w-md"><div class="p-5 border-b flex justify-between bg-slate-50"><h3>Relatório de Vendas</h3><button onclick="closePeriodReportModal()"><i data-lucide="x"></i></button></div>
+    <div class="p-6 space-y-4"><input type="date" id="rep-per-start" class="w-full p-3 border rounded-xl"><input type="date" id="rep-per-end" class="w-full p-3 border rounded-xl"><select id="rep-per-payment" class="w-full p-3 border rounded-xl"><option value="Todos">Todos</option><option>Dinheiro</option><option>PIX</option><option>Cartão Crédito</option><option>Cartão Débito</option><option>Boleto 5 dias</option><option>Boleto 10 dias</option><option>Boleto 15 dias</option><option>PIX 7 dias</option><option>Carteira</option></select><input type="text" id="rep-per-client" placeholder="Cliente" class="w-full p-3 border rounded-xl">
+    <button onclick="printPeriodReport()" class="w-full py-3 bg-indigo-700 text-white rounded-xl font-bold">Gerar e Imprimir</button></div></div>
+</div>
 
-    <!-- Modal Relatório Período -->
-    <div id="modal-period-report" class="hidden fixed inset-0 bg-black/50 z-50 flex justify-center items-center p-4">
-        <div class="bg-white rounded-2xl w-full max-w-md shadow-2xl flex flex-col max-h-[90vh] overflow-hidden">
-            <div class="p-5 border-b flex justify-between items-center bg-slate-50">
-                <h3 class="font-bold text-slate-800 text-lg flex items-center gap-2"><i data-lucide="calendar-search" class="text-indigo-600"></i> Relatório de Vendas</h3>
-                <button onclick="closePeriodReportModal()" class="text-slate-400 hover:text-red-500"><i data-lucide="x"></i></button>
-            </div>
-            <div class="p-6 space-y-4 overflow-y-auto">
-                <div class="grid grid-cols-2 gap-3">
-                    <div>
-                        <label class="block text-sm font-bold text-slate-700 mb-1">Data Inicial</label>
-                        <input type="date" id="rep-per-start" class="w-full p-3 border rounded-xl focus:ring-2 focus:ring-indigo-600 outline-none bg-white">
-                    </div>
-                    <div>
-                        <label class="block text-sm font-bold text-slate-700 mb-1">Data Final</label>
-                        <input type="date" id="rep-per-end" class="w-full p-3 border rounded-xl focus:ring-2 focus:ring-indigo-600 outline-none bg-white">
-                    </div>
-                </div>
-                <div>
-                    <label class="block text-sm font-bold text-slate-700 mb-1">Forma de Pagamento</label>
-                    <select id="rep-per-payment" class="w-full p-3 border rounded-xl focus:ring-2 focus:ring-indigo-600 outline-none bg-white">
-                        <option value="Todos">Todos</option>
-                        <option>Dinheiro</option><option>PIX</option><option>Cartão Crédito</option><option>Cartão Débito</option>
-                        <option>Boleto 5 dias</option><option>Boleto 10 dias</option><option>Boleto 15 dias</option>
-                        <option>PIX 7 dias</option><option>Carteira</option>
-                    </select>
-                </div>
-                <div>
-                    <label class="block text-sm font-bold text-slate-700 mb-1">Cliente</label>
-                    <input type="text" id="rep-per-client" placeholder="Digite o nome (Deixe vazio para Todos)" class="w-full p-3 border rounded-xl focus:ring-2 focus:ring-indigo-600 outline-none">
-                </div>
-            </div>
-            <div class="p-5 border-t bg-slate-50 flex gap-3">
-                <button onclick="closePeriodReportModal()" class="flex-1 py-3 bg-white border border-slate-300 rounded-xl font-bold text-slate-600 hover:bg-slate-100">Cancelar</button>
-                <button onclick="printPeriodReport()" class="flex-1 py-3 bg-indigo-700 rounded-xl font-bold text-white hover:bg-indigo-800 shadow-lg flex items-center justify-center gap-2"><i data-lucide="printer" class="w-4 h-4"></i> Gerar e Imprimir</button>
-            </div>
-        </div>
-    </div>
+<!-- MODAIS LAJES -->
+<div id="modal-comodo-laje" class="hidden fixed inset-0 bg-black/40 z-50 flex items-center justify-center p-4">
+    <div class="bg-white rounded-2xl w-full max-w-lg shadow-2xl max-h-[90vh] overflow-y-auto"><div class="p-5 border-b flex justify-between bg-slate-50"><h3>Novo Cômodo</h3><button onclick="fecharModalComodo()"><i data-lucide="x"></i></button></div>
+    <div class="p-6 space-y-4"><input type="text" id="laje-comodo-nome" placeholder="Nome" class="w-full p-3 border rounded-lg"><div class="grid grid-cols-2 gap-3"><div><label>Vão Menor</label><input type="number" id="laje-vao-menor" step="0.01" oninput="calcularLajePreview()" class="w-full p-3 border rounded-lg"></div><div><label>Vão Maior</label><input type="number" id="laje-vao-maior" step="0.01" oninput="calcularLajePreview()" class="w-full p-3 border rounded-lg"></div></div>
+    <select id="laje-tipo-enchimento" class="w-full p-3 border rounded-lg" onchange="calcularLajePreview()"><option value="EPS">Isopor</option><option value="LAJOTA_CERAMICA">Lajota</option></select>
+    <select id="laje-altura" class="w-full p-3 border rounded-lg" onchange="calcularLajePreview()"><option value="8">8 cm</option><option value="12">12 cm</option><option value="16">16 cm</option><option value="20">20 cm</option></select>
+    <div id="laje-preview" class="bg-amber-50 border border-amber-200 rounded-lg p-4 text-sm hidden"><p class="font-bold text-amber-800">Pré-visualização</p><div class="grid grid-cols-2 gap-2"><div>Vigotas: <strong id="laje-prev-vigotas">-</strong></div><div>Tamanho: <strong id="laje-prev-tamanho">-</strong></div><div>EPS: <strong id="laje-prev-eps">-</strong></div><div>Área: <strong id="laje-prev-area">-</strong></div><div>Valor: <strong id="laje-prev-valor">-</strong></div></div></div>
+    <button onclick="adicionarComodoLaje()" class="w-full bg-slate-800 text-white py-3 rounded-lg font-bold">Adicionar</button></div></div>
+</div>
 
-    <!-- ============================================================ -->
-    <!-- SCRIPTS (ORDEM CORRETA)                                     -->
-    <!-- ============================================================ -->
-    <script src="js/utils.js"></script>
-    <script src="js/pdv.js"></script>
-    <script src="js/expedicao.js"></script>
-    <script src="js/orcamentos.js"></script>
-    <script src="js/relatorios.js"></script>
-    <script src="js/clientes.js"></script>
-    <script src="js/produtos.js"></script>
-    <script src="js/producao.js"></script>
-    <script src="js/usuarios.js"></script>
-    <script src="js/financeiro.js"></script>
-    <script src="js/gerencial.js"></script>
-    <script src="js/equipe.js"></script>
-    <script src="js/laje.js"></script>
-    <script src="js/app.js"></script>
-  </body>
+<div id="modal-produto-laje" class="hidden fixed inset-0 bg-black/40 z-50 flex items-center justify-center p-4">
+    <div class="bg-white rounded-2xl w-full max-w-md shadow-2xl"><div class="p-5 border-b flex justify-between bg-slate-50"><h3>Novo Produto</h3><button onclick="fecharModalProduto()"><i data-lucide="x"></i></button></div>
+    <div class="p-6 space-y-4"><input type="hidden" id="laje-produto-id"><input type="text" id="laje-produto-descricao" placeholder="Descrição" class="w-full p-3 border rounded-lg"><input type="text" id="laje-produto-unidade" placeholder="Unidade" class="w-full p-3 border rounded-lg"><input type="number" id="laje-produto-custo" placeholder="Custo unitário" step="0.01" class="w-full p-3 border rounded-lg"><select id="laje-produto-tipo" class="w-full p-3 border rounded-lg"><option value="material">Material</option><option value="servico">Serviço</option><option value="frete">Frete</option></select>
+    <button onclick="salvarProdutoLaje()" class="w-full bg-green-600 text-white py-3 rounded-lg font-bold">Salvar</button></div></div>
+</div>
+
+<!-- SCRIPTS -->
+<script src="js/utils.js"></script>
+<script src="js/app.js"></script>
+<script src="js/financeiro.js"></script>
+<script src="js/pdv.js"></script>
+<script src="js/expedicao.js"></script>
+<script src="js/orcamentos.js"></script>
+<script src="js/relatorios.js"></script>
+<script src="js/clientes.js"></script>
+<script src="js/produtos.js"></script>
+<script src="js/producao.js"></script>
+<script src="js/usuarios.js"></script>
+<script src="js/dashboard.js"></script>
+<script src="js/gerencial.js"></script>
+<script src="js/equipe.js"></script>
+<script src="js/laje.js"></script>
+</body>
 </html>
