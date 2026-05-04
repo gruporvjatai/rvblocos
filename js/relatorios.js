@@ -1,6 +1,46 @@
-// ====== RELATÓRIOS ======
+// =================================================================
+// MÓDULO RELATÓRIOS - RV BLOCOS
+// =================================================================
 
-// ====== FATURAMENTO DO DIA ======
+// =================================================================
+// RENDER PRINCIPAL - chamado por navigate('reports')
+// =================================================================
+function renderReports() {
+    const container = document.getElementById('view-reports');
+    if (!container) return;
+
+    container.innerHTML = `
+    <h2 class="text-2xl font-bold text-slate-800 mb-6 flex items-center gap-2">
+        <i data-lucide="pie-chart"></i> Relatórios
+    </h2>
+
+    <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6 pb-10">
+        <!-- Card Faturamento do Dia -->
+        <div onclick="printDailyRevenue()" class="bg-white p-6 rounded-xl shadow-sm border border-slate-200 hover:border-orange-500 hover:shadow-md cursor-pointer transition-all flex flex-col items-center text-center gap-3">
+            <div class="w-14 h-14 bg-orange-100 text-orange-600 rounded-full flex items-center justify-center">
+                <i data-lucide="calendar-days" class="w-7 h-7"></i>
+            </div>
+            <h3 class="font-bold text-slate-800 text-lg">Faturamento do Dia</h3>
+            <p class="text-xs text-slate-500 font-medium">Imprime o resumo das vendas de hoje, formas de pagamento e total geral.</p>
+        </div>
+
+        <!-- Card Vendas por Período -->
+        <div onclick="openPeriodReportModal()" class="bg-white p-6 rounded-xl shadow-sm border border-slate-200 hover:border-indigo-500 hover:shadow-md cursor-pointer transition-all flex flex-col items-center text-center gap-3">
+            <div class="w-14 h-14 bg-indigo-100 text-indigo-600 rounded-full flex items-center justify-center">
+                <i data-lucide="bar-chart-3" class="w-7 h-7"></i>
+            </div>
+            <h3 class="font-bold text-slate-800 text-lg">Vendas por Período</h3>
+            <p class="text-xs text-slate-500 font-medium">Filtre vendas por data, cliente ou método de pagamento.</p>
+        </div>
+    </div>
+    `;
+
+    lucide.createIcons();
+}
+
+// =================================================================
+// FATURAMENTO DO DIA
+// =================================================================
 function printDailyRevenue() {
     showLoading(true);
     const hojeLocalStr = getHojeLocalStr();
@@ -103,14 +143,8 @@ function printDailyRevenue() {
                 <div style="width:45%; border:1px solid #000; padding:15px; border-radius:6px; background-color:#f8fafc;">
                     <h4 style="margin:0 0 10px; font-size:13px; border-bottom:1px solid #000; padding-bottom:5px; text-transform:uppercase;">Resumo do Dia</h4>
                     <table style="width:100%; font-size:12px; border-collapse:collapse;">
-                        <tr>
-                            <td style="padding:5px 0;">Qtd. Pedidos:</td>
-                            <td style="padding:5px 0; text-align:right; font-weight:bold;">${vendasHoje.length}</td>
-                        </tr>
-                        <tr>
-                            <td style="padding:10px 0; font-size:14px; font-weight:900; border-top:1px solid #000;">LÍQUIDO TOTAL:</td>
-                            <td style="padding:10px 0; font-size:16px; font-weight:900; text-align:right; border-top:1px solid #000; color:#0f172a;">${formatMoney(totalLiquido)}</td>
-                        </tr>
+                        <tr><td style="padding:5px 0;">Qtd. Pedidos:</td><td style="text-align:right; font-weight:bold;">${vendasHoje.length}</td></tr>
+                        <tr><td style="padding:10px 0; font-size:14px; font-weight:900; border-top:1px solid #000;">LÍQUIDO TOTAL:</td><td style="text-align:right; font-size:16px; font-weight:900; border-top:1px solid #000; color:#0f172a;">${formatMoney(totalLiquido)}</td></tr>
                     </table>
                 </div>
             </div>
@@ -124,13 +158,17 @@ function printDailyRevenue() {
     }, 500);
 }
 
-// ====== RELATÓRIO POR PERÍODO ======
+// =================================================================
+// RELATÓRIO POR PERÍODO
+// =================================================================
 function openPeriodReportModal() {
     const hoje = new Date();
     const primeiro = new Date(hoje.getFullYear(), hoje.getMonth(), 1);
     const ultimo = new Date(hoje.getFullYear(), hoje.getMonth() + 1, 0);
     document.getElementById('rep-per-start').value = getLocalISODate(primeiro);
     document.getElementById('rep-per-end').value = getLocalISODate(ultimo);
+    document.getElementById('rep-per-payment').value = 'Todos';
+    document.getElementById('rep-per-client').value = '';
     document.getElementById('modal-period-report').classList.remove('hidden');
 }
 
@@ -249,14 +287,8 @@ function printPeriodReport() {
                 <div style="width:45%; border:1px solid #000; padding:15px; border-radius:6px; background-color:#f8fafc;">
                     <h4 style="margin:0 0 10px; font-size:13px; border-bottom:1px solid #000; padding-bottom:5px; text-transform:uppercase;">Resumo do Período</h4>
                     <table style="width:100%; font-size:12px; border-collapse:collapse;">
-                        <tr>
-                            <td style="padding:5px 0;">Qtd. Pedidos:</td>
-                            <td style="padding:5px 0; text-align:right; font-weight:bold;">${filteredSales.length}</td>
-                        </tr>
-                        <tr>
-                            <td style="padding:10px 0; font-size:14px; font-weight:900; border-top:1px solid #000;">LÍQUIDO TOTAL:</td>
-                            <td style="padding:10px 0; font-size:16px; font-weight:900; text-align:right; border-top:1px solid #000; color:#0f172a;">${formatMoney(totalLiquido)}</td>
-                        </tr>
+                        <tr><td style="padding:5px 0;">Qtd. Pedidos:</td><td style="text-align:right; font-weight:bold;">${filteredSales.length}</td></tr>
+                        <tr><td style="padding:10px 0; font-size:14px; font-weight:900; border-top:1px solid #000;">LÍQUIDO TOTAL:</td><td style="text-align:right; font-size:16px; font-weight:900; border-top:1px solid #000; color:#0f172a;">${formatMoney(totalLiquido)}</td></tr>
                     </table>
                 </div>
             </div>
