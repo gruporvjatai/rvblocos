@@ -372,6 +372,8 @@ function reprintSale(id) {
     else showToast("Função de impressão indisponível", true);
 }
 
+function printSaleOrder(id) { reprintSale(id); } // ou implemente a impressão dedicada
+
 async function duplicateSaleToQuote(saleId) {
     if (!confirm("Duplicar esta venda como orçamento?")) return;
     showLoading(true);
@@ -436,3 +438,6 @@ function downloadSalePDF(id) {
     // será implementada no módulo de impressão
     showToast("Download PDF em desenvolvimento.", true);
 }
+
+// no final de pdv.js
+document.addEventListener('DOMContentLoaded', () => updateClientSelects());
