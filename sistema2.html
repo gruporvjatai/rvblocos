@@ -3001,7 +3001,7 @@ function openClientForm(id) {
     }
 }
 
-function renderFinance() {
+/*function renderFinance() {
     const salesMap = {};
     STATE.logs.filter(l => l.type === 'venda' && l.status !== 'CANCELADO').forEach(l => {
         if(!salesMap[l.id]) {
@@ -3131,7 +3131,7 @@ function renderDashboard() {
         <div class="w-full bg-slate-100 h-2 rounded-full mt-4 overflow-hidden"><div class="h-full rounded-full ${p.available<100?'bg-red-500':'bg-blue-500'}" style="width: ${percent}%"></div></div>
         </div>`; 
     }).join(''); 
-}
+}*/
 
 function renderProductionSelect() { 
     const sel = document.getElementById('prod-select-production');
