@@ -319,120 +319,39 @@
           </div>
         </div>
       </div>
+
       
-      <div id="view-fin" class="hidden-section">
-    <div class="flex justify-between items-center mb-6">
-        <h2 class="text-2xl font-bold text-slate-800">Financeiro &amp; Caixa</h2>
-    </div>
-    
-    <div class="grid grid-cols-1 md:grid-cols-3 gap-4 mb-6">
-        <div class="bg-green-50 p-4 rounded-xl border border-green-100 shadow-sm">
-            <p class="text-green-800 text-xs font-bold uppercase">Receitas (Recebidas)</p>
-            <h3 id="fin-income" class="text-2xl font-bold text-green-600 mt-1">R$ 0,00</h3>
-        </div>
-        <div class="bg-red-50 p-4 rounded-xl border border-red-100 shadow-sm">
-            <p class="text-red-800 text-xs font-bold uppercase">Saídas (Despesas Pagas)</p>
-            <h3 id="fin-expenses" class="text-2xl font-bold text-red-600 mt-1">R$ 0,00</h3>
-        </div>
-        <div class="bg-blue-50 p-4 rounded-xl border border-blue-100 shadow-sm">
-            <p class="text-blue-800 text-xs font-bold uppercase">Saldo em Caixa</p>
-            <h3 id="fin-balance" class="text-2xl font-bold text-blue-600 mt-1">R$ 0,00</h3>
-        </div>
-    </div>
-    
-    <div class="grid grid-cols-1 lg:grid-cols-2 gap-6">
-        
-        <div class="bg-white rounded-xl border shadow-sm flex flex-col h-[650px]">
-            <div class="p-4 border-b bg-slate-50 rounded-t-xl flex justify-between items-center">
-                <h3 class="font-bold text-slate-700 flex items-center gap-2"><i data-lucide="arrow-down-to-line" class="w-5 h-5 text-blue-600"></i> Contas a Receber</h3>
-                <div class="flex gap-2">
-                    <button onclick="printReceivables()" class="bg-slate-200 hover:bg-slate-300 text-slate-700 px-3 py-1.5 rounded-lg text-xs font-bold shadow-sm transition-all flex items-center gap-1"><i data-lucide="printer" class="w-4 h-4"></i> Imprimir</button>
-                    <button onclick="openRevenueModal()" class="bg-blue-600 hover:bg-blue-700 text-white px-3 py-1.5 rounded-lg text-xs font-bold shadow-md transition-all flex items-center gap-1"><i data-lucide="plus" class="w-4 h-4"></i> Nova</button>
-                </div>
-            </div>
-            
-            <div class="p-3 border-b bg-white flex flex-col gap-2">
-                <div class="flex gap-2">
-                    <div class="relative flex-1">
-                        <i data-lucide="search" class="absolute left-2 top-2 text-slate-400 w-4 h-4"></i>
-                        <input type="text" id="rec-search" placeholder="Buscar cliente..." class="w-full pl-8 p-1.5 border rounded text-xs focus:ring-1 focus:ring-blue-600 outline-none" onkeyup="renderFinance()">
+      <div id="view-fin" class="hidden-section"></div>
+
+                <div class="bg-white rounded-xl border shadow-sm flex flex-col h-[400px]">
+                    <div class="p-4 border-b bg-slate-50 rounded-t-xl flex justify-between items-center">
+                        <h3 class="font-bold text-slate-700 flex items-center gap-2"><i data-lucide="list" class="w-5 h-5 text-slate-500"></i> Histórico de Saídas (Despesas)</h3>
                     </div>
-                    <select id="rec-status" class="w-32 p-1.5 border rounded text-xs focus:ring-1 focus:ring-blue-600 outline-none" onchange="renderFinance()">
-                        <option value="">Todos</option>
-                        <option value="ABERTOS">Em Aberto</option>
-                        <option value="VENCIDOS">Vencidos</option>
-                        <option value="PAGOS">Pagos</option>
-                    </select>
-                </div>
-                <div class="flex gap-2 items-center">
-                    <input type="date" id="rec-start" class="p-1.5 border rounded text-xs flex-1 focus:ring-1 focus:ring-blue-600 outline-none" onchange="renderFinance()">
-                    <span class="text-slate-400 text-xs">até</span>
-                    <input type="date" id="rec-end" class="p-1.5 border rounded text-xs flex-1 focus:ring-1 focus:ring-blue-600 outline-none" onchange="renderFinance()">
-                    <button onclick="document.getElementById('rec-search').value=''; document.getElementById('rec-status').value=''; document.getElementById('rec-start').value=''; document.getElementById('rec-end').value=''; renderFinance()" class="p-1.5 bg-slate-200 hover:bg-slate-300 rounded text-slate-600" title="Limpar Filtros"><i data-lucide="x" class="w-4 h-4"></i></button>
-                </div>
-            </div>
-
-            <div class="overflow-y-auto flex-1 p-0">
-                <table class="w-full text-sm text-left">
-                    <thead class="text-slate-500 bg-slate-50 sticky top-0 border-b z-10">
-                        <tr>
-                            <th class="p-3 font-semibold">Venc/Pagto</th>
-                            <th class="p-3 font-semibold">Cliente/Ref</th>
-                            <th class="p-3 font-semibold">Valor</th>
-                            <th class="p-3 font-semibold text-right w-24">Ação</th>
-                        </tr>
-                    </thead>
-                    <tbody id="fin-receivables-list" class="divide-y"></tbody>
-                </table>
-            </div>
-        </div>
-
-        <div class="bg-white rounded-xl border shadow-sm flex flex-col h-[650px]">
-            <div class="p-4 border-b bg-slate-50 rounded-t-xl flex justify-between items-center">
-                <h3 class="font-bold text-slate-700 flex items-center gap-2"><i data-lucide="arrow-up-from-line" class="w-5 h-5 text-red-500"></i> Contas a Pagar</h3>
-                <div class="flex gap-2">
-                    <button onclick="printExpenses()" class="bg-slate-200 hover:bg-slate-300 text-slate-700 px-3 py-1.5 rounded-lg text-xs font-bold shadow-sm transition-all flex items-center gap-1"><i data-lucide="printer" class="w-4 h-4"></i> Imprimir</button>
-                    <button onclick="document.getElementById('exp-id').value=''; document.getElementById('modal-expense').classList.remove('hidden')" class="bg-red-500 hover:bg-red-600 text-white px-3 py-1.5 rounded-lg text-xs font-bold shadow-md transition-all flex items-center gap-1"><i data-lucide="minus-circle" class="w-4 h-4"></i> Lançar Saída</button>
-                </div>
-            </div>
-            
-            <div class="p-3 border-b bg-white flex flex-col gap-2">
-                <div class="flex gap-2">
-                    <div class="relative flex-1">
-                        <i data-lucide="search" class="absolute left-2 top-2 text-slate-400 w-4 h-4"></i>
-                        <input type="text" id="exp-search" placeholder="Buscar fornecedor/item..." class="w-full pl-8 p-1.5 border rounded text-xs focus:ring-1 focus:ring-red-500 outline-none" onkeyup="renderFinance()">
+                    <div class="p-3 border-b bg-white flex gap-2">
+                        <input type="date" id="exp-filter-start" class="p-2 border rounded text-xs w-full focus:ring-2 focus:ring-orange-500 outline-none" onchange="renderFinance()">
+                        <span class="text-slate-400 self-center">Até</span>
+                        <input type="date" id="exp-filter-end" class="p-2 border rounded text-xs w-full focus:ring-2 focus:ring-orange-500 outline-none" onchange="renderFinance()">
+                        <button onclick="document.getElementById('exp-filter-start').value=''; document.getElementById('exp-filter-end').value=''; renderFinance()" class="p-2 bg-slate-200 hover:bg-slate-300 rounded text-xs"><i data-lucide="x" class="w-4 h-4"></i></button>
                     </div>
-                    <select id="exp-status" class="w-32 p-1.5 border rounded text-xs focus:ring-1 focus:ring-red-500 outline-none" onchange="renderFinance()">
-                        <option value="">Todos</option>
-                        <option value="PENDENTE">Pendentes</option>
-                        <option value="PAGO">Pagos</option>
-                    </select>
+                    <div class="overflow-y-auto flex-1 p-4">
+                        <table class="w-full text-sm text-left">
+                            <thead class="text-slate-500 border-b">
+                                <tr>
+                                    <th class="pb-2">Data</th>
+                                    <th class="pb-2">Item</th>
+                                    <th class="pb-2 text-center">Qtd</th>
+                                    <th class="pb-2">Valor (R$)</th>
+                                    <th class="pb-2">Obs</th>
+                                </tr>
+                            </thead>
+                            <tbody id="fin-expense-history-list" class="divide-y"></tbody>
+                        </table>
+                    </div>
                 </div>
-                <div class="flex gap-2 items-center">
-                    <input type="date" id="exp-start" class="p-1.5 border rounded text-xs flex-1 focus:ring-1 focus:ring-red-500 outline-none" onchange="renderFinance()">
-                    <span class="text-slate-400 text-xs">até</span>
-                    <input type="date" id="exp-end" class="p-1.5 border rounded text-xs flex-1 focus:ring-1 focus:ring-red-500 outline-none" onchange="renderFinance()">
-                    <button onclick="document.getElementById('exp-search').value=''; document.getElementById('exp-status').value=''; document.getElementById('exp-start').value=''; document.getElementById('exp-end').value=''; renderFinance()" class="p-1.5 bg-slate-200 hover:bg-slate-300 rounded text-slate-600" title="Limpar Filtros"><i data-lucide="x" class="w-4 h-4"></i></button>
-                </div>
-            </div>
 
-            <div class="overflow-y-auto flex-1 p-0">
-                <table class="w-full text-sm text-left">
-                    <thead class="text-slate-500 bg-slate-50 sticky top-0 border-b z-10">
-                        <tr>
-                            <th class="p-3 font-semibold">Data</th>
-                            <th class="p-3 font-semibold">Fornecedor</th>
-                            <th class="p-3 font-semibold">Valor</th>
-                            <th class="p-3 font-semibold text-right w-[110px]">Ação</th>
-                        </tr>
-                    </thead>
-                    <tbody id="fin-expense-history-list" class="divide-y"></tbody>
-                </table>
             </div>
         </div>
-
-    </div>
-</div>
+      </div>
 
       <div id="view-reports" class="hidden-section w-full h-[calc(100vh-120px)] flex flex-col">
           <h2 class="text-2xl font-bold text-slate-800 mb-6 flex items-center gap-2">
@@ -1007,84 +926,6 @@
         </form>
     </div>
 
-    <div id="modal-receivable-edit" class="hidden fixed inset-0 bg-black/50 z-50 flex justify-center items-center p-4">
-        <div class="bg-white rounded-2xl w-full max-w-md shadow-2xl flex flex-col max-h-[90vh] overflow-hidden">
-            <div class="p-5 border-b flex justify-between items-center bg-slate-50">
-                <h3 class="font-bold text-slate-800 text-lg flex items-center gap-2"><i data-lucide="edit" class="text-blue-500"></i> Editar / Baixa Parcial</h3>
-                <button onclick="document.getElementById('modal-receivable-edit').classList.add('hidden')" class="text-slate-400 hover:text-red-500"><i data-lucide="x"></i></button>
-            </div>
-            <div class="p-6 space-y-4 overflow-y-auto">
-                <input type="hidden" id="rec-id">
-                <div class="flex justify-between items-center bg-slate-100 p-3 rounded">
-                    <span class="text-sm font-bold text-slate-600">Total: <span id="rec-total-lbl" class="text-blue-600"></span></span>
-                    <span class="text-sm font-bold text-slate-600">Restante: <span id="rec-pending-lbl" class="text-red-600"></span></span>
-                </div>
-                <div>
-                    <label class="block text-sm font-bold text-slate-700 mb-1">Forma de Pagto</label>
-                    <select id="rec-method" class="w-full p-3 border rounded-xl"><option>Dinheiro</option><option>PIX</option><option>Cartão Crédito</option><option>Cartão Débito</option><option>Boleto 5 dias</option><option>Boleto 10 dias</option><option>Boleto 15 dias</option><option>PIX 7 dias</option></select>
-                </div>
-                <div>
-                    <label class="block text-sm font-bold text-slate-700 mb-1">Data Vencimento</label>
-                    <input type="date" id="rec-due" class="w-full p-3 border rounded-xl focus:ring-2 focus:ring-blue-500">
-                </div>
-                <div class="pt-3 border-t mt-2">
-                    <label class="block text-sm font-bold text-green-700 mb-1">Dar Baixa (Receber Valor Agora)</label>
-                    <input type="number" id="rec-pay-val" placeholder="0.00" class="w-full p-3 border rounded-xl font-bold focus:ring-2 focus:ring-green-500 outline-none text-green-700">
-                    <p class="text-[11px] text-slate-400 mt-1">*Para editar apenas a Data/Tipo, deixe o valor em branco.</p>
-                </div>
-            </div>
-            <div class="p-5 border-t bg-slate-50 flex gap-3">
-                <button onclick="document.getElementById('modal-receivable-edit').classList.add('hidden')" class="flex-1 py-3 bg-white border border-slate-300 rounded-xl font-bold text-slate-600 hover:bg-slate-100">Cancelar</button>
-                <button onclick="saveReceivableEdit()" class="flex-1 py-3 bg-blue-600 rounded-xl font-bold text-white hover:bg-blue-700 shadow-lg">Salvar / Baixar</button>
-            </div>
-        </div>
-    </div>
-
-   <div id="modal-expense" class="hidden fixed inset-0 bg-black/50 z-50 flex justify-center items-center p-4">
-    <div class="bg-white rounded-2xl w-full max-w-md shadow-2xl flex flex-col max-h-[90vh] overflow-hidden">
-        <div class="p-5 border-b flex justify-between items-center bg-slate-50">
-            <h3 class="font-bold text-slate-800 text-lg flex items-center gap-2"><i data-lucide="minus-circle" class="text-red-500"></i> Registrar Nova Saída</h3>
-            <button onclick="document.getElementById('modal-expense').classList.add('hidden')" class="text-slate-400 hover:text-red-500"><i data-lucide="x"></i></button>
-        </div>
-        <div class="p-6 space-y-4 overflow-y-auto">
-            <input type="hidden" id="exp-id">
-            <div>
-                <label class="block text-sm font-bold text-slate-700 mb-1">Categoria da Despesa</label>
-                <select id="exp-item" class="w-full p-3 border rounded-xl focus:ring-2 focus:ring-red-500 outline-none bg-white">
-                    <option value="Cimento">Cimento</option>
-                    <option value="Areia">Areia</option>
-                    <option value="Brita">Brita</option>
-                    <option value="Frete">Frete</option>
-                    <option value="Salário">Salário</option>
-                    <option value="Combustível">Combustível</option>
-                    <option value="Imposto">Imposto</option>
-                    <option value="Maquinas">Máquinas</option>
-                    <option value="Despesas Diversas">Despesas Diversas</option>
-                </select>
-            </div>
-            <div>
-                <label class="block text-sm font-bold text-slate-700 mb-1">Nome / Fornecedor</label>
-                <input type="text" id="exp-provider" placeholder="Ex: João da Silva..." class="w-full p-3 border rounded-xl focus:ring-2 focus:ring-red-500 outline-none">
-            </div>
-            <div>
-                <label class="block text-sm font-bold text-slate-700 mb-1">Custo Total (R$)</label>
-                <input type="number" id="exp-cost" placeholder="0.00" class="w-full p-3 border rounded-xl font-bold text-red-600 focus:ring-2 focus:ring-red-500 outline-none">
-            </div>
-            <div>
-                <label class="block text-sm font-bold text-slate-700 mb-1">Data de Vencimento</label>
-                <input type="date" id="exp-date" class="w-full p-3 border rounded-xl focus:ring-2 focus:ring-red-500 outline-none">
-            </div>
-            <div>
-                <label class="block text-sm font-bold text-slate-700 mb-1">Observação</label>
-                <input type="text" id="exp-note" placeholder="Descrição ou detalhes..." class="w-full p-3 border rounded-xl focus:ring-2 focus:ring-red-500 outline-none">
-            </div>
-        </div>
-        <div class="p-5 border-t bg-slate-50 flex gap-3">
-            <button onclick="document.getElementById('modal-expense').classList.add('hidden')" class="flex-1 py-3 bg-white border border-slate-300 rounded-xl font-bold text-slate-600 hover:bg-slate-100">Cancelar</button>
-            <button onclick="saveExpense()" class="flex-1 py-3 bg-red-600 rounded-xl font-bold text-white hover:bg-red-700 shadow-lg">Salvar Pendente</button>
-        </div>
-    </div>
-</div>
 
     <div id="modal-revenue" class="hidden fixed inset-0 bg-black/50 z-50 flex justify-center items-center p-4">
     <div class="bg-white rounded-2xl w-full max-w-md shadow-2xl flex flex-col max-h-[90vh] overflow-hidden">
@@ -1124,6 +965,99 @@
         </div>
     </div>
 </div>
+
+    
+
+    <div id="modal-receivable-edit" class="hidden fixed inset-0 bg-black/50 z-50 flex justify-center items-center p-4">
+        <div class="bg-white rounded-2xl w-full max-w-md shadow-2xl flex flex-col max-h-[90vh] overflow-hidden">
+            <div class="p-5 border-b flex justify-between items-center bg-slate-50">
+                <h3 class="font-bold text-slate-800 text-lg flex items-center gap-2"><i data-lucide="edit" class="text-blue-500"></i> Editar / Baixa Parcial</h3>
+                <button onclick="document.getElementById('modal-receivable-edit').classList.add('hidden')" class="text-slate-400 hover:text-red-500"><i data-lucide="x"></i></button>
+            </div>
+            <div class="p-6 space-y-4 overflow-y-auto">
+                <input type="hidden" id="rec-id">
+                <div class="flex justify-between items-center bg-slate-100 p-3 rounded">
+                    <span class="text-sm font-bold text-slate-600">Total: <span id="rec-total-lbl" class="text-blue-600"></span></span>
+                    <span class="text-sm font-bold text-slate-600">Restante: <span id="rec-pending-lbl" class="text-red-600"></span></span>
+                </div>
+                <div>
+                    <label class="block text-sm font-bold text-slate-700 mb-1">Forma de Pagto</label>
+                    <select id="rec-method" class="w-full p-3 border rounded-xl"><option>Dinheiro</option><option>PIX</option><option>Cartão Crédito</option><option>Cartão Débito</option><option>Boleto 5 dias</option><option>Boleto 10 dias</option><option>Boleto 15 dias</option><option>PIX 7 dias</option></select>
+                </div>
+                <div>
+                    <label class="block text-sm font-bold text-slate-700 mb-1">Data Vencimento</label>
+                    <input type="date" id="rec-due" class="w-full p-3 border rounded-xl focus:ring-2 focus:ring-blue-500">
+                </div>
+                <div class="pt-3 border-t mt-2">
+                    <label class="block text-sm font-bold text-green-700 mb-1">Dar Baixa (Receber Valor Agora)</label>
+                    <input type="number" id="rec-pay-val" placeholder="0.00" class="w-full p-3 border rounded-xl font-bold focus:ring-2 focus:ring-green-500 outline-none text-green-700">
+                    <p class="text-[11px] text-slate-400 mt-1">*Para editar apenas a Data/Tipo, deixe o valor em branco.</p>
+                </div>
+            </div>
+            <div class="p-5 border-t bg-slate-50 flex gap-3">
+                <button onclick="document.getElementById('modal-receivable-edit').classList.add('hidden')" class="flex-1 py-3 bg-white border border-slate-300 rounded-xl font-bold text-slate-600 hover:bg-slate-100">Cancelar</button>
+                <button onclick="saveReceivableEdit()" class="flex-1 py-3 bg-blue-600 rounded-xl font-bold text-white hover:bg-blue-700 shadow-lg">Salvar / Baixar</button>
+            </div>
+        </div>
+    </div>
+
+    <div id="modal-expense" class="hidden fixed inset-0 bg-black/50 z-50 flex justify-center items-center p-4">
+        <div class="bg-white rounded-2xl w-full max-w-md shadow-2xl flex flex-col max-h-[90vh] overflow-hidden">
+            <div class="p-5 border-b flex justify-between items-center bg-slate-50">
+                <h3 class="font-bold text-slate-800 text-lg flex items-center gap-2"><i data-lucide="minus-circle" class="text-red-500"></i> Registrar Nova Saída</h3>
+                <button onclick="document.getElementById('modal-expense').classList.add('hidden')" class="text-slate-400 hover:text-red-500"><i data-lucide="x"></i></button>
+            </div>
+            <div class="p-6 space-y-4 overflow-y-auto">
+                 <div>
+                    <label class="block text-sm font-bold text-slate-700 mb-1">Descrição do Gasto (Item)</label>
+                    <select id="exp-item" class="w-full p-3 border rounded-xl focus:ring-2 focus:ring-orange-500 outline-none bg-white">
+                        <option value="Cimento">Cimento</option>
+                        <option value="Areia">Areia</option>
+                        <option value="Brita">Brita</option>
+                        <option value="Frete">Frete</option>
+                        <option value="Salário">Salário</option>
+                        <option value="Combustível">Combustível</option>
+                        <option value="Imposto">Imposto</option>
+                        <option value="Maquinas">Máquinas</option>
+                        <option value="Despesas Diversas">Despesas Diversas</option>
+                    </select>
+                </div>
+                <div class="grid grid-cols-2 gap-4">
+                    <div>
+                        <label class="block text-sm font-bold text-slate-700 mb-1">Quantidade</label>
+                        <input type="number" id="exp-qty" placeholder="Ex: 50" class="w-full p-3 border rounded-xl focus:ring-2 focus:ring-orange-500 outline-none">
+                    </div>
+                    <div>
+                        <label class="block text-sm font-bold text-slate-700 mb-1">Unidade</label>
+                        <select id="exp-unit" class="w-full p-3 border rounded-xl focus:ring-2 focus:ring-orange-500 outline-none bg-white">
+                            <option value="Un">Un (Unidade)</option>
+                            <option value="Sc">Sc (Saco)</option>
+                            <option value="Tn">Tn (Tonelada)</option>
+                            <option value="M³">M³ (Metros Cúbicos)</option>                            
+                            <option value="Kg">Kg (Quilo)</option>
+                            <option value="Lt">Lt (Litros)</option>
+                        </select>
+                    </div>
+                </div>
+                <div>
+                    <label class="block text-sm font-bold text-slate-700 mb-1">Custo Total (R$)</label>
+                    <input type="number" id="exp-cost" placeholder="0.00" class="w-full p-3 border rounded-xl font-bold text-red-600 focus:ring-2 focus:ring-orange-500 outline-none">
+                </div>
+                <div>
+                    <label class="block text-sm font-bold text-slate-700 mb-1">Data</label>
+                    <input type="date" id="exp-date" class="w-full p-3 border rounded-xl focus:ring-2 focus:ring-orange-500 outline-none">
+                </div>
+                <div>
+                    <label class="block text-sm font-bold text-slate-700 mb-1">Observação</label>
+                    <input type="text" id="exp-note" placeholder="Descrição..." class="w-full p-3 border rounded-xl focus:ring-2 focus:ring-orange-500 outline-none">
+                </div>
+            </div>
+            <div class="p-5 border-t bg-slate-50 flex gap-3">
+                <button onclick="document.getElementById('modal-expense').classList.add('hidden')" class="flex-1 py-3 bg-white border border-slate-300 rounded-xl font-bold text-slate-600 hover:bg-slate-100">Cancelar</button>
+                <button onclick="saveExpense()" class="flex-1 py-3 bg-red-600 rounded-xl font-bold text-white hover:bg-red-700 shadow-lg">Salvar</button>
+            </div>
+        </div>
+    </div>
 
     <div id="modal-period-report" class="hidden fixed inset-0 bg-black/50 z-50 flex justify-center items-center p-4">
         <div class="bg-white rounded-2xl w-full max-w-md shadow-2xl flex flex-col max-h-[90vh] overflow-hidden">
@@ -1199,23 +1133,6 @@ function navigate(viewId) {
     if(viewId === 'quotes') renderQuotesList();
     if(viewId === 'expedition') renderExpedition();
     if(viewId === 'fin') renderFinance();
-  // ===== INÍCIO DA ALTERAÇÃO: PREENCHER DATAS PADRÃO NA ABA FINANCEIRO =====
-    if(viewId === 'fin') {
-        const range = getCurrentMonthRange();
-        if (!document.getElementById('rec-start').value) {
-            document.getElementById('rec-start').value = range.start;
-        }
-        if (!document.getElementById('rec-end').value) {
-            document.getElementById('rec-end').value = range.end;
-        }
-        if (!document.getElementById('exp-start').value) {
-            document.getElementById('exp-start').value = range.start;
-        }
-        if (!document.getElementById('exp-end').value) {
-            document.getElementById('exp-end').value = range.end;
-        }
-    }
-    // ===== FIM DA ALTERAÇÃO =====
     if(viewId === 'reports') {} 
     if (viewId === 'equipe') { if (typeof renderEquipe === 'function') renderEquipe(); }
     if(viewId === 'clients') renderClients();
@@ -1227,16 +1144,6 @@ function navigate(viewId) {
   
     lucide.createIcons();
 }
-
-      function getCurrentMonthRange() {
-          const hoje = new Date();
-          const primeiroDia = new Date(hoje.getFullYear(), hoje.getMonth(), 1);
-          const ultimoDia = new Date(hoje.getFullYear(), hoje.getMonth() + 1, 0);
-          return {
-              start: getLocalISODate(primeiroDia),
-              end: getLocalISODate(ultimoDia)
-          };
-      }
 
 function applyRBAC() {
     try {
@@ -1792,8 +1699,8 @@ async function saveReceivableEdit() {
     
     showLoading(true);
 
-    let rowsToUpdate = STATE.logs.filter(l => String(l.id) === String(id) && (l.type === 'venda' || l.type === 'receita'));
-    if(!rowsToUpdate.length) { showLoading(false); return showToast("Registro não encontrado", true); }
+    let rowsToUpdate = STATE.logs.filter(l => String(l.id) === String(id) && l.type === 'venda');
+    if(!rowsToUpdate.length) { showLoading(false); return showToast("Pedido não encontrado", true); }
 
     let orderTotal = rowsToUpdate.reduce((acc, r) => acc + r.totalValue, 0);
     let orderPaid = rowsToUpdate.reduce((acc, r) => Math.max(acc, r.paidValue), 0);
@@ -1810,7 +1717,7 @@ async function saveReceivableEdit() {
     if (payVal > 0) {
         await sb.from('logs').insert([{
             id: getNextId(STATE.logs), tipo: 'recebimento', produto_nome: 'Baixa de Conta', quantidade: 0,
-            data: getHojeLocalStr(), observacao: 'Ref Lanc #' + id, valor_total: payVal,
+            data: new Date().toISOString(), observacao: 'Ref Venda #' + id, valor_total: payVal,
             cliente_nome: rowsToUpdate[0].clientName, forma_pagamento: method || rowsToUpdate[0].paymentMethod,
             status: 'ATIVO', status_financeiro: 'PAGO', valor_pago: payVal
         }]);
@@ -1820,304 +1727,39 @@ async function saveReceivableEdit() {
     showToast("Conta atualizada!");
     loadData();
 }
-      
-// ========== DESPESAS ==========
-function openEditExpense(id) {
-    const exp = STATE.expenses.find(e => String(e.id) === String(id));
-    if(!exp) return;
-    document.getElementById('exp-id').value = exp.id;
-    document.getElementById('exp-item').value = exp.item;
-    
-    let providerVal = '';
-    let noteVal = exp.note || '';
-    if (noteVal.startsWith('Fornecedor:')) {
-        const parts = noteVal.split('|');
-        providerVal = parts[0].replace('Fornecedor:', '').trim();
-        noteVal = parts.slice(1).join('|').trim();
-    }
-    
-    document.getElementById('exp-provider').value = providerVal;
-    document.getElementById('exp-cost').value = exp.cost;
-    try { document.getElementById('exp-date').value = (exp.date||'').split('T')[0]; } catch(e){}
-    document.getElementById('exp-note').value = noteVal;
-    
-    document.getElementById('modal-expense').classList.remove('hidden');
-}
 
 async function saveExpense() {
-    const idVal = document.getElementById('exp-id').value;
-    const isNew = !idVal;
     const item = document.getElementById('exp-item').value;
-    const provider = document.getElementById('exp-provider').value.trim();
+    const qty = document.getElementById('exp-qty').value;
+    const unit = document.getElementById('exp-unit').value;
     const cost = document.getElementById('exp-cost').value;
+    let date = document.getElementById('exp-date').value || new Date().toISOString();
+    const note = document.getElementById('exp-note').value;
     
-    const dataLocal = getHojeLocalStr();
-    let date = document.getElementById('exp-date').value || dataLocal;
-    const note = document.getElementById('exp-note').value.trim();
-    
-    if(!item || !cost) return showToast("Preencha a categoria e o valor", true);
+    if(!item || !cost) return showToast("Preencha item e custo", true);
     showLoading(true);
 
-    const finalNote = provider ? `Fornecedor: ${provider}${note ? ' | ' + note : ''}` : note;
+    const newId = getNextId(STATE.logs); 
 
-    const payload = {
-        item: item, quantidade: 1, unidade: 'Un',
-        custo: Number(cost), data: date, observacao: finalNote, status: 'PENDENTE'
-    };
+    await sb.from('despesas').insert([{
+        id: newId, item: item, quantidade: Number(qty) || 0, unidade: unit,
+        custo: Number(cost), data: date, observacao: note
+    }]);
 
-    let error;
-    if (isNew) {
-        payload.id = getNextId(STATE.expenses);
-        const res = await sb.from('despesas').insert([payload]);
-        error = res.error;
-    } else {
-        const res = await sb.from('despesas').update(payload).eq('id', idVal);
-        error = res.error;
-    }
+    await sb.from('logs').insert([{
+        id: newId, tipo: 'despesa', produto_nome: item, quantidade: Number(qty) || 0,
+        data: date, observacao: note, valor_total: Number(cost), status: 'ATIVO',
+        status_financeiro: 'PAGO', valor_pago: Number(cost)
+    }]);
 
-    if(error) { showLoading(false); return showToast("Erro: " + error.message, true); }
-
-    document.getElementById('exp-id').value = "";
-    document.getElementById('exp-provider').value = "";
-    document.getElementById('exp-cost').value = ""; 
-    document.getElementById('exp-note').value = "";
+    document.getElementById('exp-item').value = ""; document.getElementById('exp-qty').value = "";
+    document.getElementById('exp-cost').value = ""; document.getElementById('exp-note').value = "";
     document.getElementById('modal-expense').classList.add('hidden');
     
-    showToast(isNew ? "Despesa Lançada (Pendente)!" : "Despesa Atualizada!");
+    showToast("Despesa Salva!");
     loadData();
 }
 
-async function payExpense(id) {
-    if(!confirm("Confirmar a baixa desta despesa? O valor sairá do caixa agora.")) return;
-    showLoading(true);
-    
-    const exp = STATE.expenses.find(e => String(e.id) === String(id));
-    if(!exp) { showLoading(false); return showToast("Erro: Despesa não encontrada", true); }
-    if(exp.status === 'PAGO') { showLoading(false); return showToast("Esta despesa já foi paga!", true); }
-    
-    const { error: err1 } = await sb.from('despesas').update({ status: 'PAGO' }).eq('id', id);
-    if(err1) { showLoading(false); return showToast("Erro ao baixar: " + err1.message, true); }
-    
-    const newLogId = getNextId(STATE.logs);
-    const { error: err2 } = await sb.from('logs').insert([{
-        id: newLogId, tipo: 'despesa', produto_nome: exp.item, quantidade: exp.quantity,
-        data: getHojeLocalStr(), 
-        observacao: (exp.note ? exp.note + ' | ' : '') + 'Ref Despesa #' + exp.id, 
-        valor_total: exp.cost, status: 'ATIVO',
-        status_financeiro: 'PAGO', valor_pago: exp.cost
-    }]);
-    
-    if(err2) { showLoading(false); return showToast("Erro ao gerar log de caixa: " + err2.message, true); }
-    
-    showToast("Despesa baixada com sucesso!");
-    loadData();
-}
-
-async function excluirDespesa(id) {
-    if(!confirm("Excluir esta despesa permanentemente do sistema?")) return;
-    showLoading(true);
-    const {error} = await sb.from('despesas').delete().eq('id', id);
-    if(error) { showLoading(false); return showToast("Erro: " + error.message, true); }
-    showToast("Despesa excluída!");
-    loadData();
-}
-
-async function estornarDespesaLog(id) {
-    if(!confirm("Estornar o pagamento desta despesa? Ela voltará a ficar PENDENTE no caixa.")) return;
-    showLoading(true);
-    try {
-        await sb.from('despesas').update({ status: 'PENDENTE' }).eq('id', id);
-        await sb.from('logs').delete().like('observacao', `%Ref Despesa #${id}%`).eq('tipo', 'despesa');
-        showToast("Pagamento estornado!");
-        loadData();
-    } catch(e) {
-        showLoading(false);
-        showToast("Erro: " + e.message, true);
-    }
-}
-
-
-
-      function printReceivables() {
-        const termRec = document.getElementById('rec-search')?.value.toLowerCase() || '';
-        const statusRec = document.getElementById('rec-status')?.value || '';
-        const startRec = document.getElementById('rec-start')?.value;
-        const endRec = document.getElementById('rec-end')?.value;
-        const hojeLocalStr = getHojeLocalStr();
-    
-        const salesMap = {};
-        STATE.logs.filter(l => (l.type === 'venda' || l.type === 'receita') && l.status !== 'CANCELADO').forEach(l => {
-            if(!salesMap[l.id]) {
-                salesMap[l.id] = { 
-                    id: l.id, val: 0, paid: 0, status: l.finStatus, date: l.date, 
-                    clientName: l.clientName, payment: l.paymentMethod, dueDate: l.dueDate,
-                    desc: l.type === 'receita' ? l.productName : `Venda #${l.id}`
-                };
-            }
-            salesMap[l.id].val += Number(l.totalValue) || 0;
-            salesMap[l.id].paid = Math.max(salesMap[l.id].paid, Number(l.paidValue) || 0);
-        });
-        
-        let filtered = Object.values(salesMap);
-        if(termRec) filtered = filtered.filter(r => (r.clientName && r.clientName.toLowerCase().includes(termRec)) || (r.desc && r.desc.toLowerCase().includes(termRec)) || String(r.id).includes(termRec));
-        if(statusRec === 'PAGOS') filtered = filtered.filter(r => r.status === 'PAGO');
-        if(statusRec === 'ABERTOS') filtered = filtered.filter(r => r.status !== 'PAGO' && (r.dueDate||'').split('T')[0] >= hojeLocalStr);
-        if(statusRec === 'VENCIDOS') filtered = filtered.filter(r => r.status !== 'PAGO' && (r.dueDate||'').split('T')[0] < hojeLocalStr);
-        if(startRec) filtered = filtered.filter(r => (r.dueDate||'').split('T')[0] >= startRec);
-        if(endRec) filtered = filtered.filter(r => (r.dueDate||'').split('T')[0] <= endRec);
-        
-        filtered.sort((a,b) => (a.dueDate||'').localeCompare(b.dueDate||''));
-        if (filtered.length === 0) return showToast("Nenhum dado para imprimir", true);
-    
-        let totalGeral = 0;
-        let totalPago = 0;
-        const company = {
-            name: "RV BLOCOS E ESTRUTURAS",
-            cnpj: "46.889.791/0001-53",
-            logoUrl: "https://lh3.googleusercontent.com/d/1SIoZ2JlalfMnGDZTXBk7ZYuPgwxX3odF"
-        };
-    
-            const el = document.getElementById('print-area');
-                el.innerHTML = `
-                    <div class="invoice-box-orig" style="font-family: 'Helvetica', sans-serif; max-width: 800px; margin: auto; padding: 15px;">
-                        <div class="header-orig" style="display: flex; border: 1px solid #000; margin-bottom: 0;">
-                            <div class="logo-box-orig" style="width: 100px; padding: 5px; border-right: 1px solid #000; display: flex; align-items: center; justify-content: center;">
-                                <img src="${company.logoUrl}" style="max-height: 80px; max-width: 100%;" />
-                            </div>
-                            <div class="company-box-orig" style="flex: 1; padding: 10px; border-right: 1px solid #000;">
-                                <h2 style="margin: 0; font-size: 18px; font-weight: bold; color: #059669;">${company.name}</h2>
-                                <p style="margin: 2px 0; font-size: 12px;">CNPJ: ${company.cnpj}</p>
-                            </div>
-                            <div class="info-box-orig" style="width: 250px; padding: 10px; background-color: #f9f9f9; text-align: right;">
-                                <h3 style="margin: 0; font-size: 14px; font-weight: bold;">RELATÓRIO: CONTAS A RECEBER</h3>
-                                <p style="margin: 5px 0; font-size: 12px;">Emissão: ${new Date().toLocaleDateString()}</p>
-                            </div>
-                        </div>
-    
-                        <div style="background-color: #f8fafc; border: 1px solid #000; border-top: none; padding: 8px; margin-bottom: 15px; font-size: 12px;">
-                            <strong>Filtros aplicados:</strong> ${subheader}
-                        </div>
-    
-                        <table class="items-table-orig" style="width: 100%; border-collapse: collapse; font-size: 11px; border: 1px solid #000;">
-                            <thead>
-                                <tr style="background-color: #f1f5f9;">
-                                    <th style="border-bottom: 1px solid #000; border-right: 1px solid #000; padding: 6px; text-align: left;">Vencimento</th>
-                                    <th style="border-bottom: 1px solid #000; border-right: 1px solid #000; padding: 6px; text-align: left;">Cliente</th>
-                                    <th style="border-bottom: 1px solid #000; border-right: 1px solid #000; padding: 6px; text-align: left;">Referência</th>
-                                    <th style="border-bottom: 1px solid #000; border-right: 1px solid #000; padding: 6px; text-align: left;">Pagto</th>
-                                    <th style="border-bottom: 1px solid #000; border-right: 1px solid #000; padding: 6px; text-align: center;">Status</th>
-                                    <th style="border-bottom: 1px solid #000; padding: 6px; text-align: right;">Valor</th>
-                                </tr>
-                            </thead>
-                            <tbody>${rowsHtml}</tbody>
-                            <tfoot>
-                                <tr style="background-color: #f0fdf4;">
-                                    <td colspan="5" style="border-top: 2px solid #000; border-right: 1px solid #000; padding: 8px; text-align: right; font-weight: bold; font-size: 12px;">TOTAL BRUTO NA LISTA:</td>
-                                    <td style="border-top: 2px solid #000; padding: 8px; text-align: right; font-weight: bold; font-size: 14px; color: #0f172a;">${formatMoney(totalGeral)}</td>
-                                </tr>
-                            </tfoot>
-                        </table>
-                    </div>
-                `;
-                setTimeout(() => window.print(), 500);
-            }
-
-function printExpenses() {
-            const termExp = document.getElementById('exp-search')?.value.toLowerCase() || '';
-            const statusExp = document.getElementById('exp-status')?.value || '';
-            const startExp = document.getElementById('exp-start')?.value;
-            const endExp = document.getElementById('exp-end')?.value;
-            const hojeLocalStr = getHojeLocalStr();
-
-            let filteredExp = STATE.expenses.slice();
-            if(termExp) filteredExp = filteredExp.filter(e => e.item?.toLowerCase().includes(termExp) || e.note?.toLowerCase().includes(termExp));
-            if(statusExp) filteredExp = filteredExp.filter(e => e.status === statusExp);
-            if(startExp) filteredExp = filteredExp.filter(e => (e.date||'').split('T')[0] >= startExp);
-            if(endExp) filteredExp = filteredExp.filter(e => (e.date||'').split('T')[0] <= endExp);
-            
-            filteredExp.sort((a,b) => (a.date||'').localeCompare(b.date||''));
-
-            if (filteredExp.length === 0) return showToast("Nenhum dado para imprimir", true);
-
-            let totalGeral = 0;
-            const rowsHtml = filteredExp.map(e => {
-                totalGeral += e.cost;
-                const dataVencStr = (e.date||'').split('T')[0];
-                const situacao = e.status === 'PAGO' ? 'PAGO' : (dataVencStr < hojeLocalStr ? 'VENCIDO' : 'PENDENTE');
-                
-                let providerVal = e.note || '-';
-                if (providerVal.startsWith('Fornecedor:')) providerVal = providerVal.replace('Fornecedor:', '').trim();
-
-                return `
-                    <tr>
-                        <td style="border-bottom: 1px solid #ccc; border-right: 1px solid #000; padding: 5px;">${formatDate(e.date)}</td>
-                        <td style="border-bottom: 1px solid #ccc; border-right: 1px solid #000; padding: 5px; font-weight: bold;">${e.item}</td>
-                        <td style="border-bottom: 1px solid #ccc; border-right: 1px solid #000; padding: 5px;">${providerVal}</td>
-                        <td style="border-bottom: 1px solid #ccc; border-right: 1px solid #000; padding: 5px; text-align: center;">${situacao}</td>
-                        <td style="border-bottom: 1px solid #ccc; padding: 5px; text-align: right; font-weight: bold;">${formatMoney(e.cost)}</td>
-                    </tr>
-                `;
-            }).join('');
-
-            let filterText = [];
-            if(statusExp) filterText.push(`Status: ${statusExp}`);
-            if(startExp) filterText.push(`De: ${formatDate(startExp)}`);
-            if(endExp) filterText.push(`Até: ${formatDate(endExp)}`);
-            if(termExp) filterText.push(`Busca: "${termExp}"`);
-            let subheader = filterText.length > 0 ? filterText.join(' | ') : 'Todos os registros';
-
-            const company = {
-            name: "RV BLOCOS E ESTRUTURAS",
-            cnpj: "46.889.791/0001-53",
-            logoUrl: "https://lh3.googleusercontent.com/d/1SIoZ2JlalfMnGDZTXBk7ZYuPgwxX3odF"
-            };
-
-            const el = document.getElementById('print-area');
-            el.innerHTML = `
-                <div class="invoice-box-orig" style="font-family: 'Helvetica', sans-serif; max-width: 800px; margin: auto; padding: 15px;">
-                    <div class="header-orig" style="display: flex; border: 1px solid #000; margin-bottom: 0;">
-                        <div class="logo-box-orig" style="width: 100px; padding: 5px; border-right: 1px solid #000; display: flex; align-items: center; justify-content: center;">
-                            <img src="${company.logoUrl}" style="max-height: 80px; max-width: 100%;" />
-                        </div>
-                        <div class="company-box-orig" style="flex: 1; padding: 10px; border-right: 1px solid #000;">
-                            <h2 style="margin: 0; font-size: 18px; font-weight: bold; color: #059669;">${company.name}</h2>
-                            <p style="margin: 2px 0; font-size: 12px;">CNPJ: ${company.cnpj}</p>
-                        </div>
-                        <div class="info-box-orig" style="width: 250px; padding: 10px; background-color: #f9f9f9; text-align: right;">
-                            <h3 style="margin: 0; font-size: 14px; font-weight: bold;">RELATÓRIO: CONTAS A PAGAR</h3>
-                            <p style="margin: 5px 0; font-size: 12px;">Emissão: ${new Date().toLocaleDateString()}</p>
-                        </div>
-                    </div>
-
-                    <div style="background-color: #f8fafc; border: 1px solid #000; border-top: none; padding: 8px; margin-bottom: 15px; font-size: 12px;">
-                        <strong>Filtros aplicados:</strong> ${subheader}
-                    </div>
-
-                    <table class="items-table-orig" style="width: 100%; border-collapse: collapse; font-size: 11px; border: 1px solid #000;">
-                        <thead>
-                            <tr style="background-color: #f1f5f9;">
-                                <th style="border-bottom: 1px solid #000; border-right: 1px solid #000; padding: 6px; text-align: left;">Data</th>
-                                <th style="border-bottom: 1px solid #000; border-right: 1px solid #000; padding: 6px; text-align: left;">Categoria</th>
-                                <th style="border-bottom: 1px solid #000; border-right: 1px solid #000; padding: 6px; text-align: left;">Fornecedor / Obs</th>
-                                <th style="border-bottom: 1px solid #000; border-right: 1px solid #000; padding: 6px; text-align: center;">Status</th>
-                                <th style="border-bottom: 1px solid #000; padding: 6px; text-align: right;">Valor</th>
-                            </tr>
-                        </thead>
-                        <tbody>${rowsHtml}</tbody>
-                        <tfoot>
-                            <tr style="background-color: #fef2f2;">
-                                <td colspan="4" style="border-top: 2px solid #000; border-right: 1px solid #000; padding: 8px; text-align: right; font-weight: bold; font-size: 12px;">TOTAL DAS DESPESAS NA LISTA:</td>
-                                <td style="border-top: 2px solid #000; padding: 8px; text-align: right; font-weight: bold; font-size: 14px; color: #dc2626;">${formatMoney(totalGeral)}</td>
-                            </tr>
-                        </tfoot>
-                    </table>
-                </div>
-            `;
-            setTimeout(() => window.print(), 500);
-        }
-
-      
-      
 async function saveProduction(e) {
     e.preventDefault();
     const pId = document.getElementById('prod-select-production').value;
@@ -2220,14 +1862,14 @@ async function estornarRecebimento(id) {
     if(!confirm("Deseja estornar a baixa desta conta? Ela voltará a ficar PENDENTE no financeiro.")) return;
     showLoading(true);
     try {
-        const items = STATE.logs.filter(l => String(l.id) === String(id) && (l.type === 'venda' || l.type === 'receita'));
+        const items = STATE.logs.filter(l => String(l.id) === String(id) && l.type === 'venda');
         for(let item of items) {
             await sb.from('logs').update({
                 valor_pago: 0,
                 status_financeiro: 'PENDENTE'
             }).eq('uid', item.uid);
         }
-        await sb.from('logs').delete().like('observacao', `%Ref Lanc #${id}%`).eq('tipo', 'recebimento');
+        await sb.from('logs').delete().like('observacao', `%Ref Venda #${id}%`).eq('tipo', 'recebimento');
 
         showToast("Recebimento estornado!");
         await loadData();
@@ -2237,62 +1879,6 @@ async function estornarRecebimento(id) {
     }
 }
 
-      async function excluirReceitaPendente(id) {
-        const items = STATE.logs.filter(l => String(l.id) === String(id) && (l.type === 'venda' || l.type === 'receita'));
-        if(!items.length) return;
-        
-        const isVenda = items.some(i => i.type === 'venda');
-    
-        if(isVenda) {
-            if(confirm("Esta conta pertence a um Pedido de Venda. Deseja estornar a venda inteira para Orçamento?")) {
-                estornarVenda(id);  // já existe no código do sistema (77)
-            }
-        } else {
-            if(!confirm("Excluir esta Receita pendente permanentemente?")) return;
-            showLoading(true);
-            const {error} = await sb.from('logs').delete().eq('id', id).eq('tipo', 'receita');
-            if(error) { showLoading(false); return showToast("Erro: " + error.message, true); }
-            showToast("Receita excluída!");
-            loadData();
-        }
-    }
-
-      
-
-      async function saveRevenue() {
-    const desc = document.getElementById('rev-desc').value.trim();
-    const client = document.getElementById('rev-client').value.trim() || 'Consumidor Final';
-    const val = parseFloat(document.getElementById('rev-val').value) || 0;
-    const method = document.getElementById('rev-method').value;
-    
-    const dataLocal = getHojeLocalStr();
-    const due = document.getElementById('rev-due').value || dataLocal;
-    
-    if(!desc || !val) return showToast("Preencha descrição e valor!", true);
-    showLoading(true);
-    
-    const newId = getNextId(STATE.logs);
-    const payload = {
-        id: newId, tipo: 'receita', produto_nome: 'Receita Avulsa: ' + desc, quantidade: 1,
-        data: dataLocal, observacao: 'Lançamento Financeiro Manual', valor_total: val,
-        cliente_nome: client, forma_pagamento: method, status: 'ATIVO',
-        status_entrega: 'ENTREGUE', qtd_entregue: 1, desconto: 0,
-        status_financeiro: 'PENDENTE', vencimento: due, valor_pago: 0, endereco_entrega: ''
-    };
-    
-    const { error } = await sb.from('logs').insert([payload]);
-    if(error) { showLoading(false); return showToast("Erro: " + error.message, true); }
-    
-    document.getElementById('modal-revenue').classList.add('hidden');
-    document.getElementById('rev-desc').value = '';
-    document.getElementById('rev-val').value = '';
-    showToast("Receita Lançada (Pendente)!");
-    loadData();
-}
-
-function openRevenueModal() { document.getElementById('modal-revenue').classList.remove('hidden'); }
-
-      
 async function estornarDespesa(id) {
     if(!confirm("Estornar o pagamento desta despesa? Ela voltará a ficar PENDENTE no caixa.")) return;
     showLoading(true);
@@ -3390,162 +2976,106 @@ function openClientForm(id) {
 }
 
 function renderFinance() {
-    // Agrupamento de vendas/receitas em contas a receber
     const salesMap = {};
-    STATE.logs.filter(l => (l.type === 'venda' || l.type === 'receita') && l.status !== 'CANCELADO').forEach(l => {
+    STATE.logs.filter(l => l.type === 'venda' && l.status !== 'CANCELADO').forEach(l => {
         if(!salesMap[l.id]) {
-            salesMap[l.id] = { 
-                id: l.id, val: 0, paid: 0, status: l.finStatus, date: l.date, 
-                clientName: l.clientName, payment: l.paymentMethod, dueDate: l.dueDate,
-                desc: l.type === 'receita' ? l.productName : `Venda #${l.id}`
-            };
+            salesMap[l.id] = { id: l.id, val: 0, paid: 0, status: l.finStatus, date: l.date, clientName: l.clientName, payment: l.paymentMethod, dueDate: l.dueDate };
         }
         salesMap[l.id].val += Number(l.totalValue) || 0;
         salesMap[l.id].paid = Math.max(salesMap[l.id].paid, Number(l.paidValue) || 0);
     });
-    let salesArr = Object.values(salesMap);
+    const salesArr = Object.values(salesMap);
 
-    // Cálculo dos cards superiores
     const income = salesArr.filter(s => s.status === 'PAGO').reduce((a, b) => a + b.val, 0) +
                    salesArr.filter(s => s.status !== 'PAGO').reduce((a, b) => a + b.paid, 0);
     
-    const expenses = STATE.expenses.filter(e => e.status === 'PAGO').reduce((a, b) => a + Number(b.cost), 0);
+    const expenses = STATE.expenses.reduce((a, b) => a + Number(b.cost), 0);
     
     document.getElementById('fin-income').innerText = formatMoney(income);
     document.getElementById('fin-expenses').innerText = formatMoney(expenses);
     document.getElementById('fin-balance').innerText = formatMoney(income - expenses);
 
-    // ----- CONTAS A RECEBER (com filtros) -----
-    const termRec = document.getElementById('rec-search')?.value.toLowerCase() || '';
-    const statusRec = document.getElementById('rec-status')?.value || '';
-    const startRec = document.getElementById('rec-start')?.value;
-    const endRec = document.getElementById('rec-end')?.value;
-    const hojeLocalStr = getHojeLocalStr();
-
-    let filteredRec = salesArr;
-    
-    if(termRec) filteredRec = filteredRec.filter(r => (r.clientName && r.clientName.toLowerCase().includes(termRec)) || (r.desc && r.desc.toLowerCase().includes(termRec)) || String(r.id).includes(termRec));
-    if(statusRec === 'PAGOS') filteredRec = filteredRec.filter(r => r.status === 'PAGO');
-    if(statusRec === 'ABERTOS') filteredRec = filteredRec.filter(r => r.status !== 'PAGO' && (r.dueDate||'').split('T')[0] >= hojeLocalStr);
-    if(statusRec === 'VENCIDOS') filteredRec = filteredRec.filter(r => r.status !== 'PAGO' && (r.dueDate||'').split('T')[0] < hojeLocalStr);
-    if(startRec) filteredRec = filteredRec.filter(r => (r.dueDate||'').split('T')[0] >= startRec);
-    if(endRec) filteredRec = filteredRec.filter(r => (r.dueDate||'').split('T')[0] <= endRec);
-    
-    filteredRec.sort((a,b) => (b.dueDate||'').localeCompare(a.dueDate||''));
-
+    const receivables = salesArr.filter(s => s.status !== 'PAGO' && s.val > s.paid).sort((a,b) => new Date(a.dueDate) - new Date(b.dueDate));
     const recBody = document.getElementById('fin-receivables-list');
-    if(filteredRec.length === 0) {
-        recBody.innerHTML = `<tr><td colspan="4" class="p-6 text-center text-slate-400">Nenhum registro encontrado.</td></tr>`;
-    } else {
-        const totalValRec = filteredRec.reduce((acc, r) => acc + r.val, 0);
-        const totalPaidRec = filteredRec.reduce((acc, r) => acc + r.paid, 0);
-        const totalRestRec = totalValRec - totalPaidRec;
-
-        const rowsHtml = filteredRec.map(r => {
-            const dataVencStr = (r.dueDate||'').split('T')[0];
-            const isVencido = dataVencStr < hojeLocalStr && r.status !== 'PAGO';
-            const corFundo = isVencido ? 'bg-red-50/50' : (r.status === 'PAGO' ? 'bg-green-50/50 opacity-80' : '');
-            const avisoVenc = isVencido ? '<span class="text-[9px] bg-red-500 text-white px-1 rounded ml-1">VENCIDO</span>' : '';
-            const rest = r.val - r.paid;
-
-            return `<tr class="hover:bg-slate-100 ${corFundo} transition">
-                <td class="p-3 text-xs border-r border-slate-100">
-                    <div class="font-bold ${isVencido ? 'text-red-600' : 'text-slate-700'}">${formatDate(r.dueDate)} ${avisoVenc}</div>
-                    <div class="text-[10px] text-slate-400 font-bold uppercase mt-0.5">${r.payment || '-'}</div>
-                </td>
-                <td class="p-3 border-r border-slate-100">
-                    <div class="font-bold text-slate-800 text-xs">${r.clientName}</div>
-                    <div class="text-[10px] text-slate-500 truncate w-32" title="${r.desc}">${r.desc}</div>
-                </td>
-                <td class="p-3 border-r border-slate-100">
-                    <div class="font-bold text-slate-800 text-sm">${formatMoney(r.val)}</div>
-                    ${r.status !== 'PAGO' && r.paid > 0 ? `<div class="text-[10px] text-orange-500 font-bold">Resta: ${formatMoney(rest)}</div>` : ''}
-                </td>
-                <td class="p-3 text-right flex items-center justify-end gap-1 h-full">
-                    ${r.status !== 'PAGO' ? 
-                    `<button onclick="openEditReceivable('${r.id}', ${r.val}, ${r.paid}, '${r.dueDate}', '${r.payment}')" class="bg-blue-600 hover:bg-blue-700 text-white text-[10px] font-bold py-1.5 px-3 rounded shadow flex items-center gap-1"><i data-lucide="edit-3" class="w-3 h-3"></i> BAIXAR</button>
-                     <button onclick="excluirReceitaPendente('${r.id}')" class="bg-white border border-red-200 text-red-500 hover:bg-red-50 text-[10px] font-bold py-1.5 px-2 rounded shadow" title="Excluir"><i data-lucide="trash-2" class="w-3 h-3"></i></button>` 
-                    : 
-                    `<span class="text-[10px] font-bold text-green-700 bg-green-100 px-2 py-1.5 rounded flex items-center gap-1"><i data-lucide="check-circle" class="w-3 h-3"></i> PAGO</span>
-                     <button onclick="estornarRecebimento('${r.id}')" class="bg-white border border-slate-200 text-slate-500 hover:text-red-500 text-[10px] font-bold py-1.5 px-2 rounded shadow" title="Estornar"><i data-lucide="rotate-ccw" class="w-3 h-3"></i></button>`
-                    }
-                </td>
-            </tr>`;
-        }).join('');
-
-        const totalRowHtml = `<tr class="bg-blue-50 border-t-2 border-blue-200 sticky bottom-0 z-10 shadow-[0_-4px_6px_-1px_rgba(0,0,0,0.1)]">
-            <td colspan="2" class="p-3 text-right font-bold text-blue-900 text-xs uppercase">Totais da Pesquisa:</td>
-            <td class="p-3 font-black text-blue-700 text-sm border-r border-blue-200">
-                ${formatMoney(totalValRec)}
-            </td>
-            <td class="p-3 bg-blue-50"></td>
-        </tr>`;
-
-        recBody.innerHTML = rowsHtml + totalRowHtml;
-    }
-
-    // ----- CONTAS A PAGAR (com filtros) -----
-    let filteredExp = STATE.expenses.slice();
-    const termExp = document.getElementById('exp-search')?.value.toLowerCase() || '';
-    const statusExp = document.getElementById('exp-status')?.value || '';
-    const startExp = document.getElementById('exp-start')?.value;
-    const endExp = document.getElementById('exp-end')?.value;
-
-    if(termExp) filteredExp = filteredExp.filter(e => e.item?.toLowerCase().includes(termExp) || e.note?.toLowerCase().includes(termExp));
-    if(statusExp) filteredExp = filteredExp.filter(e => e.status === statusExp);
-    if(startExp) filteredExp = filteredExp.filter(e => (e.date||'').split('T')[0] >= startExp);
-    if(endExp) filteredExp = filteredExp.filter(e => (e.date||'').split('T')[0] <= endExp);
     
-    filteredExp.sort((a,b) => (b.date||'').localeCompare(a.date||''));
-
-    const expBody = document.getElementById('fin-expense-history-list');
-    if(filteredExp.length === 0) {
-        expBody.innerHTML = `<tr><td colspan="4" class="p-6 text-center text-slate-400">Nenhum registro encontrado.</td></tr>`;
+    if(receivables.length === 0) {
+        recBody.innerHTML = `<tr><td colspan="5" class="p-4 text-center text-slate-400">Nenhuma conta pendente.</td></tr>`;
     } else {
-        const totalValExp = filteredExp.reduce((acc, e) => acc + e.cost, 0);
-
-        const rowsHtmlExp = filteredExp.map(e => {
-            const dataVencStr = (e.date||'').split('T')[0];
-            const isVencido = dataVencStr < hojeLocalStr && e.status !== 'PAGO';
-            const corFundo = isVencido ? 'bg-red-50/50' : (e.status === 'PAGO' ? 'bg-green-50/50 opacity-80' : 'bg-orange-50/30');
-            const avisoVenc = isVencido ? '<span class="text-[9px] bg-red-500 text-white px-1 rounded ml-1">VENCIDO</span>' : '';
-
-            let providerVal = e.note || '-';
-            if (providerVal.startsWith('Fornecedor:')) providerVal = providerVal.replace('Fornecedor:', '').trim();
-
-            return `<tr class="hover:bg-slate-100 ${corFundo} transition">
-                <td class="p-3 text-xs border-r border-slate-100">
-                    <div class="font-bold ${isVencido ? 'text-red-600' : 'text-slate-700'}">${formatDate(e.date)} ${avisoVenc}</div>
-                </td>
-                <td class="p-3 border-r border-slate-100">
-                    <div class="font-bold text-slate-800 text-xs">${e.item}</div>
-                    <div class="text-[10px] text-slate-500 truncate w-32" title="${providerVal}">${providerVal}</div>
-                </td>
-                <td class="p-3 border-r border-slate-100">
-                    <div class="font-bold text-slate-800 text-sm">${formatMoney(e.cost)}</div>
-                </td>
-                <td class="p-3 text-right flex items-center justify-end gap-1 h-full">
-                    ${e.status !== 'PAGO' ? `
-                        <button onclick="openEditExpense('${e.id}')" class="bg-slate-200 text-slate-700 hover:bg-slate-300 p-1.5 rounded shadow" title="Editar"><i data-lucide="edit-3" class="w-3.5 h-3.5"></i></button>
-                        <button onclick="payExpense('${e.id}')" class="bg-red-500 text-white hover:bg-red-600 p-1.5 rounded shadow flex items-center gap-1 text-[10px] font-bold" title="Baixar / Pagar"><i data-lucide="check-circle" class="w-3.5 h-3.5"></i> BAIXAR</button>
-                        <button onclick="excluirDespesa('${e.id}')" class="bg-white border border-red-200 text-red-500 hover:bg-red-50 p-1.5 rounded shadow" title="Excluir"><i data-lucide="trash-2" class="w-3.5 h-3.5"></i></button>
-                    ` : `
-                        <span class="text-[10px] font-bold text-green-700 bg-green-100 px-2 py-1.5 rounded flex items-center gap-1"><i data-lucide="check" class="w-3 h-3 inline"></i> PAGO</span>
-                        <button onclick="estornarDespesaLog('${e.id}')" class="bg-white border border-slate-200 text-slate-500 hover:text-red-500 p-1.5 rounded shadow" title="Estornar"><i data-lucide="rotate-ccw" class="w-3 h-3 inline"></i></button>
-                    `}
+        const hoje = new Date();
+        hoje.setHours(0,0,0,0);
+        
+        recBody.innerHTML = receivables.map(r => {
+            const dataVenc = new Date(r.dueDate);
+            const isVencido = dataVenc < hoje;
+            const corTexto = isVencido ? 'text-red-600 font-bold' : 'text-slate-800';
+            const corFundo = isVencido ? 'bg-red-50' : '';
+            const aviso = isVencido ? '<span class="text-[10px] bg-red-500 text-white px-1 rounded ml-1">ATRASADO</span>' : '';
+            const rest = r.val - r.paid;
+            
+            return `<tr class="hover:bg-slate-50 ${corFundo}">
+                <td class="p-3 py-4">#${r.id}<br><span class="text-[10px] text-slate-400 font-bold">${r.payment}</span></td>
+                <td class="p-3">${r.clientName}</td>
+                <td class="p-3 ${corTexto}">${formatDate(r.dueDate)} ${aviso}</td>
+                <td class="p-3 font-bold">${formatMoney(rest)}</td>
+                <td class="p-3 text-right">
+                    <button onclick="openEditReceivable('${r.id}', ${r.val}, ${r.paid}, '${r.dueDate}', '${r.payment}')" class="bg-blue-500 hover:bg-blue-600 text-white text-[10px] font-bold py-1 px-3 rounded shadow"><i data-lucide="edit-3" class="w-3 h-3 inline"></i> EDITAR</button>
+                    <button onclick="estornarRecebimento('${r.id}')" class="bg-white border border-slate-200 text-slate-500 hover:text-red-500 text-[10px] font-bold py-1 px-2 rounded shadow ml-1" title="Estornar"><i data-lucide="rotate-ccw" class="w-3 h-3"></i></button>
                 </td>
             </tr>`;
         }).join('');
-
-        const totalRowExpHtml = `<tr class="bg-red-50 border-t-2 border-red-200 sticky bottom-0 z-10 shadow-[0_-4px_6px_-1px_rgba(0,0,0,0.1)]">
-            <td colspan="2" class="p-3 text-right font-bold text-red-900 text-xs uppercase">Totais da Pesquisa:</td>
-            <td class="p-3 font-black text-red-700 text-sm border-r border-red-200">${formatMoney(totalValExp)}</td>
-            <td class="p-3 bg-red-50"></td>
-        </tr>`;
-
-        expBody.innerHTML = rowsHtmlExp + totalRowExpHtml;
     }
 
+    let incomeLogs = [];
+    STATE.logs.forEach(l => {
+        if (l.status === 'CANCELADO') return;
+        if (l.type === 'recebimento') {
+            incomeLogs.push({ date: l.date, client: l.clientName, ref: l.note, method: l.paymentMethod, val: l.totalValue });
+        }
+    });
+
+    const incStart = document.getElementById('inc-filter-start')?.value;
+    const incEnd = document.getElementById('inc-filter-end')?.value;
+    
+    if(incStart) incomeLogs = incomeLogs.filter(i => new Date(i.date) >= new Date(incStart));
+    if(incEnd) {
+        let endD = new Date(incEnd);
+        endD.setHours(23,59,59);
+        incomeLogs = incomeLogs.filter(i => new Date(i.date) <= endD);
+    }
+    
+    incomeLogs.sort((a,b) => new Date(b.date) - new Date(a.date));
+
+    document.getElementById('fin-income-history-list').innerHTML = incomeLogs.map(i => `
+        <tr class="hover:bg-slate-50">
+            <td class="p-3 text-slate-500">${formatDate(i.date)}</td>
+            <td class="p-3 font-medium">${i.client}</td>
+            <td class="p-3 text-xs text-slate-500">${i.ref}</td>
+            <td class="p-3 text-xs text-slate-500">${i.method}</td>
+            <td class="p-3 font-bold text-green-600">+ ${formatMoney(i.val)}</td>
+        </tr>
+    `).join('');
+
+    const start = document.getElementById('exp-filter-start')?.value;
+    const end = document.getElementById('exp-filter-end')?.value;
+    
+    let filteredExp = STATE.expenses.slice().reverse();
+    if(start) filteredExp = filteredExp.filter(e => new Date(e.date) >= new Date(start));
+    if(end) {
+        let endD = new Date(end);
+        endD.setHours(23,59,59);
+        filteredExp = filteredExp.filter(e => new Date(e.date) <= endD);
+    }
+
+    document.getElementById('fin-expense-history-list').innerHTML = filteredExp.map(e => `
+        <tr class="hover:bg-slate-50">
+            <td class="p-3 text-slate-500">${formatDate(e.date)}</td>
+            <td class="p-3 font-medium">${e.item}</td>
+            <td class="p-3 text-center text-slate-500 text-xs">${e.quantity} ${e.unit}</td>
+            <td class="p-3 font-bold text-red-500">- ${formatMoney(e.cost)}</td>
+            <td class="p-3 text-slate-400 text-xs italic">${e.note || '-'}</td>
+        </tr>
+    `).join('');
+    
     lucide.createIcons();
 }
 
@@ -3553,12 +3083,13 @@ function openEditReceivable(id, total, paid, due, method) {
     document.getElementById('rec-id').value = id;
     document.getElementById('rec-total-lbl').innerText = formatMoney(total);
     document.getElementById('rec-pending-lbl').innerText = formatMoney(total - paid);
-    try { document.getElementById('rec-due').value = (due||'').split('T')[0]; } catch(e){}
+    
+    try { document.getElementById('rec-due').value = new Date(due).toISOString().split('T')[0]; } catch(e){}
     document.getElementById('rec-method').value = method;
     document.getElementById('rec-pay-val').value = '';
+    
     document.getElementById('modal-receivable-edit').classList.remove('hidden');
 }
-
 
 function renderDashboard() { 
     const grid = document.getElementById('dash-grid');
