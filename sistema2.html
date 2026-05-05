@@ -1158,7 +1158,7 @@ function navigate(viewId) {
     if(viewId === 'pos') renderPOSProducts();
     if(viewId === 'quotes') renderQuotesList();
     if(viewId === 'expedition') renderExpedition();
-    if(viewId === 'fin') renderFinance();
+    if(viewId === 'fin') { if (typeof renderFinance === 'function') renderFinance(); } 
     if(viewId === 'reports') {} 
     if (viewId === 'equipe') { if (typeof renderEquipe === 'function') renderEquipe(); }
     if(viewId === 'clients') renderClients();
