@@ -334,9 +334,9 @@
             <p class="text-red-800 text-xs font-bold uppercase">Saídas (Despesas Pagas)</p>
             <h3 id="fin-expenses" class="text-2xl font-bold text-red-600 mt-1">R$ 0,00</h3>
         </div>
-        <div class="bg-orange-50 p-4 rounded-xl border border-orange-100 shadow-sm">
-            <p class="text-orange-800 text-xs font-bold uppercase">Saldo em Caixa</p>
-            <h3 id="fin-balance" class="text-2xl font-bold text-orange-600 mt-1">R$ 0,00</h3>
+        <div class="bg-red-50 p-4 rounded-xl border border-red-100 shadow-sm">
+            <p class="text-red-800 text-xs font-bold uppercase">Saldo em Caixa</p>
+            <h3 id="fin-balance" class="text-2xl font-bold text-red-600 mt-1">R$ 0,00</h3>
         </div>
     </div>
     
@@ -344,10 +344,10 @@
         
         <div class="bg-white rounded-xl border shadow-sm flex flex-col h-[650px]">
             <div class="p-4 border-b bg-slate-50 rounded-t-xl flex justify-between items-center">
-                <h3 class="font-bold text-slate-700 flex items-center gap-2"><i data-lucide="arrow-down-to-line" class="w-5 h-5 text-orange-600"></i> Contas a Receber</h3>
+                <h3 class="font-bold text-slate-700 flex items-center gap-2"><i data-lucide="arrow-down-to-line" class="w-5 h-5 text-red-500"></i> Contas a Receber</h3>
                 <div class="flex gap-2">
                     <button onclick="printReceivables()" class="bg-slate-200 hover:bg-slate-300 text-slate-700 px-3 py-1.5 rounded-lg text-xs font-bold shadow-sm transition-all flex items-center gap-1"><i data-lucide="printer" class="w-4 h-4"></i> Imprimir</button>
-                    <button onclick="openRevenueModal()" class="bg-orange-600 hover:bg-orange-700 text-white px-3 py-1.5 rounded-lg text-xs font-bold shadow-md transition-all flex items-center gap-1"><i data-lucide="plus" class="w-4 h-4"></i> Nova</button>
+                    <button onclick="openRevenueModal()" class="bg-red-600 hover:bg-red-700 text-white px-3 py-1.5 rounded-lg text-xs font-bold shadow-md transition-all flex items-center gap-1"><i data-lucide="plus" class="w-4 h-4"></i> Nova</button>
                 </div>
             </div>
             
@@ -355,9 +355,9 @@
                 <div class="flex gap-2">
                     <div class="relative flex-1">
                         <i data-lucide="search" class="absolute left-2 top-2 text-slate-400 w-4 h-4"></i>
-                        <input type="text" id="rec-search" placeholder="Buscar cliente..." class="w-full pl-8 p-1.5 border rounded text-xs focus:ring-1 focus:ring-orange-600 outline-none" onkeyup="renderFinance()">
+                        <input type="text" id="rec-search" placeholder="Buscar cliente..." class="w-full pl-8 p-1.5 border rounded text-xs focus:ring-1 focus:ring-red-500 outline-none" onkeyup="renderFinance()">
                     </div>
-                    <select id="rec-status" class="w-32 p-1.5 border rounded text-xs focus:ring-1 focus:ring-orange-600 outline-none" onchange="renderFinance()">
+                    <select id="rec-status" class="w-32 p-1.5 border rounded text-xs focus:ring-1 focus:ring-red-500 outline-none" onchange="renderFinance()">
                         <option value="">Todos</option>
                         <option value="ABERTOS">Em Aberto</option>
                         <option value="VENCIDOS">Vencidos</option>
@@ -365,9 +365,9 @@
                     </select>
                 </div>
                 <div class="flex gap-2 items-center">
-                    <input type="date" id="rec-start" class="p-1.5 border rounded text-xs flex-1 focus:ring-1 focus:ring-orange-600 outline-none" onchange="renderFinance()">
+                    <input type="date" id="rec-start" class="p-1.5 border rounded text-xs flex-1 focus:ring-1 focus:ring-red-500 outline-none" onchange="renderFinance()">
                     <span class="text-slate-400 text-xs">até</span>
-                    <input type="date" id="rec-end" class="p-1.5 border rounded text-xs flex-1 focus:ring-1 focus:ring-orange-600 outline-none" onchange="renderFinance()">
+                    <input type="date" id="rec-end" class="p-1.5 border rounded text-xs flex-1 focus:ring-1 focus:ring-red-500 outline-none" onchange="renderFinance()">
                     <button onclick="document.getElementById('rec-search').value=''; document.getElementById('rec-status').value=''; document.getElementById('rec-start').value=''; document.getElementById('rec-end').value=''; renderFinance()" class="p-1.5 bg-slate-200 hover:bg-slate-300 rounded text-slate-600" title="Limpar Filtros"><i data-lucide="x" class="w-4 h-4"></i></button>
                 </div>
             </div>
@@ -433,7 +433,6 @@
 
     </div>
 </div>
-
       <div id="view-reports" class="hidden-section w-full h-[calc(100vh-120px)] flex flex-col">
           <h2 class="text-2xl font-bold text-slate-800 mb-6 flex items-center gap-2">
               <i data-lucide="pie-chart"></i> Relatórios
@@ -1050,7 +1049,7 @@
              <input type="hidden" id="exp-id">
              <div>
                 <label class="block text-sm font-bold text-slate-700 mb-1">Categoria da Despesa</label>
-                <select id="exp-item" class="w-full p-3 border rounded-xl focus:ring-2 focus:ring-orange-600 outline-none bg-white">
+                <select id="exp-item" class="w-full p-3 border rounded-xl focus:ring-2 focus:ring-red-500 outline-none bg-white">
                     <option value="Cimento">Cimento</option>
                     <option value="Areia">Areia</option>
                     <option value="Brita">Brita</option>
@@ -1073,24 +1072,24 @@
             </div>
             <div>
                 <label class="block text-sm font-bold text-slate-700 mb-1">Nome / Fornecedor</label>
-                <input type="text" id="exp-provider" placeholder="Ex: João da Silva..." class="w-full p-3 border rounded-xl focus:ring-2 focus:ring-orange-600 outline-none">
+                <input type="text" id="exp-provider" placeholder="Ex: João da Silva..." class="w-full p-3 border rounded-xl focus:ring-2 focus:ring-red-500 outline-none">
             </div>
             <div>
                 <label class="block text-sm font-bold text-slate-700 mb-1">Custo Total (R$)</label>
-                <input type="number" id="exp-cost" placeholder="0.00" class="w-full p-3 border rounded-xl font-bold text-red-600 focus:ring-2 focus:ring-orange-600 outline-none">
+                <input type="number" id="exp-cost" placeholder="0.00" class="w-full p-3 border rounded-xl font-bold text-red-600 focus:ring-2 focus:ring-red-500 outline-none">
             </div>
             <div>
                 <label class="block text-sm font-bold text-slate-700 mb-1">Data de Vencimento</label>
-                <input type="date" id="exp-date" class="w-full p-3 border rounded-xl focus:ring-2 focus:ring-orange-600 outline-none">
+                <input type="date" id="exp-date" class="w-full p-3 border rounded-xl focus:ring-2 focus:ring-red-500 outline-none">
             </div>
             <div>
                 <label class="block text-sm font-bold text-slate-700 mb-1">Observação</label>
-                <input type="text" id="exp-note" placeholder="Descrição ou detalhes..." class="w-full p-3 border rounded-xl focus:ring-2 focus:ring-orange-600 outline-none">
+                <input type="text" id="exp-note" placeholder="Descrição ou detalhes..." class="w-full p-3 border rounded-xl focus:ring-2 focus:ring-red-500 outline-none">
             </div>
         </div>
         <div class="p-5 border-t bg-slate-50 flex gap-3">
             <button onclick="document.getElementById('modal-expense').classList.add('hidden')" class="flex-1 py-3 bg-white border border-slate-300 rounded-xl font-bold text-slate-600 hover:bg-slate-100">Cancelar</button>
-            <button onclick="saveExpense()" class="flex-1 py-3 bg-red-600 rounded-xl font-bold text-white hover:bg-red-700 shadow-lg">Salvar Pendente</button>
+            <button onclick="saveExpense()" class="flex-1 py-3 bg-red-600 hover:bg-red-700 rounded-xl font-bold text-white shadow-lg">Salvar Pendente</button>
         </div>
     </div>
 </div>
@@ -1134,29 +1133,29 @@
     <div id="modal-revenue" class="hidden fixed inset-0 bg-black/50 z-50 flex justify-center items-center p-4">
     <div class="bg-white rounded-2xl w-full max-w-md shadow-2xl flex flex-col max-h-[90vh] overflow-hidden">
         <div class="p-5 border-b flex justify-between items-center bg-slate-50">
-            <h3 class="font-bold text-slate-800 text-lg flex items-center gap-2"><i data-lucide="plus-circle" class="text-orange-600"></i> Lançar Receita Eventual</h3>
+            <h3 class="font-bold text-slate-800 text-lg flex items-center gap-2"><i data-lucide="plus-circle" class="text-red-500"></i> Lançar Receita Eventual</h3>
             <button onclick="document.getElementById('modal-revenue').classList.add('hidden')" class="text-slate-400 hover:text-red-500"><i data-lucide="x"></i></button>
         </div>
         <div class="p-6 space-y-4 overflow-y-auto">
             <div>
                 <label class="block text-sm font-bold text-slate-700 mb-1">Descrição / Origem</label>
-                <input type="text" id="rev-desc" placeholder="Ex: Venda de sucata, Serviço extra..." class="w-full p-3 border rounded-xl focus:ring-2 focus:ring-orange-600 outline-none bg-white">
+                <input type="text" id="rev-desc" placeholder="Ex: Venda de sucata, Serviço extra..." class="w-full p-3 border rounded-xl focus:ring-2 focus:ring-red-500 outline-none bg-white">
             </div>
             <div>
                 <label class="block text-sm font-bold text-slate-700 mb-1">Nome do Cliente (Opcional)</label>
-                <input type="text" id="rev-client" placeholder="Ex: João Silva" class="w-full p-3 border rounded-xl focus:ring-2 focus:ring-orange-600 outline-none">
+                <input type="text" id="rev-client" placeholder="Ex: João Silva" class="w-full p-3 border rounded-xl focus:ring-2 focus:ring-red-500 outline-none">
             </div>
             <div>
                 <label class="block text-sm font-bold text-slate-700 mb-1">Valor a Receber (R$)</label>
-                <input type="number" id="rev-val" placeholder="0.00" class="w-full p-3 border rounded-xl font-bold text-orange-700 focus:ring-2 focus:ring-orange-600 outline-none">
+                <input type="number" id="rev-val" placeholder="0.00" class="w-full p-3 border rounded-xl font-bold text-red-700 focus:ring-2 focus:ring-red-500 outline-none">
             </div>
             <div>
                 <label class="block text-sm font-bold text-slate-700 mb-1">Data de Vencimento</label>
-                <input type="date" id="rev-due" class="w-full p-3 border rounded-xl focus:ring-2 focus:ring-orange-600 outline-none">
+                <input type="date" id="rev-due" class="w-full p-3 border rounded-xl focus:ring-2 focus:ring-red-500 outline-none">
             </div>
             <div>
                 <label class="block text-sm font-bold text-slate-700 mb-1">Forma de Pagto Base</label>
-                <select id="rev-method" class="w-full p-3 border rounded-xl focus:ring-2 focus:ring-orange-600 outline-none">
+                <select id="rev-method" class="w-full p-3 border rounded-xl focus:ring-2 focus:ring-red-500 outline-none">
                     <option>Dinheiro</option>
                     <option>PIX</option>
                     <option>Cartão Crédito</option>
@@ -1171,7 +1170,7 @@
         </div>
         <div class="p-5 border-t bg-slate-50 flex gap-3">
             <button onclick="document.getElementById('modal-revenue').classList.add('hidden')" class="flex-1 py-3 bg-white border border-slate-300 rounded-xl font-bold text-slate-600 hover:bg-slate-100">Cancelar</button>
-            <button onclick="saveRevenue()" class="flex-1 py-3 bg-orange-600 rounded-xl font-bold text-white hover:bg-orange-700 shadow-lg">Lançar Pendente</button>
+            <button onclick="saveRevenue()" class="flex-1 py-3 bg-red-600 hover:bg-red-700 rounded-xl font-bold text-white shadow-lg">Lançar Pendente</button>
         </div>
     </div>
 </div>
@@ -1179,13 +1178,13 @@
     <div id="modal-receivable-edit" class="hidden fixed inset-0 bg-black/50 z-50 flex justify-center items-center p-4">
     <div class="bg-white rounded-2xl w-full max-w-md shadow-2xl flex flex-col max-h-[90vh] overflow-hidden">
         <div class="p-5 border-b flex justify-between items-center bg-slate-50">
-            <h3 class="font-bold text-slate-800 text-lg flex items-center gap-2"><i data-lucide="edit" class="text-orange-600"></i> Editar / Baixar</h3>
+            <h3 class="font-bold text-slate-800 text-lg flex items-center gap-2"><i data-lucide="edit" class="text-red-500"></i> Editar / Baixar</h3>
             <button onclick="document.getElementById('modal-receivable-edit').classList.add('hidden')" class="text-slate-400 hover:text-red-500"><i data-lucide="x"></i></button>
         </div>
         <div class="p-6 space-y-4 overflow-y-auto">
             <input type="hidden" id="rec-id">
             <div class="flex justify-between items-center bg-slate-100 p-3 rounded">
-                <span class="text-sm font-bold text-slate-600">Total: <span id="rec-total-lbl" class="text-orange-700"></span></span>
+                <span class="text-sm font-bold text-slate-600">Total: <span id="rec-total-lbl" class="text-red-700"></span></span>
                 <span class="text-sm font-bold text-slate-600">Restante: <span id="rec-pending-lbl" class="text-red-600"></span></span>
             </div>
             <div>
@@ -1204,7 +1203,7 @@
             </div>
             <div>
                 <label class="block text-sm font-bold text-slate-700 mb-1">Data Vencimento</label>
-                <input type="date" id="rec-due" class="w-full p-3 border rounded-xl focus:ring-2 focus:ring-orange-600">
+                <input type="date" id="rec-due" class="w-full p-3 border rounded-xl focus:ring-2 focus:ring-red-500">
             </div>
             <div class="pt-3 border-t mt-2">
                 <label class="block text-sm font-bold text-green-700 mb-1">Dar Baixa (Receber Valor Agora)</label>
@@ -1214,7 +1213,7 @@
         </div>
         <div class="p-5 border-t bg-slate-50 flex gap-3">
             <button onclick="document.getElementById('modal-receivable-edit').classList.add('hidden')" class="flex-1 py-3 bg-white border border-slate-300 rounded-xl font-bold text-slate-600 hover:bg-slate-100">Cancelar</button>
-            <button onclick="saveReceivableEdit()" class="flex-1 py-3 bg-orange-600 rounded-xl font-bold text-white hover:bg-orange-700 shadow-lg">Salvar / Baixar</button>
+            <button onclick="saveReceivableEdit()" class="flex-1 py-3 bg-red-600 hover:bg-red-700 rounded-xl font-bold text-white shadow-lg">Salvar / Baixar</button>
         </div>
     </div>
 </div>
