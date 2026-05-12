@@ -698,7 +698,7 @@ async function gerarDetalhamento() {
   const metrosLinearesTrelica = tamanhosVigota.reduce((a, b) => a + b, 0);
   const barras = binPackingFFD(tamanhosVigota, 12.0);
   const numBarras = barras.length;
-  const alturaModa = [...alturas].sort((a, b) => b - a)[0] || 8;
+  const alturaModa = [...alturas].sort((a, b) => b - a)[0] || 8;   // ← altura principal da laje
   const tipoPredominante = [...tiposEnchimento][0] || 'EPS';
 
   // Capeamento
@@ -737,15 +737,15 @@ async function gerarDetalhamento() {
     custoTotal += vlrTotal;
   }
 
-  // Treliça
+  // Treliça – usa a altura moda
   const trelicaNome = `Treliça TG${alturaModa} 12m`;
   const custoTrelica = custoProduto(trelicaNome, alturaModa <= 8 ? 68 : (alturaModa <= 12 ? 92 : 105));
   addLinha('Treliça', `${numBarras} barras`, `${metrosLinearesTrelica.toFixed(2)} m lineares`, custoTrelica, numBarras * custoTrelica);
 
-  // Enchimento – EPS (placa de 1,00 m × 0,50 m → cobre 1 m linear)
+  // Enchimento – EPS: também usa a altura moda para escolher a placa correta
   if (tiposEnchimento.has('EPS')) {
     const placasEps = Math.ceil(totalEpsLinear); // cada placa = 1 m linear
-    const epsNome = `EPS H${alturaModa} placa 50x50`; // manter nome do banco
+    const epsNome = `EPS H${alturaModa} placa 50x50`;   // ← altura da placa é a mesma da treliça
     const custoEpsPlaca = custoProduto(epsNome, 11.90);
     addLinha(
       'EPS (isopor)',
@@ -864,9 +864,6 @@ async function gerarDetalhamento() {
           <p class="text-slate-500 text-sm">Preço de Venda</p>
           <p class="text-2xl font-bold text-orange-600" id="detalhe-preco-venda">${formatMoney(precoVendaInicial)}</p>
           <p class="text-xs text-slate-500"><span id="detalhe-preco-m2">${formatMoney(precoM2Inicial)}</span> / m²</p>       
-          <!--<button onclick="enviarParaOrcamento()" class="mt-3 bg-green-600 hover:bg-green-700 text-white px-4 py-2 rounded-lg font-bold text-sm w-full">
-             <i data-lucide="send"></i> Enviar para Orçamento
-          </button>-->
           <button onclick="enviarParaOrcamento()" class="mt-2 bg-green-600 hover:bg-green-700 text-white px-3 py-1 rounded-lg font-bold text-xs">
             <i data-lucide="send" class="w-3 h-3 inline"></i> Enviar para Orçamento
           </button>
