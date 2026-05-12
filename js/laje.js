@@ -745,7 +745,7 @@ async function gerarDetalhamento() {
   // Enchimento – EPS: também usa a altura moda para escolher a placa correta
   if (tiposEnchimento.has('EPS')) {
     const placasEps = Math.ceil(totalEpsLinear); // cada placa = 1 m linear
-    const epsNome = `EPS H${alturaModa} placa 50x50`;   // ← altura da placa é a mesma da treliça
+    const epsNome = `EPS H${alturaModa} placa 50x100`;   // ← CORREÇÃO: nome igual ao da tabela
     const custoEpsPlaca = custoProduto(epsNome, 11.90);
     addLinha(
       'EPS (isopor)',
