@@ -1573,3 +1573,186 @@ function imprimirDetalhamento() {
     limparAreaImpressao();
   }, 300);
 }
+
+
+/*==========================================================================================================================================*/
+
+// ==================== ABA ENTREGAS ====================
+
+// Carrega o <select> com orçamentos aprovados
+async function carregarSelectOrcamentosEntregas() {
+  const sel = document.getElementById('laje-entrega-select');
+  if (!sel) return;
+  const { data } = await sb.from('laje_orcamentos')
+    .select('id, cliente_nome')
+    .eq('status', 'APROVADO')
+    .order('id', { ascending: false });
+  sel.innerHTML = '<option value="">-- Selecione --</option>' +
+    (data || []).map(o => `<option value="${o.id}">#${o.id} – ${o.cliente_nome}</option>`).join('');
+  sel.onchange = () => carregarProgressoEntregas();
+}
+
+// Carrega o progresso e o histórico de entregas
+async function carregarProgressoEntregas() {
+  const idOrc = document.getElementById('laje-entrega-select').value;
+  if (!idOrc) {
+    document.getElementById('laje-entrega-resumo').classList.add('hidden');
+    return;
+  }
+
+  showLoading(true);
+
+  // 1. Todas as vigotas do orçamento (tamanhos reais)
+  const { data: itens } = await sb.from('laje_itens_orcamento')
+    .select('tamanho_vigota, qtd_vigotas').eq('id_orcamento', idOrc);
+  
+  // Mapa de total por tamanho
+  const totalPorTamanho = {};
+  (itens || []).forEach(i => {
+    const t = Number(i.tamanho_vigota).toFixed(2);
+    totalPorTamanho[t] = (totalPorTamanho[t] || 0) + Number(i.qtd_vigotas);
+  });
+
+  // 2. Entregas já realizadas
+  const { data: entregas } = await sb.from('laje_entregas')
+    .select('*').eq('id_orcamento', idOrc).order('data', { ascending: false });
+
+  // Soma entregue por tamanho
+  const entreguePorTamanho = {};
+  let totalPecasEntregues = 0;
+  (entregas || []).forEach(e => {
+    const vigotas = e.vigotas_entregues || [];
+    vigotas.forEach(v => {
+      const t = Number(v.tamanho).toFixed(2);
+      entreguePorTamanho[t] = (entreguePorTamanho[t] || 0) + Number(v.qtd);
+      totalPecasEntregues += Number(v.qtd);
+    });
+  });
+
+  // 3. Monta tabela de progresso
+  const tbody = document.getElementById('laje-entrega-tbody');
+  const tamanhos = Object.keys(totalPorTamanho).sort((a, b) => b - a);
+  let totalGeral = 0, pendenteGeral = 0;
+  tbody.innerHTML = tamanhos.map(t => {
+    const total = totalPorTamanho[t];
+    const entregue = entreguePorTamanho[t] || 0;
+    const pendente = total - entregue;
+    totalGeral += total;
+    pendenteGeral += pendente;
+    return `<tr class="border-b">
+      <td class="p-3 font-medium">${t} m</td>
+      <td class="p-3 text-center">${total}</td>
+      <td class="p-3 text-center text-green-600">${entregue}</td>
+      <td class="p-3 text-center ${pendente > 0 ? 'text-orange-600 font-bold' : 'text-green-600'}">${pendente}</td>
+    </tr>`;
+  }).join('');
+  tbody.insertAdjacentHTML('beforeend', `
+    <tr class="bg-slate-50 font-bold">
+      <td class="p-3">Total</td>
+      <td class="p-3 text-center">${totalGeral}</td>
+      <td class="p-3 text-center">${totalPecasEntregues}</td>
+      <td class="p-3 text-center">${pendenteGeral}</td>
+    </tr>
+  `);
+
+  // 4. Histórico de entregas
+  const histBody = document.getElementById('laje-entrega-historico-tbody');
+  histBody.innerHTML = (entregas || []).map(e => {
+    const vigotas = e.vigotas_entregues || [];
+    const desc = vigotas.map(v => `${v.qtd}x ${Number(v.tamanho).toFixed(2)}m`).join(', ');
+    const total = vigotas.reduce((s, v) => s + Number(v.qtd), 0);
+    return `<tr class="border-b">
+      <td class="p-3">${formatDate(e.data)}</td>
+      <td class="p-3 text-xs">${desc || '-'}</td>
+      <td class="p-3 text-center">${total}</td>
+    </tr>`;
+  }).join('');
+
+  document.getElementById('laje-entrega-resumo').classList.remove('hidden');
+  showLoading(false);
+}
+
+// Abre o modal de registro de entrega
+function abrirModalEntregaLaje() {
+  const idOrc = document.getElementById('laje-entrega-select').value;
+  if (!idOrc) return showToast('Selecione um orçamento.', true);
+
+  document.getElementById('entrega-data').value = new Date().toISOString().split('T')[0];
+  document.getElementById('entrega-obs').value = '';
+
+  // Preenche o modal com campos para cada tamanho de vigota
+  const container = document.getElementById('entrega-vigotas-container');
+  const totalPorTamanho = {};
+  // Aqui precisamos dos tamanhos do orçamento – podemos reaproveitar a lógica de carregarProgresso,
+  // mas simplificamos chamando o Supabase novamente
+  sb.from('laje_itens_orcamento')
+    .select('tamanho_vigota, qtd_vigotas')
+    .eq('id_orcamento', idOrc)
+    .then(({ data }) => {
+      (data || []).forEach(i => {
+        const t = Number(i.tamanho_vigota).toFixed(2);
+        totalPorTamanho[t] = (totalPorTamanho[t] || 0) + Number(i.qtd_vigotas);
+      });
+      container.innerHTML = Object.keys(totalPorTamanho).sort((a, b) => b - a).map(t => `
+        <div class="flex items-center gap-2 mb-2">
+          <span class="text-sm font-medium w-20">${t} m</span>
+          <input type="number" id="ent-qtd-${t.replace('.', '_')}" value="0" min="0" max="${totalPorTamanho[t]}"
+            class="w-20 p-2 border rounded text-sm text-center">
+          <span class="text-xs text-slate-400">/ ${totalPorTamanho[t]} un</span>
+        </div>
+      `).join('');
+    });
+
+  document.getElementById('modal-entrega-laje').classList.remove('hidden');
+}
+
+function fecharModalEntregaLaje() {
+  document.getElementById('modal-entrega-laje').classList.add('hidden');
+}
+
+// Registra a entrega no banco
+async function registrarEntregaLaje() {
+  const idOrc = document.getElementById('laje-entrega-select').value;
+  const data = document.getElementById('entrega-data').value;
+  const obs = document.getElementById('entrega-obs').value;
+
+  // Monta o array de vigotas entregues
+  const container = document.getElementById('entrega-vigotas-container');
+  const inputs = container.querySelectorAll('input[type=number]');
+  const vigotas = [];
+  let totalEntregue = 0;
+  inputs.forEach(input => {
+    const qtd = parseInt(input.value) || 0;
+    if (qtd > 0) {
+      const tamanho = parseFloat(input.id.replace('ent-qtd-', '').replace('_', '.'));
+      vigotas.push({ tamanho, qtd });
+      totalEntregue += qtd;
+    }
+  });
+
+  if (totalEntregue === 0) return showToast('Informe pelo menos uma vigota.', true);
+  if (!data) return showToast('Informe a data.', true);
+
+  const { error } = await sb.from('laje_entregas').insert({
+    id_orcamento: parseInt(idOrc),
+    data: new Date(data).toISOString(),
+    vigotas_entregues: vigotas,
+    observacao: obs
+  });
+
+  if (error) return showToast('Erro ao registrar: ' + error.message, true);
+
+  fecharModalEntregaLaje();
+  showToast('Entrega registrada!');
+  carregarProgressoEntregas();
+}
+
+// Atualiza o switchLajeTab para incluir a nova aba
+const originalSwitchLajeTab = switchLajeTab;
+switchLajeTab = function(tab) {
+  originalSwitchLajeTab(tab);
+  if (tab === 'entregas') {
+    carregarSelectOrcamentosEntregas();
+    document.getElementById('laje-entrega-resumo').classList.add('hidden');
+  }
+};
