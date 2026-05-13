@@ -5,7 +5,7 @@ const LAJE = {
   produtosList: [],          // cache da tabela laje_produtos
   editandoId: null,
   tabAtiva: 'orcamento',
-  algoritmoCorte: 'FFD',
+  algoritmoCorte: 'DP',
   planoCorteCache: null,
   editandoComodoIndex: null
 };
