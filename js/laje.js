@@ -707,8 +707,7 @@ async function gerarDetalhamento() {
 
   const metrosLinearesTrelica = tamanhosVigota.reduce((a, b) => a + b, 0);
 
-  // ========== ALTERAÇÃO AQUI ==========
-  // Usa o mesmo algoritmo selecionado na aba Plano de Corte
+  // ========== ALGORITMO DE CORTE ==========
   const barra12m = obterConfig('comprimento_barra_trelica', 12.0);
   let barras;
   if (LAJE.algoritmoCorte === 'BFD') {
@@ -720,36 +719,47 @@ async function gerarDetalhamento() {
   } else {
     barras = binPackingFFD(tamanhosVigota, barra12m);
   }
-  // ====================================
 
   const numBarras = barras.length;
   const alturaModa = [...alturas].sort((a, b) => b - a)[0] || 8;
   const tipoPredominante = [...tiposEnchimento][0] || 'EPS';
 
-  // Capeamento (Cálculo apenas no filete sobre as vigotas)
-  const espessuraCapeamento = 0.02; // 2 cm fixo para todas as alturas
+  // Capeamento (apenas sobre as vigotas)
+  const espessuraCapeamento = 0.02; // 2 cm fixo
   const larguraCapeamento = 0.12;   // 12 cm de largura
   const secaoCapeamento = larguraCapeamento * espessuraCapeamento;
-  
-  // CORREÇÃO: Calcula usando os metros lineares da treliça, não a área total
   const volumeConcreto = metrosLinearesTrelica * secaoCapeamento;
 
-  // Traço
-  // CORREÇÃO: Volume exato de 1 traço que rende 48 metros lineares
-  const volumePorTraco = 0.1152; 
+  // Traço (rendimento linear de 48 m por traço)
+  const volumePorTraco = 0.1152;
   const numTracos = Math.ceil(volumeConcreto / volumePorTraco);
-  const metrosLinearesPorTraco = 48; // Rendimento fixo por traço
-  
+  const metrosLinearesPorTraco = 48;
   const sacosCimento = Math.ceil(numTracos * 1.5);
-  const areiaM3 = numTracos * (6.5 * 0.018); // 6.5 latas * 18L
-  const britaM3 = numTracos * (5 * 0.018);   // 5 latas * 18L
-  
-  // CORREÇÃO: Math.round evita o erro da dízima de transformar 26 latas em 27
+  const areiaM3 = numTracos * (6.5 * 0.018);
+  const britaM3 = numTracos * (5 * 0.018);
   const latasAreia = Math.round(areiaM3 / 0.018);
   const latasBrita = Math.round(britaM3 / 0.018);
 
+  // ========== VERGALHÃO 6mm (ID 26) ==========
+  let totalVergalhoes = 0;
+  for (const item of itens) {
+    const tamVigota = Number(item.tamanho_vigota);
+    const qtdVigotas = Number(item.qtd_vigotas);
+    if (tamVigota > 3.40) {
+      totalVergalhoes += qtdVigotas;
+    }
+  }
+  const barrasVergalhao = Math.ceil(totalVergalhoes / 3);
+  const custoVergalhaoPorBarra = custoProdutoPorId(26, 25.00); // ID 26 = Vergalhão 6mm 12m
+
+  // Funções auxiliares
   function custoProduto(nomePadrao, padrao = 0) {
     const p = LAJE.produtosList.find(x => x.descricao === nomePadrao);
+    return p ? Number(p.custo_unitario) : padrao;
+  }
+
+  function custoProdutoPorId(id, padrao = 0) {
+    const p = LAJE.produtosList.find(x => x.id === id);
     return p ? Number(p.custo_unitario) : padrao;
   }
 
@@ -787,6 +797,8 @@ async function gerarDetalhamento() {
     const freteIsopor = custoProduto('Frete Isopor', 0);
     if (freteIsopor > 0) addLinha('Frete do isopor', '1 un', '', freteIsopor, freteIsopor);
   }
+
+  // Enchimento – Lajota
   if (tiposEnchimento.has('LAJOTA_CERAMICA')) {
     const totalLajotas = Math.ceil(totalArea * 12);
     const custoLajota = custoProduto('Lajota Cerâmica', 1.7);
@@ -817,6 +829,17 @@ async function gerarDetalhamento() {
     custoProduto('Brita 0', 200),
     britaM3 * custoProduto('Brita 0', 200)
   );
+
+  // Vergalhão (se houver)
+  if (totalVergalhoes > 0) {
+    addLinha(
+      'Vergalhão CA-60 6mm',
+      `${barrasVergalhao} barra(s) de 12 m`,
+      `${totalVergalhoes} pedaços de 3,40 m (vãos > 3,40 m)`,
+      custoVergalhaoPorBarra,
+      barrasVergalhao * custoVergalhaoPorBarra
+    );
+  }
 
   // Serviços gerais
   addLinha('Disco de Corte', '1 un', '', custoProduto('Disco de Corte', 10), custoProduto('Disco de Corte', 10));
