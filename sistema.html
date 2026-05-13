@@ -795,9 +795,14 @@
   <div class="bg-white rounded-xl border shadow-sm p-6 mb-6">
     <label class="block text-sm font-bold text-slate-700 mb-2">Selecione o orçamento aprovado:</label>
     <div class="flex gap-2">
-      <select id="laje-entrega-select" class="flex-1 p-3 border rounded-lg bg-white text-sm">
+      <select id="laje-entrega-select" class="flex-1 p-3 border rounded-lg bg-white text-sm">        
         <option value="">-- Selecione --</option>
       </select>
+      <div class="flex gap-2 mt-2">
+        <button onclick="imprimirBackupEntrega()" class="bg-white border border-slate-300 text-slate-700 px-4 py-3 rounded-lg font-bold hover:bg-slate-100">
+            <i data-lucide="printer"></i> Imprimir Lista Geral (Backup)
+          </button>
+        </div>
       <button onclick="abrirModalEntregaLaje()" class="bg-green-600 text-white px-6 py-3 rounded-lg font-bold hover:bg-green-700">
         <i data-lucide="truck"></i> Registrar Entrega
       </button>
@@ -861,9 +866,14 @@
         <label class="block text-sm font-bold text-slate-700 mb-1">Observação</label>
         <input type="text" id="entrega-obs" placeholder="Opcional" class="w-full p-3 border rounded-lg text-sm">
       </div>
-      <button onclick="registrarEntregaLaje()" class="w-full bg-green-600 text-white py-3 rounded-lg font-bold hover:bg-green-700">
-        <i data-lucide="save"></i> Confirmar Entrega
-      </button>
+      <div class="flex gap-2">
+        <button onclick="registrarEntregaLaje()" class="flex-1 bg-green-600 text-white py-3 rounded-lg font-bold hover:bg-green-700">
+          <i data-lucide="save"></i> Confirmar Entrega
+        </button>
+        <button onclick="imprimirRegistroEntregaModal()" class="bg-slate-200 hover:bg-slate-300 text-slate-700 px-4 py-3 rounded-lg font-bold">
+          <i data-lucide="printer"></i> Imprimir
+        </button>
+      </div>
     </div>
   </div>
 </div> <!-- ============================================================================================ -->
