@@ -1111,8 +1111,8 @@ async function gerarDetalhamento() {
           <p class="text-slate-500 text-sm">Preço de Venda</p>
           <p class="text-2xl font-bold text-orange-600" id="detalhe-preco-venda">${formatMoney(precoVendaInicial)}</p>
           <p class="text-xs text-slate-500"><span id="detalhe-preco-m2">${formatMoney(precoM2Inicial)}</span> / m²</p>       
-          <button onclick="enviarParaOrcamento()" class="mt-2 bg-green-600 hover:bg-green-700 text-white px-3 py-1 rounded-lg font-bold text-xs">
-            <i data-lucide="send" class="w-3 h-3 inline"></i> Enviar para Orçamento
+          <button onclick="enviarParaOrcamento()" class="mt-2 bg-green-600 hover:bg-green-700 text-white px-3 py-1.5 rounded-lg font-bold text-xs inline-flex items-center gap-1 whitespace-nowrap">
+            <i data-lucide="send" class="w-3 h-3"></i> Enviar para Orçamento
           </button>
         </div>        
       </div>      
