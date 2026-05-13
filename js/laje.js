@@ -1782,3 +1782,157 @@ switchLajeTab = function(tab) {
     document.getElementById('laje-entrega-resumo').classList.add('hidden');
   }
 };*/
+
+
+function imprimirRegistroEntregaModal() {
+  const idOrc = document.getElementById('laje-entrega-select').value;
+  if (!idOrc) return showToast('Selecione um orçamento.', true);
+
+  const orc = LAJE.orcamentosList.find(o => o.id == idOrc);
+  const cliente = orc ? orc.cliente_nome : 'Não informado';
+  const dataEntrega = document.getElementById('entrega-data').value || new Date().toLocaleDateString('pt-BR');
+
+  // Coleta as vigotas informadas no modal
+  const container = document.getElementById('entrega-vigotas-container');
+  const inputs = container.querySelectorAll('input[type=number]');
+  const vigotas = [];
+  let totalMetrosLineares = 0;
+
+  inputs.forEach(input => {
+    const qtd = parseInt(input.value) || 0;
+    if (qtd > 0) {
+      const tamanho = parseFloat(input.id.replace('ent-qtd-', '').replace('_', '.'));
+      const metros = tamanho * qtd;
+      totalMetrosLineares += metros;
+      vigotas.push({ tamanho, qtd, metros });
+    }
+  });
+
+  if (vigotas.length === 0) return showToast('Nenhuma vigota informada.', true);
+
+  // Calcula m² (considerando capeamento padrão de 0,50m entre eixos)
+  const larguraUtil = 0.50; // m² por metro linear (inter-eixo padrão)
+  const totalM2 = totalMetrosLineares * larguraUtil;
+
+  const linhas = vigotas.map(v => `
+    <tr>
+      <td style="padding:4px 8px; border:1px solid #000; text-align:center; font-weight:bold;">${v.qtd}x</td>
+      <td style="padding:4px 8px; border:1px solid #000;">${v.tamanho.toFixed(2)} m</td>
+      <td style="padding:4px 8px; border:1px solid #000; text-align:right;">${v.metros.toFixed(2)} m</td>
+      <td style="padding:4px 8px; border:1px solid #000; text-align:center; font-size:16px;">☐</td>
+    </tr>
+  `).join('');
+
+  const printArea = document.getElementById('print-area');
+  printArea.innerHTML = `
+    <div style="font-family:'Segoe UI', Arial, sans-serif; padding:10mm; max-width:190mm; margin:0 auto; background:#fff; font-size:12px;">
+      <table width="100%" style="border-bottom:1px solid #ea580c; padding-bottom:5px; margin-bottom:10px;">
+        <tr>
+          <td width="45"><img src="https://lh3.googleusercontent.com/d/1SIoZ2JlalfMnGDZTXBk7ZYuPgwxX3odF" style="height:28px;"></td>
+          <td><strong style="color:#ea580c; font-size:15px;">RV BLOCOS E ESTRUTURAS</strong><br><span style="font-size:10px;">Controle de Entrega de Pré-Moldados</span></td>
+          <td align="right" style="font-size:10px;">
+            <strong>Orçamento #${idOrc}</strong><br>
+            Cliente: ${cliente}<br>
+            Data: ${dataEntrega}
+          </td>
+        </tr>
+      </table>
+      <p style="font-size:11px; margin-bottom:10px;">
+        <strong>Total:</strong> ${vigotas.reduce((s,v) => s + v.qtd, 0)} peças | 
+        <strong>Metros lineares:</strong> ${totalMetrosLineares.toFixed(2)} m | 
+        <strong>Área equivalente:</strong> ${totalM2.toFixed(2)} m²
+      </p>
+      <table width="100%" style="border-collapse:collapse; margin-bottom:15px;">
+        <thead>
+          <tr style="background:#e5e7eb;">
+            <th style="padding:6px; border:1px solid #000; width:50px;">Qtd</th>
+            <th style="padding:6px; border:1px solid #000;">Tamanho</th>
+            <th style="padding:6px; border:1px solid #000;">Metros</th>
+            <th style="padding:6px; border:1px solid #000; width:40px;">✔</th>
+          </tr>
+        </thead>
+        <tbody>${linhas}</tbody>
+      </table>
+      <div style="display:flex; justify-content:space-between; margin-top:40px;">
+        <div style="text-align:center; width:45%;">
+          <div style="border-top:1px solid #000; margin-bottom:5px;"></div>
+          <span style="font-size:10px; font-weight:bold;">CONFERENTE RV BLOCOS</span>
+          <p style="margin:10px 0 0 0; font-size:10px;">Data: ____ / ____ / ________</p>
+        </div>
+        <div style="text-align:center; width:45%;">
+          <div style="border-top:1px solid #000; margin-bottom:5px;"></div>
+          <span style="font-size:10px; font-weight:bold;">RECEBEDOR (CLIENTE)</span>
+          <p style="margin:10px 0 0 0; font-size:10px;">Data: ____ / ____ / ________</p>
+        </div>
+      </div>
+    </div>
+  `;
+  setTimeout(() => { window.print(); limparAreaImpressao(); }, 300);
+}
+
+function imprimirBackupEntrega() {
+  const idOrc = document.getElementById('laje-entrega-select').value;
+  if (!idOrc) return showToast('Selecione um orçamento.', true);
+
+  const orc = LAJE.orcamentosList.find(o => o.id == idOrc);
+  const cliente = orc ? orc.cliente_nome : 'Não informado';
+
+  // Busca os itens do orçamento
+  sb.from('laje_itens_orcamento')
+    .select('tamanho_vigota, qtd_vigotas')
+    .eq('id_orcamento', idOrc)
+    .then(({ data }) => {
+      const totalPorTamanho = {};
+      (data || []).forEach(i => {
+        const t = Number(i.tamanho_vigota).toFixed(2);
+        totalPorTamanho[t] = (totalPorTamanho[t] || 0) + Number(i.qtd_vigotas);
+      });
+
+      const tamanhos = Object.keys(totalPorTamanho).sort((a, b) => b - a);
+      const linhas = tamanhos.map(t => `
+        <tr>
+          <td style="padding:5px; border:1px solid #000; text-align:center; font-weight:bold;">${totalPorTamanho[t]}x</td>
+          <td style="padding:5px; border:1px solid #000;">${t} m</td>
+          <td style="padding:5px; border:1px solid #000; text-align:right;">${(Number(t) * totalPorTamanho[t]).toFixed(2)} m</td>
+          <td style="padding:5px; border:1px solid #000; min-width:80px;"></td>
+        </tr>
+      `).join('');
+
+      const totalPecas = tamanhos.reduce((s, t) => s + totalPorTamanho[t], 0);
+      const totalMetros = tamanhos.reduce((s, t) => s + Number(t) * totalPorTamanho[t], 0);
+
+      const printArea = document.getElementById('print-area');
+      printArea.innerHTML = `
+        <div style="font-family:'Segoe UI', Arial, sans-serif; padding:10mm; max-width:190mm; margin:0 auto; background:#fff; font-size:12px;">
+          <table width="100%" style="border-bottom:1px solid #ea580c; padding-bottom:5px; margin-bottom:10px;">
+            <tr>
+              <td width="45"><img src="https://lh3.googleusercontent.com/d/1SIoZ2JlalfMnGDZTXBk7ZYuPgwxX3odF" style="height:28px;"></td>
+              <td><strong style="color:#ea580c; font-size:15px;">RV BLOCOS E ESTRUTURAS</strong><br><span style="font-size:10px;">Lista de Peças para Entrega</span></td>
+              <td align="right" style="font-size:10px;">
+                <strong>Orçamento #${idOrc}</strong><br>
+                Cliente: ${cliente}<br>
+                Data: ${new Date().toLocaleDateString('pt-BR')}
+              </td>
+            </tr>
+          </table>
+          <p style="font-size:11px; margin-bottom:10px;">
+            <strong>Total de peças:</strong> ${totalPecas} | 
+            <strong>Metros lineares totais:</strong> ${totalMetros.toFixed(2)} m
+          </p>
+          <table width="100%" style="border-collapse:collapse; margin-bottom:15px;">
+            <thead>
+              <tr style="background:#e5e7eb;">
+                <th style="padding:6px; border:1px solid #000; width:50px;">Qtd</th>
+                <th style="padding:6px; border:1px solid #000;">Tamanho da Vigota</th>
+                <th style="padding:6px; border:1px solid #000;">Metros Totais</th>
+                <th style="padding:6px; border:1px solid #000; width:120px;">Qtd. Saindo (caneta)</th>
+              </tr>
+            </thead>
+            <tbody>${linhas}</tbody>
+          </table>
+          <p style="font-size:10px; color:#64748b;">* Preencha a última coluna a caneta com a quantidade que está sendo entregue nesta remessa.</p>
+        </div>
+      `;
+      setTimeout(() => { window.print(); limparAreaImpressao(); }, 300);
+    });
+}
