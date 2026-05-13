@@ -1619,7 +1619,7 @@ async function carregarSelectOrcamentosEntregas() {
 }
 
 // Carrega o progresso e o histórico de entregas
-async function carregarProgressoEntregas() {
+/*async function carregarProgressoEntregas() {
   const idOrc = document.getElementById('laje-entrega-select').value;
   if (!idOrc) {
     document.getElementById('laje-entrega-resumo').classList.add('hidden');
@@ -1696,7 +1696,133 @@ async function carregarProgressoEntregas() {
 
   document.getElementById('laje-entrega-resumo').classList.remove('hidden');
   showLoading(false);
+}*/
+
+async function carregarProgressoEntregas() {
+  const idOrc = document.getElementById('laje-entrega-select').value;
+  if (!idOrc) {
+    document.getElementById('laje-entrega-resumo').classList.add('hidden');
+    return;
+  }
+
+  showLoading(true);
+
+  // 1. Buscar os tamanhos e quantidades das vigotas do orçamento
+  const { data: itens } = await sb.from('laje_itens_orcamento')
+    .select('tamanho_vigota, qtd_vigotas').eq('id_orcamento', idOrc);
+
+  // 2. Montar a lista plana de tamanhos para o algoritmo de corte
+  const tamanhos = [];
+  (itens || []).forEach(i => {
+    for (let j = 0; j < Number(i.qtd_vigotas); j++) {
+      tamanhos.push(Number(i.tamanho_vigota));
+    }
+  });
+
+  // 3. Aplicar o algoritmo selecionado na aba Plano de Corte
+  const barra12m = obterConfig('comprimento_barra_trelica', 12.0);
+  let barras;
+  if (LAJE.algoritmoCorte === 'BFD') {
+    barras = binPackingBFD(tamanhos, barra12m);
+  } else if (LAJE.algoritmoCorte === 'RBF') {
+    barras = binPackingRBF(tamanhos, barra12m, 100);
+  } else if (LAJE.algoritmoCorte === 'DP') {
+    barras = binPackingDP(tamanhos, barra12m);
+  } else {
+    barras = binPackingFFD(tamanhos, barra12m);
+  }
+
+  // 4. Extrair as peças reais do plano de corte (cada corte vira uma vigota individual)
+  const pecasPlano = []; // array de { tamanho, qtd }
+  barras.forEach(barra => {
+    barra.cortes.forEach(corte => {
+      const t = corte.toFixed(2);
+      const existente = pecasPlano.find(p => p.tamanho.toFixed(2) === t);
+      if (existente) {
+        existente.qtd++;
+      } else {
+        pecasPlano.push({ tamanho: corte, qtd: 1 });
+      }
+    });
+  });
+
+  // Ordena por tamanho decrescente
+  pecasPlano.sort((a, b) => b.tamanho - a.tamanho);
+
+  // 5. Calcular totais por tamanho com base no plano
+  const totalPorTamanho = {};
+  pecasPlano.forEach(p => {
+    const t = p.tamanho.toFixed(2);
+    totalPorTamanho[t] = p.qtd;
+  });
+
+  // 6. Entregas já realizadas
+  const { data: entregas } = await sb.from('laje_entregas')
+    .select('*').eq('id_orcamento', idOrc).order('data', { ascending: false });
+
+  // Soma entregue por tamanho
+  const entreguePorTamanho = {};
+  let totalPecasEntregues = 0;
+  (entregas || []).forEach(e => {
+    const vigotas = e.vigotas_entregues || [];
+    vigotas.forEach(v => {
+      const t = Number(v.tamanho).toFixed(2);
+      entreguePorTamanho[t] = (entreguePorTamanho[t] || 0) + Number(v.qtd);
+      totalPecasEntregues += Number(v.qtd);
+    });
+  });
+
+  // 7. Monta tabela de progresso
+  const tbody = document.getElementById('laje-entrega-tbody');
+  const tamanhosArr = Object.keys(totalPorTamanho).sort((a, b) => b - a);
+  let totalGeral = 0, pendenteGeral = 0;
+  tbody.innerHTML = tamanhosArr.map(t => {
+    const total = totalPorTamanho[t] || 0;
+    const entregue = entreguePorTamanho[t] || 0;
+    const pendente = total - entregue;
+    totalGeral += total;
+    pendenteGeral += pendente;
+    return `<tr class="border-b">
+      <td class="p-3 font-medium">${t} m</td>
+      <td class="p-3 text-center">${total}</td>
+      <td class="p-3 text-center text-green-600">${entregue}</td>
+      <td class="p-3 text-center ${pendente > 0 ? 'text-orange-600 font-bold' : 'text-green-600'}">${pendente}</td>
+    </tr>`;
+  }).join('');
+  tbody.insertAdjacentHTML('beforeend', `
+    <tr class="bg-slate-50 font-bold">
+      <td class="p-3">Total</td>
+      <td class="p-3 text-center">${totalGeral}</td>
+      <td class="p-3 text-center">${totalPecasEntregues}</td>
+      <td class="p-3 text-center">${pendenteGeral}</td>
+    </tr>
+  `);
+
+  // 8. Histórico de entregas
+  const histBody = document.getElementById('laje-entrega-historico-tbody');
+  histBody.innerHTML = (entregas || []).map(e => {
+    const vigotas = e.vigotas_entregues || [];
+    const desc = vigotas.map(v => `${v.qtd}x ${Number(v.tamanho).toFixed(2)}m`).join(', ');
+    const total = vigotas.reduce((s, v) => s + Number(v.qtd), 0);
+    return `<tr class="border-b">
+      <td class="p-3">${formatDate(e.data)}</td>
+      <td class="p-3 text-xs">${desc || '-'}</td>
+      <td class="p-3 text-center">${total}</td>
+    </tr>`;
+  }).join('');
+
+  // 9. Atualiza o modal de entrega com as peças do plano
+  LAJE.ultimasPecasPlano = pecasPlano; // guarda para uso no modal
+
+  document.getElementById('laje-entrega-resumo').classList.remove('hidden');
+  showLoading(false);
 }
+
+
+
+
+
+
 
 // Abre o modal de registro de entrega
 function abrirModalEntregaLaje() {
@@ -1773,15 +1899,7 @@ async function registrarEntregaLaje() {
   carregarProgressoEntregas();
 }
 
-/*// Atualiza o switchLajeTab para incluir a nova aba
-const originalSwitchLajeTab = switchLajeTab;
-switchLajeTab = function(tab) {
-  originalSwitchLajeTab(tab);
-  if (tab === 'entregas') {
-    carregarSelectOrcamentosEntregas();
-    document.getElementById('laje-entrega-resumo').classList.add('hidden');
-  }
-};*/
+
 
 
 function imprimirRegistroEntregaModal() {
