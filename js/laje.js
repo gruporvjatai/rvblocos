@@ -954,8 +954,8 @@ async function gerarDetalhamento() {
   const tipoPredominante = [...tiposEnchimento][0] || 'EPS';
 
   // Capeamento
-  const espessuraCapeamento = (alturaModa <= 12) ? 0.02 : 0.02;
-  //const espessuraCapeamento = 0.02; // 2 cm fixo para todas as alturas
+  //const espessuraCapeamento = (alturaModa <= 12) ? 0.02 : 0.02;
+  const espessuraCapeamento = 0.02; // 2 cm fixo para todas as alturas
   const larguraCapeamento = 0.12;
   const secaoCapeamento = larguraCapeamento * espessuraCapeamento;
   const volumeConcreto = totalArea * espessuraCapeamento;
