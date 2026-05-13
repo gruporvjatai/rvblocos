@@ -1231,7 +1231,7 @@ async function enviarParaOrcamento() {
 }
 
 
-function imprimirDetalhamento() {
+/*function imprimirDetalhamento() {
   const resultado = document.getElementById('laje-detalhamento-resultado');
   if (!resultado || resultado.classList.contains('hidden')) {
     return showToast('Gere o detalhamento primeiro.', true);
@@ -1259,6 +1259,85 @@ function imprimirDetalhamento() {
     #detalhe-margem-lucro { border: 1px solid #ccc; }
   `;
   printArea.appendChild(estilo);
+
+  setTimeout(() => {
+    window.print();
+    limparAreaImpressao();
+  }, 300);
+}*/
+
+function imprimirDetalhamento() {
+  const resultado = document.getElementById('laje-detalhamento-resultado');
+  if (!resultado || resultado.classList.contains('hidden')) {
+    return showToast('Gere o detalhamento primeiro.', true);
+  }
+
+  // Captura os valores exibidos na tela (já com margem/frete aplicados)
+  const custoTotalEl = document.getElementById('detalhe-custo-total');
+  const precoVendaEl = document.getElementById('detalhe-preco-venda');
+  const precoM2El    = document.getElementById('detalhe-preco-m2');
+  const margemInput  = document.getElementById('detalhe-margem-lucro');
+  const freteCheck   = document.getElementById('detalhe-frete-check');
+
+  const custoTotal   = custoTotalEl ? custoTotalEl.innerText : '0,00';
+  const precoVenda   = precoVendaEl ? precoVendaEl.innerText : '0,00';
+  const precoM2      = precoM2El    ? precoM2El.innerText    : '0,00';
+  const margemLucro  = margemInput  ? margemInput.value      : '20';
+  const freteAtivo   = freteCheck   ? freteCheck.checked     : false;
+
+  // Clona a tabela de materiais (remove botões e inputs)
+  const tabela = resultado.querySelector('table');
+  let tabelaHTML = '';
+  if (tabela) {
+    const cloneTabela = tabela.cloneNode(true);
+    // Remove a coluna de "Composição" para economizar espaço na impressão (opcional – mantenha se quiser)
+    // cloneTabela.querySelectorAll('th:nth-child(3), td:nth-child(3)').forEach(el => el.remove());
+    tabelaHTML = cloneTabela.outerHTML;
+  }
+
+  const printArea = document.getElementById('print-area');
+  if (!printArea) return;
+
+  printArea.innerHTML = `
+    <style>
+      /* Reset e fonte compacta */
+      * { font-family: 'Segoe UI', Arial, sans-serif; font-size: 11px; line-height: 1.3; }
+      body { margin: 0; padding: 0; }
+      .container { max-width: 100%; padding: 10mm; }
+      h1 { font-size: 18px; margin: 0 0 8px 0; }
+      table { width: 100%; border-collapse: collapse; margin-bottom: 10px; }
+      th, td { padding: 5px 6px; border-bottom: 1px solid #ddd; text-align: left; }
+      th { background: #f1f5f9; font-weight: bold; }
+      .totais { display: flex; justify-content: space-between; gap: 10px; margin-top: 12px; }
+      .card { flex: 1; padding: 10px; border-radius: 8px; background: #f9fafb; text-align: center; }
+      .card.valor { background: #fff7ed; }
+      .card h2 { font-size: 20px; margin: 4px 0; }
+      .card p { margin: 0; color: #555; }
+      @media print {
+        body { -webkit-print-color-adjust: exact; print-color-adjust: exact; }
+      }
+    </style>
+    <div class="container">
+      <h1>Detalhamento de Custos e Materiais</h1>
+      ${tabelaHTML}
+      <div class="totais">
+        <div class="card">
+          <p>Custo Total</p>
+          <h2>${custoTotal}</h2>
+        </div>
+        <div class="card">
+          <p>Margem de Lucro</p>
+          <h2>${margemLucro}%</h2>
+          ${freteAtivo ? '<p style="font-size:10px; color:#ea580c;">Frete (6%) incluso</p>' : ''}
+        </div>
+        <div class="card valor">
+          <p>Preço de Venda</p>
+          <h2>${precoVenda}</h2>
+          <p>${precoM2} / m²</p>
+        </div>
+      </div>
+    </div>
+  `;
 
   setTimeout(() => {
     window.print();
