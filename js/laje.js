@@ -740,17 +740,53 @@ async function gerarDetalhamento() {
   const latasAreia = Math.round(areiaM3 / 0.018);
   const latasBrita = Math.round(britaM3 / 0.018);
 
-  // ========== VERGALHÃO 6mm (ID 26) ==========
-  let totalVergalhoes = 0;
+  // ========== VERGALHÃO 6mm (ID 26) PARA VIGOTAS COM TAMANHO >= 3,40 m ==========
+  // Coleta todos os comprimentos das vigotas que atendem à condição
+  const comprimentosVergalhao = [];
   for (const item of itens) {
     const tamVigota = Number(item.tamanho_vigota);
     const qtdVigotas = Number(item.qtd_vigotas);
-    if (tamVigota > 3.40) {
-      totalVergalhoes += qtdVigotas;
+    if (tamVigota >= 3.40) {
+      for (let i = 0; i < qtdVigotas; i++) {
+        comprimentosVergalhao.push(tamVigota);
+      }
     }
   }
-  const barrasVergalhao = Math.ceil(totalVergalhoes / 3);
-  const custoVergalhaoPorBarra = custoProdutoPorId(26, 25.00); // ID 26 = Vergalhão 6mm 12m
+
+  let barrasVergalhao = 0;
+  let custoTotalVergalhao = 0;
+  let gruposVergalhao = []; // para exibição
+
+  if (comprimentosVergalhao.length > 0) {
+    // Usa o mesmo algoritmo de corte selecionado pelo usuário
+    let corteVergalhao;
+    if (LAJE.algoritmoCorte === 'BFD') {
+      corteVergalhao = binPackingBFD(comprimentosVergalhao, 12.0);
+    } else if (LAJE.algoritmoCorte === 'RBF') {
+      corteVergalhao = binPackingRBF(comprimentosVergalhao, 12.0, 100);
+    } else if (LAJE.algoritmoCorte === 'DP') {
+      corteVergalhao = binPackingDP(comprimentosVergalhao, 12.0);
+    } else {
+      corteVergalhao = binPackingFFD(comprimentosVergalhao, 12.0);
+    }
+
+    barrasVergalhao = corteVergalhao.length;
+
+    // Agrupa os cortes iguais para exibição
+    const gruposMap = new Map();
+    corteVergalhao.forEach(barra => {
+      barra.cortes.forEach(corte => {
+        const key = corte.toFixed(2);
+        gruposMap.set(key, (gruposMap.get(key) || 0) + 1);
+      });
+    });
+    gruposVergalhao = Array.from(gruposMap.entries())
+      .map(([tamanho, qtd]) => ({ tamanho: parseFloat(tamanho), qtd }))
+      .sort((a, b) => b.tamanho - a.tamanho);
+
+    const custoPorBarraVerg = custoProdutoPorId(26, 25.00);
+    custoTotalVergalhao = barrasVergalhao * custoPorBarraVerg;
+  }
 
   // Funções auxiliares
   function custoProduto(nomePadrao, padrao = 0) {
@@ -831,13 +867,14 @@ async function gerarDetalhamento() {
   );
 
   // Vergalhão (se houver)
-  if (totalVergalhoes > 0) {
+  if (comprimentosVergalhao.length > 0) {
+    const descricaoCortes = gruposVergalhao.map(g => `${g.qtd}x ${g.tamanho.toFixed(2)}m`).join(', ');
     addLinha(
       'Vergalhão CA-60 6mm',
       `${barrasVergalhao} barra(s) de 12 m`,
-      `${totalVergalhoes} pedaços de 3,40 m (vãos > 3,40 m)`,
-      custoVergalhaoPorBarra,
-      barrasVergalhao * custoVergalhaoPorBarra
+      `${comprimentosVergalhao.length} peças: ${descricaoCortes}`,
+      custoProdutoPorId(26, 25.00),
+      custoTotalVergalhao
     );
   }
 
