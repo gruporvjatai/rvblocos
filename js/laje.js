@@ -11,7 +11,7 @@ const LAJE = {
 };
 
 // ==================== NAVEGAÇÃO DE ABAS ====================
-function switchLajeTab(tab) {
+/*function switchLajeTab(tab) {
   LAJE.tabAtiva = tab;
   document.getElementById('laje-tab-orcamento').classList.toggle('hidden', tab !== 'orcamento');
   document.getElementById('laje-tab-corte').classList.toggle('hidden', tab !== 'corte');
@@ -29,6 +29,32 @@ function switchLajeTab(tab) {
   if (tab === 'corte') carregarSelectOrcamentosAprovados();
   if (tab === 'detalhamento') carregarSelectTodosOrcamentos();
   if (tab === 'itens') carregarProdutosLaje();
+  lucide.createIcons();
+}*/
+
+function switchLajeTab(tab) {
+  LAJE.tabAtiva = tab;
+  document.getElementById('laje-tab-orcamento').classList.toggle('hidden', tab !== 'orcamento');
+  document.getElementById('laje-tab-corte').classList.toggle('hidden', tab !== 'corte');
+  document.getElementById('laje-tab-detalhamento').classList.toggle('hidden', tab !== 'detalhamento');
+  document.getElementById('laje-tab-itens').classList.toggle('hidden', tab !== 'itens');
+  document.getElementById('laje-tab-entregas').classList.toggle('hidden', tab !== 'entregas');
+
+  ['orcamento','corte','detalhamento','itens','entregas'].forEach(t => {
+    const btn = document.getElementById(`tab-${t}-btn`);
+    if (!btn) return;
+    btn.className = tab === t
+      ? 'px-4 py-2 rounded-t-lg font-bold text-sm bg-orange-600 text-white shadow'
+      : 'px-4 py-2 rounded-t-lg font-bold text-sm bg-slate-100 text-slate-600 hover:bg-slate-200';
+  });
+
+  if (tab === 'corte') carregarSelectOrcamentosAprovados();
+  if (tab === 'detalhamento') carregarSelectTodosOrcamentos();
+  if (tab === 'itens') carregarProdutosLaje();
+  if (tab === 'entregas') {
+    carregarSelectOrcamentosEntregas();
+    document.getElementById('laje-entrega-resumo').classList.add('hidden');
+  }
   lucide.createIcons();
 }
 
@@ -1747,7 +1773,7 @@ async function registrarEntregaLaje() {
   carregarProgressoEntregas();
 }
 
-// Atualiza o switchLajeTab para incluir a nova aba
+/*// Atualiza o switchLajeTab para incluir a nova aba
 const originalSwitchLajeTab = switchLajeTab;
 switchLajeTab = function(tab) {
   originalSwitchLajeTab(tab);
@@ -1755,4 +1781,4 @@ switchLajeTab = function(tab) {
     carregarSelectOrcamentosEntregas();
     document.getElementById('laje-entrega-resumo').classList.add('hidden');
   }
-};
+};*/
