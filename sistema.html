@@ -799,13 +799,13 @@
         <option value="">-- Selecione --</option>
       </select>
       <div class="flex gap-2 mt-2">
-        <button onclick="imprimirBackupEntrega()" class="bg-white border border-slate-300 text-slate-700 px-4 py-3 rounded-lg font-bold hover:bg-slate-100">
-            <i data-lucide="printer"></i> Imprimir Lista Geral (Backup)
-          </button>
+        <button onclick="imprimirBackupEntrega()" class="bg-white border border-slate-300 text-slate-700 px-4 py-2.5 rounded-lg font-bold hover:bg-slate-100 inline-flex items-center gap-2 whitespace-nowrap">
+          <i data-lucide="printer" class="w-4 h-4"></i> Imprimir Lista Geral
+        </button>
         </div>
-      <button onclick="abrirModalEntregaLaje()" class="bg-green-600 text-white px-6 py-3 rounded-lg font-bold hover:bg-green-700">
-        <i data-lucide="truck"></i> Registrar Entrega
-      </button>
+     <button onclick="abrirModalEntregaLaje()" class="bg-green-600 text-white px-5 py-2.5 rounded-lg font-bold hover:bg-green-700 inline-flex items-center gap-2 whitespace-nowrap">
+      <i data-lucide="truck" class="w-4 h-4"></i> Registrar Entrega
+    </button>
     </div>
   </div>
 
@@ -870,8 +870,8 @@
         <button onclick="registrarEntregaLaje()" class="flex-1 bg-green-600 text-white py-3 rounded-lg font-bold hover:bg-green-700">
           <i data-lucide="save"></i> Confirmar Entrega
         </button>
-        <button onclick="imprimirRegistroEntregaModal()" class="bg-slate-200 hover:bg-slate-300 text-slate-700 px-4 py-3 rounded-lg font-bold">
-          <i data-lucide="printer"></i> Imprimir
+        <button onclick="imprimirRegistroEntregaModal()" class="bg-slate-200 hover:bg-slate-300 text-slate-700 px-4 py-2.5 rounded-lg font-bold inline-flex items-center gap-2 whitespace-nowrap">
+          <i data-lucide="printer" class="w-4 h-4"></i> Imprimir
         </button>
       </div>
     </div>
