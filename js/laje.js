@@ -670,7 +670,7 @@ async function carregarSelectTodosOrcamentos() {
     (data || []).map(o => `<option value="${o.id}">#${o.id} – ${o.cliente_nome}</option>`).join('');
 }
 
-async function gerarDetalhamento() {
+/*ync function gerarDetalhamento() {
   const idOrc = document.getElementById('laje-detalhamento-select').value;
   if (!idOrc) return showToast('Selecione um orçamento.', true);
   showLoading(true);
@@ -878,7 +878,236 @@ async function gerarDetalhamento() {
   document.getElementById('laje-detalhamento-resultado').classList.remove('hidden');
   showLoading(false);
   lucide.createIcons();
+}*/
+
+
+async function gerarDetalhamento() {
+  const idOrc = document.getElementById('laje-detalhamento-select').value;
+  if (!idOrc) return showToast('Selecione um orçamento.', true);
+  showLoading(true);
+
+  // 1. Buscar itens do orçamento
+  const { data: itens, error } = await sb.from('laje_itens_orcamento').select('*').eq('id_orcamento', idOrc);
+  if (error || !itens?.length) { showLoading(false); return showToast('Nenhum item.', true); }
+
+  // 2. Garantir lista de produtos carregada
+  await carregarProdutosLajeSilencioso();
+
+  let totalVigotas = 0, totalArea = 0, totalEpsLinear = 0;
+  const tamanhosVigota = [];
+  const tiposEnchimento = new Set();
+  const alturas = new Set();
+  itens.forEach(i => {
+    totalVigotas += Number(i.qtd_vigotas);
+    totalArea += Number(i.area || (i.vao_menor * i.vao_maior));
+    if (i.tipo_enchimento === 'EPS') totalEpsLinear += Number(i.metragem_eps);
+    for (let j = 0; j < Number(i.qtd_vigotas); j++) tamanhosVigota.push(Number(i.tamanho_vigota));
+    tiposEnchimento.add(i.tipo_enchimento);
+    alturas.add(i.altura);
+  });
+
+  const metrosLinearesTrelica = tamanhosVigota.reduce((a, b) => a + b, 0);
+
+  // ========== ALTERAÇÃO AQUI ==========
+  // Usa o mesmo algoritmo selecionado na aba Plano de Corte
+  const barra12m = obterConfig('comprimento_barra_trelica', 12.0);
+  let barras;
+  if (LAJE.algoritmoCorte === 'BFD') {
+    barras = binPackingBFD(tamanhosVigota, barra12m);
+  } else if (LAJE.algoritmoCorte === 'RBF') {
+    barras = binPackingRBF(tamanhosVigota, barra12m, 100);
+  } else if (LAJE.algoritmoCorte === 'DP') {
+    barras = binPackingDP(tamanhosVigota, barra12m);
+  } else {
+    barras = binPackingFFD(tamanhosVigota, barra12m);
+  }
+  // ====================================
+
+  const numBarras = barras.length;
+  const alturaModa = [...alturas].sort((a, b) => b - a)[0] || 8;
+  const tipoPredominante = [...tiposEnchimento][0] || 'EPS';
+
+  // Capeamento
+  const espessuraCapeamento = (alturaModa <= 12) ? 0.02 : 0.04;
+  const larguraCapeamento = 0.12;
+  const secaoCapeamento = larguraCapeamento * espessuraCapeamento;
+  const volumeConcreto = totalArea * espessuraCapeamento;
+
+  // Traço
+  const volumePorTraco = 0.231;
+  const numTracos = Math.ceil(volumeConcreto / volumePorTraco);
+  const metrosLinearesPorTraco = volumePorTraco / secaoCapeamento;
+  const sacosCimento = Math.ceil(numTracos * 1.5);
+  const areiaM3 = numTracos * 0.117;
+  const britaM3 = numTracos * 0.09;
+  const latasAreia = Math.ceil(areiaM3 / 0.018);
+  const latasBrita = Math.ceil(britaM3 / 0.018);
+
+  function custoProduto(nomePadrao, padrao = 0) {
+    const p = LAJE.produtosList.find(x => x.descricao === nomePadrao);
+    return p ? Number(p.custo_unitario) : padrao;
+  }
+
+  const linhas = [];
+  let custoTotal = 0;
+
+  function addLinha(desc, qtd, composicao, vlrUnit, vlrTotal) {
+    linhas.push({
+      desc,
+      qtd,
+      composicao: composicao || '',
+      unitario: formatMoney(vlrUnit),
+      total: formatMoney(vlrTotal)
+    });
+    custoTotal += vlrTotal;
+  }
+
+  // Treliça
+  const trelicaNome = `Treliça TG${alturaModa} 12m`;
+  const custoTrelica = custoProduto(trelicaNome, alturaModa <= 8 ? 68 : (alturaModa <= 12 ? 92 : 105));
+  addLinha('Treliça', `${numBarras} barras`, `${metrosLinearesTrelica.toFixed(2)} m lineares`, custoTrelica, numBarras * custoTrelica);
+
+  // Enchimento – EPS
+  if (tiposEnchimento.has('EPS')) {
+    const placasEps = Math.ceil(totalEpsLinear);
+    const epsNome = `EPS H${alturaModa} placa 50x100`;
+    const custoEpsPlaca = custoProduto(epsNome, 11.90);
+    addLinha(
+      'EPS (isopor)',
+      `${placasEps} placas`,
+      `${totalEpsLinear.toFixed(2)} m lineares (equivale a ${placasEps} placas de 1,00×0,50 m)`,
+      custoEpsPlaca,
+      placasEps * custoEpsPlaca
+    );
+    const freteIsopor = custoProduto('Frete Isopor', 0);
+    if (freteIsopor > 0) addLinha('Frete do isopor', '1 un', '', freteIsopor, freteIsopor);
+  }
+  if (tiposEnchimento.has('LAJOTA_CERAMICA')) {
+    const totalLajotas = Math.ceil(totalArea * 12);
+    const custoLajota = custoProduto('Lajota Cerâmica', 1.7);
+    addLinha('Lajota', `${totalLajotas} peças`, '', custoLajota, totalLajotas * custoLajota);
+    const freteLajota = custoProduto('Frete Lajota', 50);
+    addLinha('Frete da lajota', '1 un', '', freteLajota, freteLajota);
+  }
+
+  // Concreto
+  addLinha(
+    'Cimento',
+    `${sacosCimento} sacos`,
+    `${numTracos} traços (${metrosLinearesPorTraco.toFixed(0)} m lineares de capeamento por traço)`,
+    custoProduto('Cimento CP II 50kg', 37),
+    sacosCimento * custoProduto('Cimento CP II 50kg', 37)
+  );
+  addLinha(
+    'Areia Grossa',
+    `${areiaM3.toFixed(3)} m³`,
+    `${latasAreia} latas (18 L)`,
+    custoProduto('Areia Grossa', 200),
+    areiaM3 * custoProduto('Areia Grossa', 200)
+  );
+  addLinha(
+    'Brita 0',
+    `${britaM3.toFixed(3)} m³`,
+    `${latasBrita} latas (18 L)`,
+    custoProduto('Brita 0', 200),
+    britaM3 * custoProduto('Brita 0', 200)
+  );
+
+  // Serviços gerais
+  addLinha('Disco de Corte', '1 un', '', custoProduto('Disco de Corte', 10), custoProduto('Disco de Corte', 10));
+  addLinha('ART', '1 un', '', custoProduto('ART', 28), custoProduto('ART', 28));
+  addLinha('Plotagem', '1 un', '', custoProduto('Plotagem de Projeto', 10), custoProduto('Plotagem de Projeto', 10));
+  addLinha('Viagem', '1 un', '', custoProduto('Viagem de Entrega', 50), custoProduto('Viagem de Entrega', 50));
+  const ajudanteTotal = totalArea * custoProduto('Diária de Ajudante', 4.5);
+  addLinha('Diária Ajudante', `${totalArea.toFixed(2)} m²`, '', custoProduto('Diária de Ajudante', 4.5), ajudanteTotal);
+  const comissaoTotal = totalArea * custoProduto('Comissão', 1);
+  addLinha('Comissão', `${totalArea.toFixed(2)} m²`, '', custoProduto('Comissão', 1), comissaoTotal);
+  if (tiposEnchimento.has('EPS')) {
+    const laudo = custoProduto('Laudo Técnico', 300);
+    if (laudo > 0) addLinha('Laudo Técnico', '1 un', '', laudo, laudo);
+  }
+
+  LAJE.custoTotalDetalhamento = custoTotal;
+  LAJE.areaTotalDetalhamento = totalArea;
+
+  const margemInicial = 20;
+  const precoVendaInicial = custoTotal * (1 + margemInicial / 100);
+  const precoM2Inicial = totalArea > 0 ? precoVendaInicial / totalArea : 0;
+
+  const html = `
+    <div class="bg-white rounded-xl border shadow-sm p-6">
+      <h3 class="font-bold text-slate-800 mb-4 flex justify-between items-center">
+        <span>Detalhamento de Custos e Materiais</span>
+        <button onclick="imprimirDetalhamento()" class="bg-slate-200 hover:bg-slate-300 text-slate-700 px-4 py-2 rounded-lg font-bold text-sm flex items-center gap-2 no-print">
+          <i data-lucide="printer" class="w-4 h-4"></i> Imprimir
+        </button>
+      </h3>
+      <div class="overflow-x-auto">
+        <table class="w-full text-sm">
+          <thead class="bg-slate-50">
+            <tr>
+              <th class="p-3 text-left">Descrição</th>
+              <th class="p-3 text-center">Quantidade</th>
+              <th class="p-3 text-center">Composição</th>
+              <th class="p-3 text-right">Valor Unit.</th>
+              <th class="p-3 text-right">Total</th>
+            </tr>
+          </thead>
+          <tbody>
+            ${linhas.map(l => `
+              <tr class="border-b">
+                <td class="p-3 font-medium">${l.desc}</td>
+                <td class="p-3 text-center">${l.qtd}</td>
+                <td class="p-3 text-center text-xs text-slate-500">${l.composicao}</td>
+                <td class="p-3 text-right">${l.unitario}</td>
+                <td class="p-3 text-right">${l.total}</td>
+              </tr>`).join('')}
+          </tbody>
+        </table>
+      </div>
+      <div class="mt-6 grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4 items-end">
+        <div class="bg-slate-50 p-4 rounded-lg text-center">
+          <p class="text-slate-500 text-sm">Custo Total</p>
+          <p class="text-2xl font-bold text-slate-800" id="detalhe-custo-total">${formatMoney(custoTotal)}</p>
+        </div>
+        <div class="bg-slate-50 p-4 rounded-lg text-center">
+          <label class="text-slate-500 text-sm block">Margem de Lucro (%)</label>
+          <input type="number" id="detalhe-margem-lucro" value="20" min="0" max="200" step="0.1"
+            class="w-24 text-center border rounded p-1 mt-1 mx-auto" onchange="recalcularDetalhamento()">
+        </div>
+        <div class="bg-white border border-slate-200 p-4 rounded-lg text-center flex flex-col items-center justify-center">
+          <label class="flex items-center gap-2 cursor-pointer">
+            <input type="checkbox" id="detalhe-frete-check" class="w-5 h-5 accent-orange-600" onchange="recalcularDetalhamento()">
+            <span class="text-sm font-medium text-slate-700">Frete (6%)</span>
+          </label>
+        </div>
+        <div class="bg-orange-50 p-4 rounded-lg text-center">
+          <p class="text-slate-500 text-sm">Preço de Venda</p>
+          <p class="text-2xl font-bold text-orange-600" id="detalhe-preco-venda">${formatMoney(precoVendaInicial)}</p>
+          <p class="text-xs text-slate-500"><span id="detalhe-preco-m2">${formatMoney(precoM2Inicial)}</span> / m²</p>       
+          <button onclick="enviarParaOrcamento()" class="mt-2 bg-green-600 hover:bg-green-700 text-white px-3 py-1 rounded-lg font-bold text-xs">
+            <i data-lucide="send" class="w-3 h-3 inline"></i> Enviar para Orçamento
+          </button>
+        </div>        
+      </div>      
+      <p class="text-xs text-slate-400 mt-2">* Ajuste a margem de lucro ou marque o frete para recalcular o preço de venda automaticamente.</p>
+    </div>
+  `;
+
+  document.getElementById('laje-detalhamento-resultado').innerHTML = html;
+  document.getElementById('laje-detalhamento-resultado').classList.remove('hidden');
+  showLoading(false);
+  lucide.createIcons();
 }
+
+
+
+
+
+
+
+
+
 
 function recalcularDetalhamento() {
   const margemInput = document.getElementById('detalhe-margem-lucro');
