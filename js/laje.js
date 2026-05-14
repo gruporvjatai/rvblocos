@@ -884,8 +884,10 @@ async function gerarDetalhamento() {
   LAJE.custoTotalDetalhamento = custoTotal;
   LAJE.areaTotalDetalhamento = totalArea;
 
-  const margemInicial = 20;
-  const precoVendaInicial = custoTotal * (1 + margemInicial / 100);
+  const margemInicial = 40;
+  let precoVendaInicial = custoTotal * (1 + margemInicial / 100);
+// Como o frete já vem marcado, aplica 6%
+  precoVendaInicial *= 1.06;
   const precoM2Inicial = totalArea > 0 ? precoVendaInicial / totalArea : 0;
 
   const html = `
@@ -926,12 +928,12 @@ async function gerarDetalhamento() {
         </div>
         <div class="bg-slate-50 p-4 rounded-lg text-center">
           <label class="text-slate-500 text-sm block">Margem de Lucro (%)</label>
-          <input type="number" id="detalhe-margem-lucro" value="20" min="0" max="200" step="0.1"
+          <input type="number" id="detalhe-margem-lucro" value="40" min="0" max="200" step="0.1"
             class="w-24 text-center border rounded p-1 mt-1 mx-auto" onchange="recalcularDetalhamento()">
         </div>
         <div class="bg-white border border-slate-200 p-4 rounded-lg text-center flex flex-col items-center justify-center">
           <label class="flex items-center gap-2 cursor-pointer">
-            <input type="checkbox" id="detalhe-frete-check" class="w-5 h-5 accent-orange-600" onchange="recalcularDetalhamento()">
+            <input type="checkbox" id="detalhe-frete-check" class="w-5 h-5 accent-orange-600" onchange="recalcularDetalhamento() checked">
             <span class="text-sm font-medium text-slate-700">Frete (6%)</span>
           </label>
         </div>
