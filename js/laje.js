@@ -1739,8 +1739,8 @@ async function carregarSelectOrcamentosEntregas() {
   sel.onchange = () => carregarProgressoEntregas();
 }
 
-// Carrega o progresso e o histórico de entregas
-/*async function carregarProgressoEntregas() {
+
+async function carregarProgressoEntregas() {
   const idOrc = document.getElementById('laje-entrega-select').value;
   if (!idOrc) {
     document.getElementById('laje-entrega-resumo').classList.add('hidden');
@@ -1749,18 +1749,56 @@ async function carregarSelectOrcamentosEntregas() {
 
   showLoading(true);
 
-  // 1. Todas as vigotas do orçamento (tamanhos reais)
+  // 1. Buscar os tamanhos e quantidades das vigotas do orçamento
   const { data: itens } = await sb.from('laje_itens_orcamento')
     .select('tamanho_vigota, qtd_vigotas').eq('id_orcamento', idOrc);
-  
-  // Mapa de total por tamanho
-  const totalPorTamanho = {};
+
+  // 2. Montar a lista plana de tamanhos para o algoritmo de corte
+  const tamanhos = [];
   (itens || []).forEach(i => {
-    const t = Number(i.tamanho_vigota).toFixed(2);
-    totalPorTamanho[t] = (totalPorTamanho[t] || 0) + Number(i.qtd_vigotas);
+    for (let j = 0; j < Number(i.qtd_vigotas); j++) {
+      tamanhos.push(Number(i.tamanho_vigota));
+    }
   });
 
-  // 2. Entregas já realizadas
+  // 3. Aplicar o algoritmo selecionado na aba Plano de Corte
+  const barra12m = obterConfig('comprimento_barra_trelica', 12.0);
+  let barras;
+  if (LAJE.algoritmoCorte === 'BFD') {
+    barras = binPackingBFD(tamanhos, barra12m);
+  } else if (LAJE.algoritmoCorte === 'RBF') {
+    barras = binPackingRBF(tamanhos, barra12m, 100);
+  } else if (LAJE.algoritmoCorte === 'DP') {
+    barras = binPackingDP(tamanhos, barra12m);
+  } else {
+    barras = binPackingFFD(tamanhos, barra12m);
+  }
+
+  // 4. Extrair as peças reais do plano de corte (cada corte vira uma vigota individual)
+  const pecasPlano = [];
+  barras.forEach(barra => {
+    barra.cortes.forEach(corte => {
+      const t = corte.toFixed(2);
+      const existente = pecasPlano.find(p => p.tamanho.toFixed(2) === t);
+      if (existente) {
+        existente.qtd++;
+      } else {
+        pecasPlano.push({ tamanho: corte, qtd: 1 });
+      }
+    });
+  });
+
+  // Ordena por tamanho decrescente
+  pecasPlano.sort((a, b) => b.tamanho - a.tamanho);
+
+  // 5. Calcular totais por tamanho com base no plano
+  const totalPorTamanho = {};
+  pecasPlano.forEach(p => {
+    const t = p.tamanho.toFixed(2);
+    totalPorTamanho[t] = p.qtd;
+  });
+
+  // 6. Entregas já realizadas
   const { data: entregas } = await sb.from('laje_entregas')
     .select('*').eq('id_orcamento', idOrc).order('data', { ascending: false });
 
@@ -1776,12 +1814,12 @@ async function carregarSelectOrcamentosEntregas() {
     });
   });
 
-  // 3. Monta tabela de progresso
+  // 7. Monta tabela de progresso
   const tbody = document.getElementById('laje-entrega-tbody');
-  const tamanhos = Object.keys(totalPorTamanho).sort((a, b) => b - a);
+  const tamanhosArr = Object.keys(totalPorTamanho).sort((a, b) => b - a);
   let totalGeral = 0, pendenteGeral = 0;
-  tbody.innerHTML = tamanhos.map(t => {
-    const total = totalPorTamanho[t];
+  tbody.innerHTML = tamanhosArr.map(t => {
+    const total = totalPorTamanho[t] || 0;
     const entregue = entreguePorTamanho[t] || 0;
     const pendente = total - entregue;
     totalGeral += total;
@@ -1802,7 +1840,7 @@ async function carregarSelectOrcamentosEntregas() {
     </tr>
   `);
 
-  // 4. Histórico de entregas
+  // 8. Histórico de entregas (COM BOTÃO DE IMPRIMIR EM CADA LINHA)
   const histBody = document.getElementById('laje-entrega-historico-tbody');
   histBody.innerHTML = (entregas || []).map(e => {
     const vigotas = e.vigotas_entregues || [];
@@ -1812,14 +1850,24 @@ async function carregarSelectOrcamentosEntregas() {
       <td class="p-3">${formatDate(e.data)}</td>
       <td class="p-3 text-xs">${desc || '-'}</td>
       <td class="p-3 text-center">${total}</td>
+      <td class="p-3 text-center">
+        <button onclick="imprimirEntregaHistorico(${e.id})" class="bg-white border border-slate-300 text-slate-600 px-2 py-1 rounded text-xs hover:bg-slate-100 inline-flex items-center gap-1" title="Imprimir esta entrega">
+          <i data-lucide="printer" class="w-3 h-3"></i> Imprimir
+        </button>
+      </td>
     </tr>`;
   }).join('');
 
+  // 9. Atualiza o modal de entrega com as peças do plano
+  LAJE.ultimasPecasPlano = pecasPlano;
+
   document.getElementById('laje-entrega-resumo').classList.remove('hidden');
   showLoading(false);
-}*/
+  lucide.createIcons();
+}
 
-async function carregarProgressoEntregas() {
+
+/*async function carregarProgressoEntregas() {
   const idOrc = document.getElementById('laje-entrega-select').value;
   if (!idOrc) {
     document.getElementById('laje-entrega-resumo').classList.add('hidden');
@@ -1937,7 +1985,7 @@ async function carregarProgressoEntregas() {
 
   document.getElementById('laje-entrega-resumo').classList.remove('hidden');
   showLoading(false);
-}
+}*/
 
 
 
@@ -2174,4 +2222,80 @@ function imprimirBackupEntrega() {
       `;
       setTimeout(() => { window.print(); limparAreaImpressao(); }, 300);
     });
+}
+
+
+
+async function imprimirEntregaHistorico(idEntrega) {
+  // Busca a entrega específica
+  const { data: entrega, error } = await sb.from('laje_entregas')
+    .select('*').eq('id', idEntrega).single();
+
+  if (error || !entrega) return showToast('Entrega não encontrada.', true);
+
+  const idOrc = entrega.id_orcamento;
+  const orc = LAJE.orcamentosList.find(o => o.id == idOrc);
+  const cliente = orc ? orc.cliente_nome : 'Não informado';
+
+  const vigotas = entrega.vigotas_entregues || [];
+  const totalPecas = vigotas.reduce((s, v) => s + Number(v.qtd), 0);
+  const totalMetrosLineares = vigotas.reduce((s, v) => s + (Number(v.tamanho) * Number(v.qtd)), 0);
+  const larguraUtil = 0.50;
+  const totalM2 = totalMetrosLineares * larguraUtil;
+
+  const linhas = vigotas.map(v => `
+    <tr>
+      <td style="padding:4px 8px; border:1px solid #000; text-align:center; font-weight:bold;">${v.qtd}x</td>
+      <td style="padding:4px 8px; border:1px solid #000;">${Number(v.tamanho).toFixed(2)} m</td>
+      <td style="padding:4px 8px; border:1px solid #000; text-align:right;">${(Number(v.tamanho) * Number(v.qtd)).toFixed(2)} m</td>
+      <td style="padding:4px 8px; border:1px solid #000; text-align:center; font-size:16px;">☐</td>
+    </tr>
+  `).join('');
+
+  const printArea = document.getElementById('print-area');
+  printArea.innerHTML = `
+    <div style="font-family:'Segoe UI', Arial, sans-serif; padding:10mm; max-width:190mm; margin:0 auto; background:#fff; font-size:12px;">
+      <table width="100%" style="border-bottom:1px solid #ea580c; padding-bottom:5px; margin-bottom:10px;">
+        <tr>
+          <td width="45"><img src="https://lh3.googleusercontent.com/d/1SIoZ2JlalfMnGDZTXBk7ZYuPgwxX3odF" style="height:28px;"></td>
+          <td><strong style="color:#ea580c; font-size:15px;">RV BLOCOS E ESTRUTURAS</strong><br><span style="font-size:10px;">Registro de Entrega</span></td>
+          <td align="right" style="font-size:10px;">
+            <strong>Orçamento #${idOrc}</strong><br>
+            Cliente: ${cliente}<br>
+            Data: ${formatDate(entrega.data)}
+          </td>
+        </tr>
+      </table>
+      <p style="font-size:11px; margin-bottom:10px;">
+        <strong>Total de peças:</strong> ${totalPecas} | 
+        <strong>Metros lineares:</strong> ${totalMetrosLineares.toFixed(2)} m | 
+        <strong>Área equivalente:</strong> ${totalM2.toFixed(2)} m²
+      </p>
+      ${entrega.observacao ? `<p style="font-size:11px; margin-bottom:10px;"><strong>Obs:</strong> ${entrega.observacao}</p>` : ''}
+      <table width="100%" style="border-collapse:collapse; margin-bottom:15px;">
+        <thead>
+          <tr style="background:#e5e7eb;">
+            <th style="padding:6px; border:1px solid #000; width:50px;">Qtd</th>
+            <th style="padding:6px; border:1px solid #000;">Tamanho</th>
+            <th style="padding:6px; border:1px solid #000;">Metros</th>
+            <th style="padding:6px; border:1px solid #000; width:40px;">✔</th>
+          </tr>
+        </thead>
+        <tbody>${linhas}</tbody>
+      </table>
+      <div style="display:flex; justify-content:space-between; margin-top:40px;">
+        <div style="text-align:center; width:45%;">
+          <div style="border-top:1px solid #000; margin-bottom:5px;"></div>
+          <span style="font-size:10px; font-weight:bold;">CONFERENTE RV BLOCOS</span>
+          <p style="margin:10px 0 0 0; font-size:10px;">Data: ____ / ____ / ________</p>
+        </div>
+        <div style="text-align:center; width:45%;">
+          <div style="border-top:1px solid #000; margin-bottom:5px;"></div>
+          <span style="font-size:10px; font-weight:bold;">RECEBEDOR (CLIENTE)</span>
+          <p style="margin:10px 0 0 0; font-size:10px;">Data: ____ / ____ / ________</p>
+        </div>
+      </div>
+    </div>
+  `;
+  setTimeout(() => { window.print(); limparAreaImpressao(); }, 300);
 }
