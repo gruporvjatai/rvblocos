@@ -403,6 +403,7 @@ async function carregarOrcamentosLaje() {
         <button onclick="editarOrcamentoLaje(${orc.id})" class="text-blue-600 hover:text-blue-800" title="Editar"><i data-lucide="edit-3" width="16"></i></button>
         <button onclick="alterarStatusLaje(${orc.id},'APROVADO')" class="text-green-600 hover:text-green-800" title="Aprovar"><i data-lucide="check" width="16"></i></button>
         <button onclick="alterarStatusLaje(${orc.id},'CANCELADO')" class="text-red-500 hover:text-red-700" title="Cancelar"><i data-lucide="x" width="16"></i></button>
+        <button onclick="duplicarOrcamentoLaje(${orc.id})" class="text-indigo-500 hover:text-indigo-700" title="Duplicar"><i data-lucide="copy" width="16"></i></button>
         <button onclick="excluirOrcamentoLaje(${orc.id})" class="text-slate-400 hover:text-red-600" title="Excluir"><i data-lucide="trash-2" width="16"></i></button>
       </td>
     </tr>`;
@@ -2342,4 +2343,61 @@ async function imprimirEntregaHistorico(idEntrega) {
     </div>
   `;
   setTimeout(() => { window.print(); limparAreaImpressao(); }, 300);
+}
+
+
+async function duplicarOrcamentoLaje(id) {
+  if (!confirm('Deseja duplicar este orçamento?')) return;
+
+  showLoading(true);
+  try {
+    // Busca o orçamento original
+    const { data: orc, error: errOrc } = await sb.from('laje_orcamentos')
+      .select('*').eq('id', id).single();
+    if (errOrc || !orc) throw new Error('Orçamento original não encontrado.');
+
+    // Busca os itens do orçamento original
+    const { data: itens, error: errItens } = await sb.from('laje_itens_orcamento')
+      .select('*').eq('id_orcamento', id);
+    if (errItens) throw new Error('Erro ao buscar itens.');
+
+    // Cria novo orçamento (sem ID, o banco gera automaticamente)
+    const { data: novoOrc, error: errNovo } = await sb.from('laje_orcamentos')
+      .insert({
+        cliente_nome: orc.cliente_nome + ' (Cópia)',
+        status: 'ABERTO',
+        valor_total_estimado: orc.valor_total_estimado,
+        area_total: orc.area_total
+      })
+      .select('id')
+      .single();
+    if (errNovo || !novoOrc) throw new Error('Erro ao criar novo orçamento.');
+
+    // Duplica os itens, associando ao novo orçamento
+    const novosItens = (itens || []).map(item => ({
+      id_orcamento: novoOrc.id,
+      comodo: item.comodo,
+      vao_menor: item.vao_menor,
+      vao_maior: item.vao_maior,
+      tipo_enchimento: item.tipo_enchimento,
+      altura: item.altura,
+      qtd_vigotas: item.qtd_vigotas,
+      tamanho_vigota: item.tamanho_vigota,
+      metragem_eps: item.metragem_eps,
+      area: item.area,
+      valor_estimado: item.valor_estimado,
+      largura_viga: item.largura_viga
+    }));
+
+    if (novosItens.length > 0) {
+      const { error: errInsert } = await sb.from('laje_itens_orcamento').insert(novosItens);
+      if (errInsert) throw new Error('Erro ao duplicar itens.');
+    }
+
+    showToast('Orçamento duplicado com sucesso!');
+    carregarOrcamentosLaje();
+  } catch (e) {
+    showToast('Erro ao duplicar: ' + e.message, true);
+  }
+  showLoading(false);
 }
